@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cognigraph"
+version = "0.2.0"
+description = "Graphs that think — turn any knowledge graph into a reasoning network"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "CrawlQ AI", email = "engineering@crawlq.ai" },
+]
+keywords = [
+    "knowledge-graph", "multi-agent", "reasoning", "slm",
+    "graph-of-agents", "lora", "pcst", "distributed-reasoning",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "networkx>=3.0",
+    "numpy>=1.24",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+    "typer[all]>=0.9",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.0",
+    "transformers>=4.35",
+    "peft>=0.7",
+    "vllm>=0.3",
+    "sentence-transformers>=2.2",
+]
+cpu = [
+    "llama-cpp-python>=0.2",
+    "sentence-transformers>=2.2",
+]
+neo4j = [
+    "neo4j>=5.0",
+]
+api = [
+    "anthropic>=0.18",
+    "openai>=1.0",
+    "boto3>=1.28",
+    "httpx>=0.25",
+]
+server = [
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.20",
+]
+all = [
+    "cognigraph[gpu,neo4j,api,server]",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "mypy>=1.0",
+    "ruff>=0.1",
+    "coverage>=7.0",
+]
+
+[project.scripts]
+kogni = "cognigraph.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/crawlq-ai/cognigraph"
+Documentation = "https://cognigraph.readthedocs.io"
+Repository = "https://github.com/crawlq-ai/cognigraph"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cognigraph"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

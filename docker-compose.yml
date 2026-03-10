@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  cognigraph:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - COGNIGRAPH_API_KEY=${COGNIGRAPH_API_KEY:-}
+      - COGNIGRAPH_RATE_LIMIT=${COGNIGRAPH_RATE_LIMIT:-10}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./cognigraph.yaml:/app/cognigraph.yaml:ro
+      - ./data:/app/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Optional: Neo4j for graph storage
+  neo4j:
+    image: neo4j:5
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-cognigraph}
+    volumes:
+      - neo4j_data:/data
+    profiles:
+      - neo4j
+
+volumes:
+  neo4j_data:

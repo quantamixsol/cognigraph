@@ -1,0 +1,29 @@
+model:
+  backend: api
+  model: claude-haiku-4-5-20251001
+
+graph:
+  connector: json
+
+activation:
+  strategy: pcst
+  max_nodes: 16
+
+orchestration:
+  max_rounds: 5
+  convergence_threshold: 0.95
+  aggregation: weighted_synthesis
+
+observer:
+  enabled: true
+  detect_conflicts: true
+  detect_anomalies: true
+
+cost:
+  budget_per_query: 0.05
+  prefer_local: true
+  fallback_to_api: true
+
+logging:
+  level: INFO
+  trace_messages: true
