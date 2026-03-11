@@ -154,6 +154,25 @@ class CogniGraph:
             "Call set_default_backend() or configure_nodes() first."
         )
 
+    def assign_tiered_backends(
+        self,
+        hub_backend: ModelBackend,
+        leaf_backend: ModelBackend,
+        hub_threshold: int = 3,
+    ) -> None:
+        """Assign backends based on node connectivity (multi-tier model assignment).
+
+        Hub nodes (degree > hub_threshold) get the stronger model.
+        Leaf nodes get the faster model.
+        """
+        for node_id, node in self.nodes.items():
+            if node.degree > hub_threshold:
+                self._node_backends[node_id] = hub_backend
+            else:
+                self._node_backends[node_id] = leaf_backend
+        # Set leaf as default fallback
+        self._default_backend = leaf_backend
+
     # --- Reasoning ---
 
     def reason(

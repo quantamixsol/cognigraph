@@ -1,0 +1,328 @@
+{
+  "run_metadata": {
+    "timestamp": "2026-03-11T11:02:44.259974+00:00",
+    "backend": "bedrock",
+    "model": "eu.anthropic.claude-sonnet-4-6",
+    "observer_model": "qwen2.5:0.5b",
+    "region": "eu-central-1",
+    "tiers": "ABC",
+    "total_questions": 30,
+    "total_elapsed_s": 238.9
+  },
+  "cost_summary": {
+    "single_agent_total_cost": 1.986222,
+    "cognigraph_total_cost": 0.0,
+    "total_benchmark_cost": 1.986222
+  },
+  "per_question_log": [
+    {
+      "question_id": "MG-A01",
+      "tier": "A",
+      "question": "What AI practices are completely prohibited under the EU AI Act, and what are th",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.066348,
+      "sa_latency_ms": 6419.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A02",
+      "tier": "A",
+      "question": "What is the complete compliance chain a provider must follow to place a high-ris",
+      "sa_f1": 0.8,
+      "sa_constrained_f1": 0.4,
+      "sa_cost": 0.066363,
+      "sa_latency_ms": 4686.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A03",
+      "tier": "A",
+      "question": "What are the obligations of deployers of high-risk AI systems regarding human ov",
+      "sa_f1": 0.4286,
+      "sa_constrained_f1": 0.2143,
+      "sa_cost": 0.066345,
+      "sa_latency_ms": 5405.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A04",
+      "tier": "A",
+      "question": "What specific requirements does the EU AI Act impose on general-purpose AI model",
+      "sa_f1": 0.8333,
+      "sa_constrained_f1": 0.4167,
+      "sa_cost": 0.066354,
+      "sa_latency_ms": 6618.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A05",
+      "tier": "A",
+      "question": "What are the GDPR principles for processing personal data and how do they apply ",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.066354,
+      "sa_latency_ms": 5563.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A06",
+      "tier": "A",
+      "question": "What transparency obligations exist for AI systems that generate deepfakes or sy",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.066222,
+      "sa_latency_ms": 6917.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A07",
+      "tier": "A",
+      "question": "How does DORA define ICT risk management requirements for financial entities?",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.066339,
+      "sa_latency_ms": 7074.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A08",
+      "tier": "A",
+      "question": "What incident notification timelines does NIS2 require for essential entities?",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.064734,
+      "sa_latency_ms": 5319.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A09",
+      "tier": "A",
+      "question": "What high-risk AI use cases does Annex III define for employment and workers man",
+      "sa_f1": 0.1839,
+      "sa_constrained_f1": 0.092,
+      "sa_cost": 0.063081,
+      "sa_latency_ms": 2390.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-A10",
+      "tier": "A",
+      "question": "What is the role and scope of AI regulatory sandboxes under the EU AI Act?",
+      "sa_f1": 0.8333,
+      "sa_constrained_f1": 0.4167,
+      "sa_cost": 0.066348,
+      "sa_latency_ms": 7090.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B01",
+      "tier": "B",
+      "question": "How do the EU AI Act and GDPR jointly regulate automated decision-making that af",
+      "sa_f1": 0.7143,
+      "sa_constrained_f1": 0.3571,
+      "sa_cost": 0.066357,
+      "sa_latency_ms": 7052.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B02",
+      "tier": "B",
+      "question": "What are the combined penalty exposures when a high-risk AI system violates both",
+      "sa_f1": 1.0,
+      "sa_constrained_f1": 0.5,
+      "sa_cost": 0.066372,
+      "sa_latency_ms": 4774.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B03",
+      "tier": "B",
+      "question": "How must a deployer using a high-risk AI system comply with both the AI Act's fu",
+      "sa_f1": 0.5714,
+      "sa_constrained_f1": 0.2857,
+      "sa_cost": 0.066393,
+      "sa_latency_ms": 5842.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B04",
+      "tier": "B",
+      "question": "What dual obligations apply when a financial entity reports an AI-related incide",
+      "sa_f1": 0.6667,
+      "sa_constrained_f1": 0.3333,
+      "sa_cost": 0.066366,
+      "sa_latency_ms": 5729.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B05",
+      "tier": "B",
+      "question": "How do the AI Act's cybersecurity requirements for high-risk AI interact with NI",
+      "sa_f1": 0.5714,
+      "sa_constrained_f1": 0.2857,
+      "sa_cost": 0.066375,
+      "sa_latency_ms": 5610.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B06",
+      "tier": "B",
+      "question": "How does the GDPR's data protection by design principle interact with the AI Act",
+      "sa_f1": 0.6667,
+      "sa_constrained_f1": 0.3333,
+      "sa_cost": 0.06636,
+      "sa_latency_ms": 6260.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B07",
+      "tier": "B",
+      "question": "What are the supply chain implications when a financial institution uses a third",
+      "sa_f1": 0.8333,
+      "sa_constrained_f1": 0.4167,
+      "sa_cost": 0.066387,
+      "sa_latency_ms": 5662.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B08",
+      "tier": "B",
+      "question": "How do AI Act risk management requirements interact with DORA ICT risk managemen",
+      "sa_f1": 0.5,
+      "sa_constrained_f1": 0.25,
+      "sa_cost": 0.066357,
+      "sa_latency_ms": 6901.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B09",
+      "tier": "B",
+      "question": "What dual incident notification requirements apply when an AI system causing a c",
+      "sa_f1": 0.8571,
+      "sa_constrained_f1": 0.4286,
+      "sa_cost": 0.066381,
+      "sa_latency_ms": 5945.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-B10",
+      "tier": "B",
+      "question": "How does the AI Act's conformity assessment interact with existing product safet",
+      "sa_f1": 0.8571,
+      "sa_constrained_f1": 0.4286,
+      "sa_cost": 0.066357,
+      "sa_latency_ms": 6924.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C01",
+      "tier": "C",
+      "question": "A bank deploys a credit scoring AI system that experiences a data breach affecti",
+      "sa_f1": 0.3,
+      "sa_constrained_f1": 0.15,
+      "sa_cost": 0.066417,
+      "sa_latency_ms": 11497.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C02",
+      "tier": "C",
+      "question": "An energy utility deploys AI for grid management (critical infrastructure). A th",
+      "sa_f1": 0.4758,
+      "sa_constrained_f1": 0.2379,
+      "sa_cost": 0.06642,
+      "sa_latency_ms": 9663.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C03",
+      "tier": "C",
+      "question": "Design a comprehensive compliance program for a hospital deploying an AI diagnos",
+      "sa_f1": 0.3604,
+      "sa_constrained_f1": 0.1802,
+      "sa_cost": 0.066417,
+      "sa_latency_ms": 5830.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C04",
+      "tier": "C",
+      "question": "What is the total maximum fine exposure for a tech company that develops a GPAI ",
+      "sa_f1": 0.625,
+      "sa_constrained_f1": 0.3125,
+      "sa_cost": 0.0663,
+      "sa_latency_ms": 6402.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C05",
+      "tier": "C",
+      "question": "How should a multinational deploy an AI recruitment system across the EU, consid",
+      "sa_f1": 0.3556,
+      "sa_constrained_f1": 0.1778,
+      "sa_cost": 0.066417,
+      "sa_latency_ms": 5509.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C06",
+      "tier": "C",
+      "question": "A law enforcement agency wants to use real-time biometric identification in a pu",
+      "sa_f1": 0.396,
+      "sa_constrained_f1": 0.198,
+      "sa_cost": 0.06642,
+      "sa_latency_ms": 6375.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C07",
+      "tier": "C",
+      "question": "An insurance company uses AI for risk assessment and a data protection authority",
+      "sa_f1": 0.3958,
+      "sa_constrained_f1": 0.1979,
+      "sa_cost": 0.066423,
+      "sa_latency_ms": 5612.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C08",
+      "tier": "C",
+      "question": "How does the AI Act's quality management system requirement interact with DORA's",
+      "sa_f1": 0.5,
+      "sa_constrained_f1": 0.25,
+      "sa_cost": 0.066414,
+      "sa_latency_ms": 5788.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C09",
+      "tier": "C",
+      "question": "Compare and contrast the incident reporting timelines, authorities, and template",
+      "sa_f1": 0.5455,
+      "sa_constrained_f1": 0.2727,
+      "sa_cost": 0.066417,
+      "sa_latency_ms": 5733.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    },
+    {
+      "question_id": "MG-C10",
+      "tier": "C",
+      "question": "An AI regulatory sandbox participant wants to test a novel emotion recognition s",
+      "sa_f1": 0.5,
+      "sa_constrained_f1": 0.25,
+      "sa_cost": 0.066384,
+      "sa_latency_ms": 6659.0,
+      "cg_error": "[Errno 22] Invalid argument"
+    }
+  ],
+  "backend_cost_report": {
+    "model": "eu.anthropic.claude-sonnet-4-6",
+    "region": "eu-central-1",
+    "calls": 31,
+    "input_tokens": 625400,
+    "output_tokens": 7343,
+    "total_tokens": 632743,
+    "total_cost_usd": 1.986345
+  }
+}

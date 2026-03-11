@@ -43,3 +43,6 @@ benchmarks/data/
 
 # Results (regeneratable)
 cognigraph/benchmarks/results/
+
+# Benchmark logs
+*.log

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from cognigraph.config.settings import ObserverConfig, OrchestrationConfig
 from cognigraph.core.message import Message
@@ -24,14 +24,11 @@ class Orchestrator:
     """Controls the message-passing reasoning lifecycle.
 
     1. Receives a query + activated node list
-    2. Runs message-passing rounds until convergence
-    3. MasterObserver watches ALL traffic for transparency (if enabled)
-    4. Aggregates final results
-    5. Returns ReasoningResult with full provenance trace + observer report
-
-    This is where emergent reasoning happens — the Orchestrator doesn't
-    reason itself, it creates the CONDITIONS for emergence by managing
-    the interaction protocol between node agents.
+    2. Builds constraint graph + propagates constraints to nodes
+    3. Runs message-passing rounds until convergence
+    4. MasterObserver watches ALL traffic for transparency (if enabled)
+    5. Aggregates final results with constraint-aware synthesis
+    6. Returns ReasoningResult with full provenance trace + observer report
     """
 
     def __init__(
@@ -42,12 +39,29 @@ class Orchestrator:
         aggregator: Aggregator | None = None,
         observer: MasterObserver | None = None,
         observer_config: ObserverConfig | None = None,
+        # v2: Governance-constrained reasoning components
+        ontology_registry: Any = None,
+        constraint_graph: Any = None,
+        ontology_router: Any = None,
+        skill_resolver: Any = None,
+        shacl_gate: Any = None,
+        embedding_fn: Any = None,
     ) -> None:
         config = config or OrchestrationConfig()
         self.config = config
 
+        # v2: Governance components
+        self.ontology_registry = ontology_registry
+        self.constraint_graph = constraint_graph
+        self.ontology_router = ontology_router
+        self.skill_resolver = skill_resolver
+        self.shacl_gate = shacl_gate
+        self.embedding_fn = embedding_fn
+
         self.message_protocol = message_protocol or MessagePassingProtocol(
-            parallel=not config.async_mode
+            parallel=not config.async_mode,
+            ontology_router=ontology_router,
+            embedding_fn=embedding_fn,
         )
         self.convergence_detector = convergence_detector or ConvergenceDetector(
             max_rounds=config.max_rounds,
@@ -72,6 +86,15 @@ class Orchestrator:
         else:
             self.observer = MasterObserver(enabled=False)
 
+        # Governance stats tracking
+        self._gov_stats: dict[str, int] = {
+            "shacl_validations_pass": 0,
+            "shacl_validations_fail": 0,
+            "constraint_propagations": 0,
+            "observer_redirects": 0,
+            "ontology_route_filtered": 0,
+        }
+
     async def run(
         self,
         graph: CogniGraph,
@@ -92,6 +115,10 @@ class Orchestrator:
         self.convergence_detector.reset()
         self.convergence_detector.max_rounds = max_rounds
         self.observer.reset()
+        self._gov_stats = {k: 0 for k in self._gov_stats}
+
+        # === v2: Pre-reasoning governance setup ===
+        self._setup_governance_constraints(graph, active_node_ids)
 
         # Cost budget enforcement
         cost_config = getattr(getattr(graph, "config", None), "cost", None)
@@ -219,6 +246,9 @@ class Orchestrator:
                 f"patterns={observer_report.pattern_count}"
             )
 
+        # Collect governance stats from components
+        self._collect_gov_stats()
+
         # Build metadata
         metadata: dict = {
             "convergence_round": rounds_completed,
@@ -226,6 +256,7 @@ class Orchestrator:
             "total_tokens": total_tokens,
             "budget_exceeded": budget_exceeded,
             "cumulative_cost_usd": round(cumulative_cost, 6),
+            "governance_stats": dict(self._gov_stats),
         }
         if observer_report:
             metadata["observer_report"] = observer_report.to_dict()
@@ -251,3 +282,53 @@ class Orchestrator:
         )
 
         return result
+
+    def _setup_governance_constraints(
+        self, graph: CogniGraph, active_node_ids: list[str]
+    ) -> None:
+        """Pre-reasoning: propagate constraints, skills, and SHACL gate to nodes."""
+        # Build constraint graph if available
+        if self.constraint_graph is not None:
+            if self.embedding_fn:
+                self.constraint_graph.set_embedding_fn(self.embedding_fn)
+            self.constraint_graph.build(graph, active_node_ids)
+            self._gov_stats["constraint_propagations"] = (
+                self.constraint_graph.stats.get("propagations", 0)
+            )
+
+        # Set up each active node with governance context
+        for nid in active_node_ids:
+            node = graph.nodes[nid]
+
+            # Constraint text from constraint graph
+            if self.constraint_graph is not None:
+                constraints = self.constraint_graph.get_constraints(nid)
+                node.constraint_text = constraints.to_prompt_text()
+
+            # Skills from skill resolver
+            if self.skill_resolver is not None:
+                node.skills_text = self.skill_resolver.skills_to_prompt(
+                    node.entity_type
+                )
+
+            # Domain identification
+            if self.ontology_registry is not None:
+                domain = self.ontology_registry.find_domain_for_type(
+                    node.entity_type
+                )
+                node.domain = domain.name if domain else "general"
+
+            # SHACL gate reference for validation during reasoning
+            if self.shacl_gate is not None:
+                node.shacl_gate = self.shacl_gate
+
+    def _collect_gov_stats(self) -> None:
+        """Collect governance stats from all components."""
+        if self.shacl_gate is not None:
+            gate_stats = self.shacl_gate.stats
+            self._gov_stats["shacl_validations_pass"] = gate_stats.get("passes", 0)
+            self._gov_stats["shacl_validations_fail"] = gate_stats.get("failures", 0)
+
+        if self.ontology_router is not None:
+            router_stats = self.ontology_router.stats
+            self._gov_stats["ontology_route_filtered"] = router_stats.get("filtered", 0)
