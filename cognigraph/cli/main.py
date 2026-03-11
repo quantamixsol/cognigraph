@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 
 from cognigraph.cli.commands.init import init_command
+from cognigraph.cli.commands.ingest import ingest_command
 from cognigraph.cli.commands.scan import scan_app
 
 app = typer.Typer(
@@ -15,6 +16,7 @@ app = typer.Typer(
 )
 app.add_typer(scan_app, name="scan")
 app.command(name="init")(init_command)
+app.command(name="ingest")(ingest_command)
 console = Console()
 
 # ---------------------------------------------------------------------------
