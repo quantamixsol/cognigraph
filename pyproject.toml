@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cognigraph"
-version = "0.2.0"
-description = "Graphs that think — turn any knowledge graph into a reasoning network"
+version = "0.3.0"
+description = "Graphs that think — governed multi-agent reasoning over knowledge graphs with 13 innovations"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
@@ -15,6 +15,8 @@ authors = [
 keywords = [
     "knowledge-graph", "multi-agent", "reasoning", "slm",
     "graph-of-agents", "lora", "pcst", "distributed-reasoning",
+    "governance", "shacl", "owl", "ontology", "mcp",
+    "bayesian-learning", "adaptive-activation", "regulatory-ai",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -69,6 +71,9 @@ all = [
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
+    "pytest-mock>=3.10",
+    "pytest-env>=1.0",
+    "pytest-cov>=4.0",
     "mypy>=1.0",
     "ruff>=0.1",
     "coverage>=7.0",

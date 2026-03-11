@@ -1,0 +1,1 @@
+"""Domain ontology registrations."""

@@ -101,6 +101,10 @@ class MasterObserver:
         self._confidence_trajectory: list[float] = []
         self._observer_cost: float = 0.0
 
+    # Active feedback tracking (v2)
+        self._active_feedback: bool = False
+        self._feedback_count: int = 0
+
     def reset(self) -> None:
         """Reset state for a new query."""
         self._round_messages.clear()
@@ -111,6 +115,7 @@ class MasterObserver:
         self._node_history.clear()
         self._confidence_trajectory.clear()
         self._observer_cost = 0.0
+        self._feedback_count = 0
 
     async def observe_round(
         self,
@@ -173,6 +178,116 @@ class MasterObserver:
             return round_findings if round_findings else None
 
         return None
+
+    def generate_feedback(
+        self,
+        round_num: int,
+        messages: dict[str, Message],
+        graph: CogniGraph | None = None,
+    ) -> dict[str, Message]:
+        """Generate active feedback for nodes (v2 — active observer).
+
+        Produces REDIRECT, DEEPEN, PRUNE, or AFFIRM feedback messages
+        that are injected into the next round of message passing.
+
+        Returns:
+            Dict of node_id -> feedback Message
+        """
+        if not self.enabled:
+            return {}
+
+        feedback: dict[str, Message] = {}
+
+        for node_id, msg in messages.items():
+            history = self._node_history.get(node_id, [])
+
+            # PRUNE: Low confidence for 2+ rounds
+            if len(history) >= 2 and all(h.confidence < 0.15 for h in history[-2:]):
+                fb = Message(
+                    source_node_id="__observer__",
+                    target_node_id=node_id,
+                    round=round_num,
+                    content=(
+                        "[OBSERVER PRUNE] Your confidence has been below 15% for "
+                        "multiple rounds. You are being pruned from further reasoning. "
+                        "This is normal — not all nodes are relevant to every query."
+                    ),
+                    reasoning_type=ReasoningType.ASSERTION,
+                    confidence=1.0,
+                )
+                feedback[node_id] = fb
+                # Mark node as pruned
+                if graph and node_id in graph.nodes:
+                    graph.nodes[node_id].pruned = True
+                self._feedback_count += 1
+                continue
+
+            # REDIRECT: Node seems off-topic (very low confidence, first round)
+            if msg.confidence < 0.2 and round_num == 1:
+                fb = Message(
+                    source_node_id="__observer__",
+                    target_node_id=node_id,
+                    round=round_num,
+                    content=(
+                        "[OBSERVER REDIRECT] Your response has low relevance to this query. "
+                        "Focus on what IS in your domain. If the query is outside your "
+                        "expertise, state that clearly in one sentence."
+                    ),
+                    reasoning_type=ReasoningType.ASSERTION,
+                    confidence=1.0,
+                )
+                feedback[node_id] = fb
+                self._feedback_count += 1
+                continue
+
+            # DEEPEN: Node has good confidence but short/surface response
+            word_count = len(msg.content.split())
+            if msg.confidence > 0.5 and word_count < 30 and round_num < 3:
+                fb = Message(
+                    source_node_id="__observer__",
+                    target_node_id=node_id,
+                    round=round_num,
+                    content=(
+                        "[OBSERVER DEEPEN] Your analysis is on-topic but too brief. "
+                        "Go deeper: cite specific article numbers, penalties, timelines, "
+                        "or evidence chunks. Substance over brevity."
+                    ),
+                    reasoning_type=ReasoningType.ASSERTION,
+                    confidence=1.0,
+                )
+                feedback[node_id] = fb
+                self._feedback_count += 1
+                continue
+
+            # AFFIRM: High-confidence, substantive response
+            if msg.confidence > 0.7 and word_count > 40:
+                # Check if there are conflicting nodes to synthesize with
+                conflict_partners = [
+                    c.node_b if c.node_a == node_id else c.node_a
+                    for c in self._conflicts
+                    if node_id in (c.node_a, c.node_b)
+                ]
+                if conflict_partners:
+                    fb = Message(
+                        source_node_id="__observer__",
+                        target_node_id=node_id,
+                        round=round_num,
+                        content=(
+                            f"[OBSERVER AFFIRM] Good analysis. However, you conflict with "
+                            f"{', '.join(conflict_partners)}. Address their points and "
+                            f"explain why your position is correct, or acknowledge overlap."
+                        ),
+                        reasoning_type=ReasoningType.ASSERTION,
+                        confidence=1.0,
+                    )
+                    feedback[node_id] = fb
+                    self._feedback_count += 1
+
+        return feedback
+
+    @property
+    def feedback_count(self) -> int:
+        return self._feedback_count
 
     def generate_report(self, query: str) -> ObserverReport:
         """Generate the final transparency report."""

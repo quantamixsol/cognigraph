@@ -1,8 +1,9 @@
 from cognigraph.connectors.base import BaseConnector
 from cognigraph.connectors.networkx import NetworkXConnector
 from cognigraph.connectors.json_graph import JSONGraphConnector
+from cognigraph.connectors.tamr import TAMRConnector
 
-__all__ = ["BaseConnector", "NetworkXConnector", "JSONGraphConnector"]
+__all__ = ["BaseConnector", "NetworkXConnector", "JSONGraphConnector", "TAMRConnector"]
 
 def __getattr__(name: str):
     if name == "Neo4jConnector":

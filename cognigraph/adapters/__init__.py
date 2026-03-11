@@ -1,7 +1,8 @@
 from cognigraph.adapters.config import AdapterConfig
 from cognigraph.adapters.registry import AdapterRegistry
+from cognigraph.adapters.auto_select import AdapterAutoSelector, SelectionResult
 
-__all__ = ["AdapterConfig", "AdapterRegistry"]
+__all__ = ["AdapterConfig", "AdapterRegistry", "AdapterAutoSelector", "SelectionResult"]
 
 def __getattr__(name: str):
     if name == "AdapterLoader":

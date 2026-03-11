@@ -1,16 +1,35 @@
 # CogniGraph — Graphs That Think
 
-> Turn any knowledge graph into a distributed reasoning network where each node is an autonomous agent.
+> Turn any knowledge graph into a governed, self-improving reasoning network where each node is an autonomous agent.
 
 [![PyPI version](https://badge.fury.io/py/cognigraph.svg)](https://pypi.org/project/cognigraph/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-332%20passing-brightgreen.svg)]()
 
 ## What is CogniGraph?
 
-CogniGraph is a **Graph-of-Agents (GoA)** SDK that transforms knowledge graphs into reasoning networks. Each node becomes an autonomous Small Language Model (SLM) agent that reasons locally, exchanges messages with neighbors, and collectively produces emergent insights that exist in *no single agent*.
+CogniGraph is a **Graph-of-Agents (GoA)** SDK with **13 innovations** that transforms knowledge graphs into governed reasoning networks. Each node becomes an autonomous language model agent that reasons locally, exchanges messages with neighbors, and collectively produces emergent insights — all under OWL+SHACL semantic governance.
 
-**Key insight:** Traditional retrieval systems find information. CogniGraph *reasons* over it — using the structure of your knowledge graph as the topology for multi-agent debate, synthesis, and convergence.
+**Key results:** Constrained F1 of **0.757** vs 0.328 for single-agent (+131%), with **99.7% governance accuracy** on MultiGov-30 benchmark.
+
+## 13 Innovations
+
+| # | Innovation | Module |
+|---|-----------|--------|
+| 1 | **PCST Activation** — sublinear subgraph selection | `cognigraph.activation.pcst` |
+| 2 | **MasterObserver** — zero-cost transparency layer | `cognigraph.orchestration.observer` |
+| 3 | **Convergent Message Passing** — similarity-based termination | `cognigraph.orchestration.convergence` |
+| 4 | **Backend Fallback Chain** — heterogeneous inference with cost budgets | `cognigraph.backends.fallback` |
+| 5 | **Hierarchical Aggregation** — centrality-based topology-aware synthesis | `cognigraph.orchestration.aggregation` |
+| 6 | **SemanticSHACLGate** — 3-layer OWL-aware governance validation | `cognigraph.ontology.semantic_shacl_gate` |
+| 7 | **Constrained F1** — joint answer quality + governance metric | `cognigraph.benchmarks.constrained_f1` |
+| 8 | **OntologyGenerator** — automated OWL+SHACL from regulation text | `cognigraph.ontology.generator` |
+| 9 | **Adaptive Activation** — dynamic Kmax from query complexity | `cognigraph.activation.adaptive` |
+| 10 | **Online Graph Learning** — Bayesian edge weight updates | `cognigraph.learning.graph_learner` |
+| 11 | **LoRA Auto-Selection** — per-entity adapter matching | `cognigraph.adapters.auto_select` |
+| 12 | **TAMR+ Connector** — retrieval-to-reasoning pipeline | `cognigraph.connectors.tamr` |
+| 13 | **MCP Plugin** — governed context engineering for Claude Code | `cognigraph.plugins.mcp_server` |
 
 ## Install
 
@@ -27,108 +46,79 @@ pip install cognigraph[gpu]
 # Full stack (API + GPU + Neo4j + FastAPI server)
 pip install cognigraph[all]
 
-# Server only
-pip install cognigraph[server]
+# Development
+pip install cognigraph[dev]
 ```
 
 ## Quickstart
 
-### 1. From Python
+### Python
 
 ```python
 from cognigraph import CogniGraph
 from cognigraph.backends.api import AnthropicBackend
 
-# Load a knowledge graph (NetworkX, JSON, or Neo4j)
 graph = CogniGraph.from_json("my_graph.json")
 graph.set_default_backend(AnthropicBackend(model="claude-haiku-4-5-20251001"))
 
-# Reason over the graph
 result = graph.reason("How does GDPR conflict with the AI Act?")
-
-print(result.answer)       # Synthesized multi-agent answer
-print(result.confidence)   # Aggregated confidence score
-print(result.cost_usd)     # Total inference cost
+print(result.answer)
+print(f"Cost: ${result.cost_usd:.4f}")
 ```
 
-### 2. Streaming
+### Adaptive Activation
 
 ```python
-async for chunk in graph.areason_stream("Explain Article 5 implications"):
-    if chunk.chunk_type == "node_result":
-        print(f"[{chunk.node_id}] {chunk.content[:80]}...")
-    elif chunk.chunk_type == "final_answer":
-        print(f"\nFinal: {chunk.content}")
+from cognigraph.activation import AdaptiveActivation
+
+activator = AdaptiveActivation()
+profile, kmax = activator.analyze("How does GDPR affect DORA compliance?")
+print(f"Tier: {profile.tier}, Kmax: {kmax}")  # moderate, 8
 ```
 
-### 3. Batch Processing
+### Online Graph Learning
 
 ```python
-results = await graph.areason_batch(
-    ["Query 1", "Query 2", "Query 3"],
-    max_concurrent=5,
-)
+from cognigraph.learning import GraphLearner, LearningConfig
+
+learner = GraphLearner(graph, LearningConfig(learning_rate=0.1))
+updates = learner.update_from_reasoning(node_messages)
+# Edges between converging agents strengthened, diverging weakened
 ```
 
-### 4. CLI
+### TAMR+ Integration
+
+```python
+from cognigraph.connectors import TAMRConnector
+
+connector = TAMRConnector()
+subgraph = connector.load_from_json("tamr_output.json")
+cogni_graph = connector.to_cognigraph(subgraph)
+# TRACE scores automatically initialize PCST node priors
+```
+
+### MCP Plugin (Claude Code)
 
 ```bash
-# Run a query
-kogni run --graph my_graph.json --query "What are the key conflicts?"
-
-# Start API server
-kogni serve --config cognigraph.yaml
-
-# Benchmark performance
-kogni bench --graph my_graph.json --queries queries.txt
+kogni mcp serve --graph knowledge_graph.json --port 8765
 ```
 
-## Configuration (YAML)
+### CLI
 
-```yaml
-model:
-  backend: api
-  model: claude-haiku-4-5-20251001
-
-graph:
-  connector: json
-  # Or: connector: neo4j, uri: bolt://localhost:7687
-
-activation:
-  strategy: pcst          # Prize-Collecting Steiner Tree
-  max_nodes: 16           # Only 4-16 relevant nodes activate
-
-orchestration:
-  max_rounds: 5           # Message-passing rounds
-  convergence_threshold: 0.95
-  aggregation: weighted_synthesis
-
-observer:
-  enabled: true           # MasterObserver watches all traffic
-  detect_conflicts: true
-  detect_anomalies: true
-
-cost:
-  budget_per_query: 0.05  # USD — halts if exceeded
-  prefer_local: true
-  fallback_to_api: true
+```bash
+kogni run --graph my_graph.json --query "What are the key conflicts?"
+kogni serve --config cognigraph.yaml
 ```
 
 ## Architecture
 
 ```
-Query → PCST Activation → Message Passing → Convergence → Aggregation → Answer
-         (4-16 nodes)      (rounds 0..N)    (similarity)   (synthesis)
-                                ↑
-                          MasterObserver
-                       (transparency layer)
+Query → Adaptive PCST Activation → Agent Deployment → Message Passing → Convergence → Aggregation → Answer
+              (4-16 nodes)                              (rounds 0..N)    (similarity)   (synthesis)
+                                                              ↑                              ↓
+                                                        MasterObserver              Online Graph Learning
+                                                     (transparency layer)          (Bayesian weight updates)
 ```
-
-1. **PCST Subgraph Activation** — Only query-relevant nodes activate (Prize-Collecting Steiner Tree)
-2. **Message Passing** — Nodes reason independently, then exchange insights with neighbors
-3. **Convergence Detection** — Stops when agent outputs stabilize (cosine similarity > threshold)
-4. **Aggregation** — Weighted synthesis of all node perspectives into final answer
-5. **MasterObserver** — Watches ALL inter-node traffic for conflicts, anomalies, and patterns
 
 ## Backends
 
@@ -140,7 +130,6 @@ Query → PCST Activation → Message Passing → Convergence → Aggregation �
 | Ollama | Any local model | `pip install cognigraph[api]` |
 | vLLM | GPU inference + LoRA | `pip install cognigraph[gpu]` |
 | llama.cpp | CPU GGUF models | `pip install cognigraph[cpu]` |
-| Mock | Testing | Built-in |
 
 ### Fallback Chain
 
@@ -149,53 +138,34 @@ from cognigraph.backends.fallback import BackendFallbackChain
 
 chain = BackendFallbackChain([
     AnthropicBackend(model="claude-haiku-4-5-20251001"),
-    OpenAIBackend(model="gpt-4o-mini"),
     OllamaBackend(model="qwen2.5:0.5b"),
 ])
-graph.set_default_backend(chain)
-# Tries Anthropic → OpenAI → Ollama automatically
+graph.set_default_backend(chain)  # Tries Anthropic → Ollama automatically
 ```
 
-## REST API Server
+## Governance
+
+The **SemanticSHACLGate** enforces 3-layer semantic governance:
+
+1. **Framework Fidelity** — agents cite correct regulatory frameworks
+2. **Scope Boundary** — responses stay within assigned domain
+3. **Cross-Reference Integrity** — proper attribution for cross-framework mentions
+
+Results on MultiGov-30: **99.7% governance accuracy** (FF: 100%, SB: 100%, CR: 98.3%).
+
+## REST API
 
 ```bash
-# Start server (with optional API key auth)
 COGNIGRAPH_API_KEY=my-secret kogni serve --port 8000
 
-# Query
 curl -X POST http://localhost:8000/reason \
   -H "X-API-Key: my-secret" \
-  -H "Content-Type: application/json" \
   -d '{"query": "Explain GDPR conflicts", "max_rounds": 3}'
 ```
 
-**Endpoints:**
-- `POST /reason` — Single query (sync or SSE streaming)
-- `POST /reason/batch` — Batch queries
-- `GET /health` — Health check
-- `GET /graph/stats` — Graph statistics
-- `GET /nodes/{id}` — Node details
+## Patent & IP Notice
 
-**Production features:** API key auth, per-client rate limiting, request validation, CORS.
-
-## TAMR+ Integration
-
-CogniGraph is the **reasoning engine** that complements [TAMR+](https://tracegov.ai) (Topology-Aware Multi-Resolution Retrieval). Together they form a complete pipeline:
-
-1. **TAMR+** builds and maintains the knowledge graph, performs adaptive retrieval
-2. **CogniGraph** reasons over the retrieved subgraph using multi-agent message passing
-3. Both share the **PCST algorithm** — TAMR+ for retrieval activation, CogniGraph for reasoning activation
-4. TAMR+ **TRACE scores** feed into CogniGraph node priors; CogniGraph's **MasterObserver** monitors reasoning quality
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| `No backend assigned` | Call `graph.set_default_backend(backend)` before reasoning |
-| `ImportError: anthropic` | Install API extras: `pip install cognigraph[api]` |
-| `Budget exceeded` | Increase `cost.budget_per_query` in config or use cheaper model |
-| `No graph loaded` (server) | Ensure `cognigraph.json` exists in working directory |
-| Slow convergence | Reduce `max_rounds` or increase `convergence_threshold` |
+CogniGraph implements methods described in **European Patent Application EP26162901.8** (filed 6 March 2026, Quantamix Solutions B.V.). See [NOTICE](NOTICE) for details. Academic and research use is freely permitted.
 
 ## License
 
@@ -204,10 +174,13 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ## Citation
 
 ```bibtex
-@software{cognigraph2026,
-  title={CogniGraph: Graph-of-Agents Distributed Reasoning SDK},
-  author={CrawlQ AI},
+@article{kumar2026cognigraph,
+  title={CogniGraph: Governed Intelligence through Graph-of-Agents Reasoning
+         over Knowledge Graph Topologies with Semantic SHACL Validation},
+  author={Kumar, Harish},
   year={2026},
-  url={https://github.com/crawlq-ai/cognigraph}
+  institution={Quantamix Solutions B.V.},
+  note={European Patent Application EP26162901.8},
+  url={https://github.com/quantamixsol/cognigraph}
 }
 ```
