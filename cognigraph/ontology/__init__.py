@@ -19,6 +19,32 @@ from cognigraph.ontology.semantic_shacl_gate import (
     build_semantic_constraints_from_kg,
 )
 from cognigraph.ontology.ontology_generator import OntologyGenerator
+from cognigraph.ontology.schema import (
+    NODE_SHAPES,
+    EDGE_SHAPES,
+    NodeShape,
+    EdgeShape,
+    PropertyConstraint,
+    EdgeConstraint,
+    Violation,
+    ValidationReport,
+    validate_graph,
+    register_node_shape,
+    register_edge_shape,
+    get_node_shape,
+    get_all_node_types,
+    get_all_edge_types,
+)
+from cognigraph.ontology.markdown_parser import (
+    MarkdownKGParser,
+    ExtractedEntity,
+    ExtractedEdge,
+    ParseResult,
+    EdgeInferenceEngine,
+    parse_markdown_kg,
+    parse_and_infer,
+    extract_tables,
+)
 
 __all__ = [
     "UpperOntology",
@@ -37,4 +63,28 @@ __all__ = [
     "SemanticViolation",
     "build_semantic_constraints_from_kg",
     "OntologyGenerator",
+    # Ontology schema (SHACL-like validation)
+    "NODE_SHAPES",
+    "EDGE_SHAPES",
+    "NodeShape",
+    "EdgeShape",
+    "PropertyConstraint",
+    "EdgeConstraint",
+    "Violation",
+    "ValidationReport",
+    "validate_graph",
+    "register_node_shape",
+    "register_edge_shape",
+    "get_node_shape",
+    "get_all_node_types",
+    "get_all_edge_types",
+    # Markdown KG parser
+    "MarkdownKGParser",
+    "ExtractedEntity",
+    "ExtractedEdge",
+    "ParseResult",
+    "EdgeInferenceEngine",
+    "parse_markdown_kg",
+    "parse_and_infer",
+    "extract_tables",
 ]
