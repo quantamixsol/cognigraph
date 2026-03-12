@@ -100,15 +100,23 @@ class TestTierFeatures:
         assert "pcst_activation" in free
         assert "master_observer" in free
         assert "mcp_context" in free
-        assert "gcc_protocol" in free
-        assert "ralph_loop" in free
+        assert "workflow_engine" in free
 
-    def test_pro_tier_has_advanced_features(self):
+    def test_free_tier_has_advanced_features_since_075(self):
+        """All solo developer features were ungated in v0.7.5."""
+        free = TIER_FEATURES[LicenseTier.FREE]
+        assert "semantic_shacl_gate" in free
+        assert "mcp_preflight" in free
+        assert "tamr_connector" in free
+        assert "session_analytics" in free
+        assert "debate_protocol" in free
+        assert "ontology_generator" in free
+        assert "mcp_learn" in free
+
+    def test_pro_tier_is_empty(self):
+        """PRO tier reserved for future team-adjacent features (v0.7.5)."""
         pro = TIER_FEATURES[LicenseTier.PRO]
-        assert "semantic_shacl_gate" in pro
-        assert "mcp_preflight" in pro
-        assert "tamr_connector" in pro
-        assert "session_analytics" in pro
+        assert len(pro) == 0
 
     def test_team_tier_features(self):
         team = TIER_FEATURES[LicenseTier.TEAM]
@@ -343,14 +351,17 @@ class TestHasFeature:
         mgr = _make_manager_safe()
         assert mgr.has_feature("pcst_activation") is True
         assert mgr.has_feature("mcp_context") is True
-        assert mgr.has_feature("gcc_protocol") is True
+        assert mgr.has_feature("workflow_engine") is True
 
-    def test_pro_feature_without_license(self):
+    def test_advanced_features_free_since_075(self):
+        """All solo developer features are free since v0.7.5 — no license needed."""
         mgr = _make_manager_safe()
-        assert mgr.has_feature("semantic_shacl_gate") is False
-        assert mgr.has_feature("mcp_preflight") is False
+        assert mgr.has_feature("semantic_shacl_gate") is True
+        assert mgr.has_feature("mcp_preflight") is True
+        assert mgr.has_feature("debate_protocol") is True
+        assert mgr.has_feature("ontology_generator") is True
 
-    def test_pro_feature_with_pro_license(self):
+    def test_pro_license_still_works(self):
         key = _generate_key("pro")
         mgr = _make_manager_safe(COGNIGRAPH_LICENSE_KEY=key)
         assert mgr.has_feature("semantic_shacl_gate") is True
@@ -369,8 +380,8 @@ class TestHasFeature:
 
     def test_check_feature_raises_on_missing(self):
         mgr = _make_manager_safe()
-        with pytest.raises(LicenseError, match="requires CogniGraph Pro"):
-            mgr.check_feature("semantic_shacl_gate")
+        with pytest.raises(LicenseError, match="requires CogniGraph Team"):
+            mgr.check_feature("shared_kg_sync")
 
     def test_check_feature_ok_for_free(self):
         mgr = _make_manager_safe()
@@ -459,7 +470,7 @@ class TestRequireLicenseDecorator:
             mod._manager = old
 
     def test_sync_function_blocked_without_license(self):
-        @require_license("semantic_shacl_gate")
+        @require_license("shared_kg_sync")
         def my_func():
             return "ok"
 
@@ -489,7 +500,7 @@ class TestRequireLicenseDecorator:
 
     @pytest.mark.asyncio
     async def test_async_function_blocked_without_license(self):
-        @require_license("mcp_preflight")
+        @require_license("shared_kg_sync")
         async def my_async():
             return "should_not_reach"
 
@@ -523,7 +534,8 @@ class TestModuleLevelAPI:
         try:
             mod._manager = _make_manager_safe()
             assert has_feature("pcst_activation") is True
-            assert has_feature("mcp_preflight") is False
+            assert has_feature("mcp_preflight") is True  # ungated in v0.7.5
+            assert has_feature("shared_kg_sync") is False  # TEAM tier still gated
         finally:
             mod._manager = old
 

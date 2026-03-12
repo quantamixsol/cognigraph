@@ -130,6 +130,6 @@ class NodeConfig:
 
     backend: ModelBackend | None = None
     adapter_id: str | None = None
-    max_tokens: int = 512
+    max_tokens: int = 2048
     temperature: float = 0.3
     system_prompt: str | None = None

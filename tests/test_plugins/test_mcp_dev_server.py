@@ -12,8 +12,6 @@ import pytest
 from cognigraph.plugins.mcp_dev_server import (
     TOOL_DEFINITIONS,
     KogniDevServer,
-    _PRO_FEATURE_MAP,
-    _PRO_TOOLS,
     _SENSITIVE_KEYS,
 )
 
@@ -141,19 +139,13 @@ class TestToolDefinitions:
             assert "description" in tool
             assert len(tool["description"]) > 10
 
-    def test_pro_tools_set(self):
-        assert "kogni_preflight" in _PRO_TOOLS
-        assert "kogni_lessons" in _PRO_TOOLS
-        assert "kogni_impact" in _PRO_TOOLS
-        assert "kogni_learn" in _PRO_TOOLS
-        # Free tools not in set
-        assert "kogni_context" not in _PRO_TOOLS
-        assert "kogni_inspect" not in _PRO_TOOLS
-        assert "kogni_reason" not in _PRO_TOOLS
-
-    def test_pro_feature_map(self):
-        for tool_name in _PRO_TOOLS:
-            assert tool_name in _PRO_FEATURE_MAP
+    def test_all_tools_are_free(self):
+        """All MCP tools are ungated since v0.7.5."""
+        tool_names = {t["name"] for t in TOOL_DEFINITIONS}
+        assert "kogni_preflight" in tool_names
+        assert "kogni_lessons" in tool_names
+        assert "kogni_impact" in tool_names
+        assert "kogni_learn" in tool_names
 
 
 # ---------------------------------------------------------------------------
@@ -188,14 +180,14 @@ class TestHandleTool:
         assert data["total_nodes"] == 3
 
     @pytest.mark.asyncio
-    async def test_pro_tool_blocked_without_license(self, server):
-        """PRO tool should be blocked when has_feature returns False."""
-        with patch("cognigraph.plugins.mcp_dev_server.KogniDevServer._check_pro_license") as mock_check:
-            mock_check.return_value = json.dumps({"error": "requires Pro"})
+    async def test_pro_tools_ungated(self, server):
+        """All tools are free since v0.7.5 — no license gate."""
+        # kogni_preflight should dispatch directly without any license check
+        with patch.object(server, "_handle_preflight", new_callable=AsyncMock) as mock_pf:
+            mock_pf.return_value = json.dumps({"status": "ok"})
             result = await server.handle_tool("kogni_preflight", {"action": "test"})
         data = json.loads(result)
-        assert "error" in data
-        assert "Pro" in data["error"]
+        assert "error" not in data or "Unknown" not in data.get("error", "")
 
 
 # ---------------------------------------------------------------------------
@@ -454,36 +446,6 @@ class TestPreflightHandler:
             result = await server._handle_preflight({"action": "deploy lambda"})
         data = json.loads(result)
         assert data["risk_level"] == "high"
-
-
-# ---------------------------------------------------------------------------
-# _check_pro_license
-# ---------------------------------------------------------------------------
-
-class TestCheckProLicense:
-    def test_returns_none_when_licensed(self, server):
-        with patch("cognigraph.plugins.mcp_dev_server.KogniDevServer._check_pro_license") as m:
-            m.return_value = None
-            result = server._check_pro_license("kogni_preflight")
-        assert result is None
-
-    def test_returns_error_when_not_licensed(self, server):
-        # Patch has_feature to return False
-        with patch("cognigraph.licensing.has_feature", return_value=False):
-            result = server._check_pro_license("kogni_preflight")
-        if result is not None:
-            data = json.loads(result)
-            assert "error" in data
-
-    def test_allows_when_import_error(self, server):
-        # If licensing module is not importable, it should pass (dev mode)
-        with patch.dict("sys.modules", {"cognigraph.licensing": None}):
-            # This may or may not error depending on implementation
-            # The key thing is it doesn't crash
-            try:
-                result = server._check_pro_license("kogni_preflight")
-            except (ImportError, TypeError):
-                pass  # Expected in some mock configurations
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,8 @@ from cognigraph.cli.commands.ingest import ingest_command
 from cognigraph.cli.commands.grow import grow_command
 from cognigraph.cli.commands.metrics_cmd import metrics_command
 from cognigraph.cli.commands.scan import scan_app
+from cognigraph.cli.commands.doctor import doctor_command
+from cognigraph.cli.commands.setup_guide import setup_guide_command
 
 app = typer.Typer(
     name="kogni",
@@ -21,6 +23,8 @@ app.command(name="init")(init_command)
 app.command(name="ingest")(ingest_command)
 app.command(name="grow")(grow_command)
 app.command(name="metrics")(metrics_command)
+app.command(name="doctor")(doctor_command)
+app.command(name="setup-guide")(setup_guide_command)
 console = Console()
 
 # ---------------------------------------------------------------------------
@@ -77,7 +81,7 @@ def run(
     \b
     Protocols:
         consensus — standard message-passing with convergence (default)
-        debate    — adversarial debate: opening → challenge → rebuttal → synthesis
+        debate    -- adversarial debate: opening -> challenge -> rebuttal -> synthesis
 
     \b
     Examples:
@@ -94,7 +98,6 @@ def run(
 
     from cognigraph.config.settings import CogniGraphConfig
     from cognigraph.core.graph import CogniGraph
-    from cognigraph.backends.mock import MockBackend
     from pathlib import Path
 
     # Load config
@@ -105,7 +108,7 @@ def run(
         if verbose:
             console.print("[yellow]No config file found, using defaults[/yellow]")
 
-    console.print(f"[bold cyan]CogniGraph[/bold cyan] — Graphs that think")
+    console.print(f"[bold cyan]CogniGraph[/bold cyan] -- Graphs that think")
     console.print(f"Query: [green]{query}[/green]")
     console.print(f"Strategy: {strategy} | Protocol: {protocol} | Max rounds: {max_rounds}")
 
@@ -115,8 +118,8 @@ def run(
         console.print("[yellow]No graph source configured. Use 'kogni init' to set up.[/yellow]")
         return
 
-    # Set mock backend if no real backend configured
-    backend = MockBackend()
+    # Create real backend from config (Anthropic, Bedrock, OpenAI, Ollama)
+    backend = _create_backend_from_config(cfg, verbose=verbose)
     graph.set_default_backend(backend)
 
     # Run reasoning with selected protocol
@@ -233,7 +236,7 @@ def context(
             n = graph.nodes[nid]
             edges = graph.get_edges_between(node.id, nid)
             rel = edges[0].relationship if edges else "RELATED_TO"
-            context_parts.append(f"  → {rel} → {n.label}: {n.description[:100]}")
+            context_parts.append(f"  -> {rel} -> {n.label}: {n.description[:100]}")
 
     output = "\n".join(context_parts)
 
@@ -323,7 +326,6 @@ def bench(
     import time
 
     from cognigraph.config.settings import CogniGraphConfig
-    from cognigraph.backends.mock import MockBackend
     from pathlib import Path
 
     if Path(config).exists():
@@ -336,7 +338,7 @@ def bench(
         console.print("[yellow]No graph loaded. Run 'kogni scan --repo .' first.[/yellow]")
         return
 
-    graph.set_default_backend(MockBackend())
+    graph.set_default_backend(_create_backend_from_config(cfg))
 
     test_queries = [
         f"Test query {i}: analyze the relationships in this graph"
@@ -364,6 +366,69 @@ def bench(
     console.print(f"  Avg rounds: {avg_rounds:.1f}")
     console.print(f"  Total cost: ${total_cost:.4f}")
     console.print(f"  Nodes in graph: {len(graph)}")
+
+
+@app.command()
+def validate(
+    config: str = typer.Option("cognigraph.yaml", "--config", "-c"),
+    graph_path: str = typer.Option(None, "--graph", "-g", help="Path to JSON graph file"),
+    fix: bool = typer.Option(False, "--fix", help="Auto-enrich empty descriptions from metadata"),
+) -> None:
+    """Validate knowledge graph quality for reasoning.
+
+    Checks that nodes have descriptions so agents can reason effectively.
+    Use --fix to auto-enrich empty nodes from their metadata/properties.
+
+    \b
+    Examples:
+        kogni validate
+        kogni validate --graph my_kg.json --fix
+    """
+    from cognigraph.config.settings import CogniGraphConfig
+    from cognigraph.core.graph import CogniGraph
+    from pathlib import Path
+
+    if graph_path and Path(graph_path).exists():
+        graph = CogniGraph.from_json(graph_path)
+    else:
+        if Path(config).exists():
+            cfg = CogniGraphConfig.from_yaml(config)
+        else:
+            cfg = CogniGraphConfig.default()
+        graph = _load_graph(cfg)
+
+    if graph is None:
+        console.print("[red]No graph found. Provide --graph or set up cognigraph.yaml[/red]")
+        raise typer.Exit(1)
+
+    report = graph.validate()
+
+    # Display report
+    score = report["quality_score"]
+    color = "green" if score >= 70 else "yellow" if score >= 40 else "red"
+    console.print(f"\n[bold]KG Quality Report[/bold]")
+    console.print(f"  Nodes: {report['total_nodes']} | Edges: {report['total_edges']}")
+    console.print(f"  With descriptions: {report['nodes_with_descriptions']}")
+    console.print(f"  Without descriptions: {report['nodes_without_descriptions']}")
+    console.print(f"  Avg description length: {report['avg_description_length']} chars")
+    console.print(f"  Quality score: [{color}]{score}/100[/{color}]")
+
+    if report["warnings"]:
+        console.print(f"\n[yellow]Warnings:[/yellow]")
+        for w in report["warnings"]:
+            console.print(f"  ! {w}")
+
+    if fix and report["nodes_without_descriptions"] > 0:
+        console.print(f"\n[cyan]Auto-enrichment already applied during load.[/cyan]")
+        console.print(f"To improve quality further, add rich descriptions to your KG nodes.")
+
+    if score >= 70:
+        console.print(f"\n[green]KG is ready for reasoning.[/green]")
+    elif score >= 40:
+        console.print(f"\n[yellow]KG quality is moderate. Consider enriching node descriptions.[/yellow]")
+    else:
+        console.print(f"\n[red]KG quality is low. Agents will produce poor reasoning.[/red]")
+        console.print(f"[red]Add descriptions to your nodes before running queries.[/red]")
 
 
 @app.command()
@@ -539,7 +604,7 @@ def ontology_from_text(
         console.print(f"  Saved to [bold]{output}[/bold]")
     else:
         for etype, parent in list(owl.items())[:10]:
-            console.print(f"    {etype} → {parent}")
+            console.print(f"    {etype} -> {parent}")
         if len(owl) > 10:
             console.print(f"    ... and {len(owl) - 10} more")
 
@@ -620,6 +685,81 @@ def _load_graph(cfg):
     if cfg.graph.connector == "neo4j":
         return None
     return None
+
+
+def _create_backend_from_config(cfg, verbose: bool = False):
+    """Create a real model backend from cognigraph.yaml config.
+
+    Tries to instantiate the configured backend (Anthropic, OpenAI, Bedrock,
+    Ollama). Falls back to MockBackend with LOUD warning if all real backends fail.
+    """
+    import os
+    from cognigraph.backends.mock import MockBackend
+
+    backend_name = cfg.model.backend
+    model_name = cfg.model.model
+    api_key = cfg.model.api_key
+
+    # Resolve env var references like ${ANTHROPIC_API_KEY}
+    if api_key and api_key.startswith("${") and api_key.endswith("}"):
+        env_var = api_key[2:-1]
+        api_key = os.environ.get(env_var)
+
+    def _mock_fallback(reason: str) -> MockBackend:
+        console.print(f"[bold yellow]WARNING: {reason}[/bold yellow]")
+        console.print("[yellow]  Falling back to mock backend — results will NOT be real LLM reasoning.[/yellow]")
+        console.print("[yellow]  Run 'kogni doctor' to diagnose and fix.[/yellow]")
+        return MockBackend(is_fallback=True, fallback_reason=reason)
+
+    try:
+        if backend_name == "anthropic":
+            from cognigraph.backends.api import AnthropicBackend
+            if not api_key:
+                api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not api_key:
+                return _mock_fallback("ANTHROPIC_API_KEY not set")
+            backend = AnthropicBackend(model=model_name, api_key=api_key)
+            if verbose:
+                console.print(f"[green]Backend: Anthropic ({model_name})[/green]")
+            return backend
+
+        elif backend_name == "openai":
+            from cognigraph.backends.api import OpenAIBackend
+            if not api_key:
+                api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                return _mock_fallback("OPENAI_API_KEY not set")
+            backend = OpenAIBackend(model=model_name, api_key=api_key)
+            if verbose:
+                console.print(f"[green]Backend: OpenAI ({model_name})[/green]")
+            return backend
+
+        elif backend_name == "bedrock":
+            from cognigraph.backends.api import BedrockBackend
+            region = getattr(cfg.model, "region", None) or os.environ.get("AWS_DEFAULT_REGION", "eu-central-1")
+            backend = BedrockBackend(model=model_name, region=region)
+            if verbose:
+                console.print(f"[green]Backend: Bedrock ({model_name} in {region})[/green]")
+            return backend
+
+        elif backend_name == "ollama":
+            from cognigraph.backends.api import OllamaBackend
+            host = getattr(cfg.model, "host", None) or "http://localhost:11434"
+            backend = OllamaBackend(model=model_name, host=host)
+            if verbose:
+                console.print(f"[green]Backend: Ollama ({model_name})[/green]")
+            return backend
+
+        elif backend_name == "local":
+            return _mock_fallback("Local backend not yet supported in CLI")
+
+        else:
+            return _mock_fallback(f"Unknown backend '{backend_name}'")
+
+    except ImportError as e:
+        return _mock_fallback(f"Missing package: {e}. Install with: pip install cognigraph[api]")
+    except Exception as e:
+        return _mock_fallback(f"Backend init failed: {e}")
 
 
 if __name__ == "__main__":

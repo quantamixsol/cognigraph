@@ -99,7 +99,7 @@ class TAMRConnector:
             ]
         }
         """
-        data = json.loads(Path(path).read_text())
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
         return self.load_from_dict(data)
 
     def compute_node_prior(self, doc: TAMRDocument) -> float:

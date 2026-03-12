@@ -163,7 +163,7 @@ class Aggregator:
                 query=query, agent_outputs=agent_outputs
             )
 
-        return await backend.generate(prompt, max_tokens=512, temperature=0.2)
+        return await backend.generate(prompt, max_tokens=4096, temperature=0.2)
 
     def _confidence_weighted(self, messages: dict[str, Message]) -> str:
         """Simple concatenation weighted by confidence."""

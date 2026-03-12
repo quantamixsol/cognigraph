@@ -57,8 +57,6 @@ class DebateProtocol:
         challenge_rounds: int = 1,
         parallel: bool = True,
     ) -> None:
-        from cognigraph.licensing.manager import check_license
-        check_license("debate_protocol")
         self.challenge_rounds = challenge_rounds
         self.parallel = parallel
 

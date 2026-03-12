@@ -78,7 +78,7 @@ class BackendFallbackChain(BaseBackend):
     @property
     def name(self) -> str:
         names = [b.name for b in self._backends]
-        return f"fallback:[{' → '.join(names)}]"
+        return f"fallback:[{' -> '.join(names)}]"
 
     @property
     def cost_per_1k_tokens(self) -> float:
