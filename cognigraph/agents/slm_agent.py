@@ -30,7 +30,7 @@ class SLMAgent(BaseAgent):
     async def reason(
         self, query: str, context: list[Message], node_info: dict[str, Any]
     ) -> str:
-        """Generate reasoning from query + context."""
+        """Generate reasoning from query + context + source content."""
         parts = []
 
         if self.system_prompt:
@@ -38,6 +38,31 @@ class SLMAgent(BaseAgent):
 
         parts.append(f"Entity: {node_info.get('label', 'Unknown')}")
         parts.append(f"Description: {node_info.get('description', '')}")
+
+        # T2: Include semantic chunks for content-aware reasoning
+        chunks = node_info.get("chunks", [])
+        if chunks:
+            parts.append("Source content:")
+            for chunk in chunks[:5]:  # top 5 chunks to stay within token budget
+                if isinstance(chunk, dict):
+                    text = chunk.get("text", "")
+                    ctype = chunk.get("type", "code")
+                else:
+                    text = str(chunk)
+                    ctype = "code"
+                if text:
+                    parts.append(f"[{ctype}] {text[:800]}")
+
+        # T3: Lazy file loading fallback when no chunks
+        if not chunks and node_info.get("file_path"):
+            try:
+                with open(node_info["file_path"], "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read(4000)
+                if content.strip():
+                    parts.append(f"File content:\n{content}")
+            except Exception:
+                pass
+
         parts.append(f"Query: {query}")
 
         if context:

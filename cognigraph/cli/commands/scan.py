@@ -195,7 +195,7 @@ class JSAnalyzer:
 
     def analyze_file(self, path: Path) -> dict[str, Any]:
         try:
-            content = path.read_text(errors="ignore")
+            content = path.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             return {"imports": [], "classes": [], "functions": [], "routes": [], "env_vars": []}
 
@@ -421,7 +421,20 @@ class RepoScanner:
 
         node_type = "TestFile" if is_test else "PythonModule"
         node_id = rel
-        self._add_node(node_id, label=path.stem, type=node_type, description=f"Python: {rel}")
+
+        # T1: Rich description + T2: Semantic chunks + T3: file_path
+        description, chunks = self._extract_content(path, "Python")
+        node_attrs: dict[str, Any] = {
+            "label": path.stem,
+            "type": node_type,
+            "description": description,
+            "file_path": str(path.resolve()),
+        }
+        if chunks:
+            node_attrs["chunks"] = chunks
+            node_attrs["chunk_count"] = len(chunks)
+
+        self._add_node(node_id, **node_attrs)
         self._py_files[node_id] = path
 
         # Parent dir edge
@@ -482,7 +495,20 @@ class RepoScanner:
 
         node_type = "TestFile" if is_test else "JavaScriptModule"
         node_id = rel
-        self._add_node(node_id, label=path.stem, type=node_type, description=f"JS/TS: {rel}")
+
+        # T1: Rich description + T2: Semantic chunks + T3: file_path
+        description, chunks = self._extract_content(path, "JS/TS")
+        node_attrs: dict[str, Any] = {
+            "label": path.stem,
+            "type": node_type,
+            "description": description,
+            "file_path": str(path.resolve()),
+        }
+        if chunks:
+            node_attrs["chunks"] = chunks
+            node_attrs["chunk_count"] = len(chunks)
+
+        self._add_node(node_id, **node_attrs)
         self._js_files[node_id] = path
 
         self._add_contains_edge(path, node_id)
@@ -517,7 +543,27 @@ class RepoScanner:
 
     def _process_config(self, path: Path) -> None:
         rel = self._rel(path)
-        self._add_node(rel, label=path.name, type="Config", description=f"Configuration: {rel}")
+        # Read config content for T2 chunks
+        config_chunks: list[dict[str, str]] = []
+        config_desc = f"Configuration: {rel}"
+        try:
+            config_content = path.read_text(encoding="utf-8", errors="ignore")
+            if config_content.strip():
+                config_chunks = [{"text": config_content[:3000], "type": "config"}]
+                config_desc = f"Configuration: {path.name}. " + config_content[:200].replace("\n", " ")
+        except Exception:
+            pass
+
+        node_attrs: dict[str, Any] = {
+            "label": path.name,
+            "type": "Config",
+            "description": config_desc,
+            "file_path": str(path.resolve()),
+        }
+        if config_chunks:
+            node_attrs["chunks"] = config_chunks
+            node_attrs["chunk_count"] = len(config_chunks)
+        self._add_node(rel, **node_attrs)
         self._add_contains_edge(path, rel)
 
         # CI/CD pipelines
@@ -784,6 +830,163 @@ class RepoScanner:
             ci_id = "ci::gitlab"
             self._add_node(ci_id, label="gitlab-ci", type="CIPipeline", description="GitLab CI/CD pipeline")
             self._add_edge(rel, ci_id, "CONFIGURES")
+
+    # -- Content extraction (T1/T2/T3) -------------------------------------
+
+    def _extract_content(
+        self, path: Path, lang_prefix: str
+    ) -> tuple[str, list[dict[str, str]]]:
+        """Extract rich description (T1) and semantic chunks (T2) from a file.
+
+        Returns (description, chunks). Falls back to generic description on error.
+        """
+        rel = self._rel(path)
+        fallback_desc = f"{lang_prefix}: {rel}"
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            return fallback_desc, []
+
+        if not content.strip():
+            return fallback_desc, []
+
+        description = self._summarize_file(content, rel, lang_prefix)
+        chunks = self._chunk_source_code(content)
+        return description, chunks
+
+    @staticmethod
+    def _summarize_file(content: str, rel: str, lang_prefix: str, max_len: int = 400) -> str:
+        """Generate a rich T1 description from file content (no LLM needed).
+
+        Extracts docstrings, JSDoc, function/class signatures, exports, and
+        React component names to create a meaningful description.
+        """
+        lines = content.splitlines()
+        parts: list[str] = []
+
+        # Extract module docstring / JSDoc (first doc block)
+        for i, line in enumerate(lines[:30]):
+            stripped = line.strip()
+            if stripped.startswith(('"""', "'''", "/**", "/*")):
+                doc_lines = []
+                for j in range(i, min(i + 10, len(lines))):
+                    dl = lines[j].strip().strip('"\'*/').strip()
+                    if dl:
+                        doc_lines.append(dl)
+                    # End of doc block
+                    if j > i and lines[j].strip().endswith(('"""', "'''", "*/", "*/")):
+                        break
+                doc = " ".join(doc_lines)[:250]
+                if doc:
+                    parts.append(doc)
+                break
+
+        # Extract function/class/export signatures
+        signatures: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith(("def ", "async def ", "class ")):
+                sig = stripped.split(":", 1)[0].split("{", 1)[0].strip()
+                if not sig.startswith(("def _", "async def _")):  # skip private
+                    signatures.append(sig)
+            elif stripped.startswith(("export function", "export const", "export default")):
+                sig = stripped[:120].split("{", 1)[0].strip()
+                signatures.append(sig)
+
+        if signatures:
+            parts.append("Defines: " + ", ".join(signatures[:12]))
+
+        # Detect React components
+        react_comps = re.findall(
+            r"(?:export\s+)?(?:default\s+)?(?:const|function)\s+([A-Z]\w+)",
+            content,
+        )
+        if react_comps:
+            unique = list(dict.fromkeys(react_comps))[:8]
+            parts.append("Components: " + ", ".join(unique))
+
+        if not parts:
+            # Fallback: first meaningful line
+            for line in lines[:15]:
+                stripped = line.strip()
+                if stripped and not stripped.startswith(("#", "//", "/*", "*", "import ", "from ")):
+                    parts.append(stripped[:120])
+                    break
+
+        summary = f"{rel}. " + ". ".join(parts) if parts else f"{lang_prefix}: {rel}"
+        return summary[:max_len]
+
+    @staticmethod
+    def _chunk_source_code(
+        content: str, max_chunk_chars: int = 1500
+    ) -> list[dict[str, str]]:
+        """Split source code into semantic chunks at function/class boundaries.
+
+        Returns a list of {"text": "...", "type": "function|class|imports|..."}.
+        """
+        lines = content.splitlines(keepends=True)
+        if not lines:
+            return []
+
+        chunks: list[dict[str, str]] = []
+
+        boundary_patterns = (
+            "def ", "class ", "async def ",
+            "function ", "export ", "const ", "let ",
+            "import ", "from ",
+            "describe(", "it(", "test(",
+        )
+
+        current_block: list[str] = []
+        block_type = "source_code"
+
+        def _flush_block() -> None:
+            text = "".join(current_block).strip()
+            if not text or len(text) < 20:
+                return
+            if len(text) > max_chunk_chars:
+                sub_parts = re.split(r"\n\s*\n", text)
+                accum = ""
+                for part in sub_parts:
+                    if len(accum) + len(part) > max_chunk_chars and accum:
+                        chunks.append({"text": accum.strip(), "type": block_type})
+                        accum = part
+                    else:
+                        accum = accum + "\n\n" + part if accum else part
+                if accum.strip():
+                    chunks.append({"text": accum.strip(), "type": block_type})
+            else:
+                chunks.append({"text": text, "type": block_type})
+
+        for line in lines:
+            stripped = line.lstrip()
+            is_boundary = (
+                any(stripped.startswith(p) for p in boundary_patterns)
+                and not line[0:1].isspace()
+            )
+
+            if is_boundary and current_block:
+                _flush_block()
+                current_block = [line]
+                if stripped.startswith(("def ", "async def ")):
+                    block_type = "function"
+                elif stripped.startswith("class "):
+                    block_type = "class"
+                elif stripped.startswith(("import ", "from ")):
+                    block_type = "imports"
+                elif stripped.startswith(("export ",)):
+                    block_type = "export"
+                elif stripped.startswith(("describe(", "it(", "test(")):
+                    block_type = "test"
+                else:
+                    block_type = "source_code"
+            else:
+                current_block.append(line)
+
+        if current_block:
+            _flush_block()
+
+        return chunks
 
     # -- Graph helpers ------------------------------------------------------
 

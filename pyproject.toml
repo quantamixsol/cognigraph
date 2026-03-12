@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cognigraph"
-version = "0.5.1"
-description = "Self-governing development for Claude Code — graph-of-agents reasoning with 13 innovations, GCC/GSD/Ralph protocols, and MCP integration"
+version = "0.7.5"
+description = "Dev Intelligence Layer — turn any codebase into a reasoning-ready knowledge graph. Works with any IDE, any AI tool, or plain terminal."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
@@ -17,7 +17,8 @@ keywords = [
     "graph-of-agents", "lora", "pcst", "distributed-reasoning",
     "governance", "shacl", "owl", "ontology", "mcp",
     "bayesian-learning", "adaptive-activation", "regulatory-ai",
-    "claude-code", "self-governing", "development-tools", "gcc", "gsd",
+    "dev-intelligence", "development-tools", "cursor", "vscode",
+    "claude-code", "copilot", "ai-coding", "codebase-reasoning",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -39,6 +40,7 @@ dependencies = [
     "pyyaml>=6.0",
     "typer[all]>=0.9",
     "rich>=13.0",
+    "sentence-transformers>=2.2",
 ]
 
 [project.optional-dependencies]

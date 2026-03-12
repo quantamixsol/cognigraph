@@ -45,23 +45,13 @@ class LicenseTier(str, Enum):
 # introduced at that tier — cumulative resolution happens in License.all_features.
 TIER_FEATURES: dict[LicenseTier, set[str]] = {
     LicenseTier.FREE: {
-        # Innovations 1-5 (always free)
+        # Innovations 1-5 (core graph reasoning)
         "pcst_activation",
         "master_observer",
         "convergent_message_passing",
         "backend_fallback",
         "hierarchical_aggregation",
-        # Basic MCP tools
-        "mcp_context",
-        "mcp_inspect",
-        "mcp_reason",
-        # GCC / GSD / Ralph (always free — the hook)
-        "gcc_protocol",
-        "gsd_protocol",
-        "ralph_loop",
-    },
-    LicenseTier.PRO: {
-        # Innovations 6-13 (IP-gated moat)
+        # Innovations 6-13 (ungated for solo developers — v0.7.5)
         "semantic_shacl_gate",
         "debate_protocol",
         "explanation_trace",
@@ -74,19 +64,27 @@ TIER_FEATURES: dict[LicenseTier, set[str]] = {
         "multi_resolution_embeddings",
         "bayesian_edge_weighting",
         "domain_detection",
-        # Advanced MCP tools
+        # All MCP tools (ungated — v0.7.5)
+        "mcp_context",
+        "mcp_inspect",
+        "mcp_reason",
         "mcp_preflight",
         "mcp_lessons",
         "mcp_impact",
         "mcp_checklist",
         "mcp_learn",
-        # Pro features
+        # Workflow engine (session continuity, structured work, iteration loops)
+        "workflow_engine",
+        # Solo developer features (ungated — v0.7.5)
         "multi_backend_fallback",
         "tiered_backends",
         "session_analytics",
         "auto_grow_hook",
         "metrics_dashboard",
     },
+    # PRO tier is now reserved for future team-adjacent features.
+    # All solo developer features have been moved to FREE (v0.7.5).
+    LicenseTier.PRO: set(),
     LicenseTier.TEAM: {
         "shared_kg_sync",
         "multi_instance_coordination",

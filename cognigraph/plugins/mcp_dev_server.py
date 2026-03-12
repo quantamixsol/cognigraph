@@ -46,19 +46,6 @@ logger = logging.getLogger("cognigraph.mcp")
 # Constants
 # ---------------------------------------------------------------------------
 
-_PRO_TOOLS = frozenset({
-    "kogni_preflight",
-    "kogni_lessons",
-    "kogni_impact",
-    "kogni_learn",
-})
-
-_PRO_FEATURE_MAP = {
-    "kogni_preflight": "mcp_preflight",
-    "kogni_lessons": "mcp_lessons",
-    "kogni_impact": "mcp_impact",
-    "kogni_learn": "mcp_learn",
-}
 
 _SENSITIVE_KEYS = frozenset({"api_key", "secret", "password", "token", "credential"})
 
@@ -304,6 +291,8 @@ class KogniDevServer:
                 if p.exists():
                     self._graph = CogniGraph.from_json(str(p), config=self._config)
                     self._graph_file = str(p.resolve())
+                    # Assign real backend from config
+                    self._assign_backend(self._graph, self._config)
                     logger.info(
                         "Loaded graph: %d nodes, %d edges from %s",
                         len(self._graph.nodes),
@@ -318,6 +307,69 @@ class KogniDevServer:
         except Exception as exc:
             logger.error("Failed to load graph: %s", exc)
             return None
+
+    @staticmethod
+    def _assign_backend(graph: Any, cfg: Any) -> None:
+        """Create and assign a real model backend from config to the graph.
+
+        Tries configured backend (Anthropic, OpenAI, Bedrock, Ollama).
+        Falls back to mock only if real backend can't be created.
+        """
+        import os
+
+        backend_name = cfg.model.backend
+        model_name = cfg.model.model
+        api_key = cfg.model.api_key
+
+        # Resolve env var references like ${ANTHROPIC_API_KEY}
+        if api_key and api_key.startswith("${") and api_key.endswith("}"):
+            env_var = api_key[2:-1]
+            api_key = os.environ.get(env_var)
+
+        try:
+            if backend_name == "anthropic":
+                from cognigraph.backends.api import AnthropicBackend
+                if not api_key:
+                    api_key = os.environ.get("ANTHROPIC_API_KEY")
+                if api_key:
+                    graph.set_default_backend(AnthropicBackend(model=model_name, api_key=api_key))
+                    logger.info("Backend: Anthropic (%s)", model_name)
+                    return
+
+            elif backend_name == "openai":
+                from cognigraph.backends.api import OpenAIBackend
+                if not api_key:
+                    api_key = os.environ.get("OPENAI_API_KEY")
+                if api_key:
+                    graph.set_default_backend(OpenAIBackend(model=model_name, api_key=api_key))
+                    logger.info("Backend: OpenAI (%s)", model_name)
+                    return
+
+            elif backend_name == "bedrock":
+                from cognigraph.backends.api import BedrockBackend
+                region = getattr(cfg.model, "region", None) or os.environ.get(
+                    "AWS_DEFAULT_REGION", "eu-central-1"
+                )
+                graph.set_default_backend(BedrockBackend(model=model_name, region=region))
+                logger.info("Backend: Bedrock (%s in %s)", model_name, region)
+                return
+
+            elif backend_name == "ollama":
+                from cognigraph.backends.api import OllamaBackend
+                host = getattr(cfg.model, "host", None) or "http://localhost:11434"
+                graph.set_default_backend(OllamaBackend(model=model_name, host=host))
+                logger.info("Backend: Ollama (%s)", model_name)
+                return
+
+        except Exception as exc:
+            logger.warning("Failed to create %s backend: %s", backend_name, exc)
+
+        # No real backend available — LOUD warning
+        logger.warning(
+            "NO LLM BACKEND CONFIGURED — reasoning will use graph traversal only. "
+            "Run 'kogni doctor' to diagnose. "
+            "Quick fix: export ANTHROPIC_API_KEY=sk-ant-..."
+        )
 
     def _require_graph(self) -> Any:
         """Load graph or raise with a helpful message."""
@@ -433,40 +485,12 @@ class KogniDevServer:
         if handler is None:
             return json.dumps({"error": f"Unknown tool: {name}"})
 
-        # PRO tier gate
-        if name in _PRO_TOOLS:
-            gate_msg = self._check_pro_license(name)
-            if gate_msg is not None:
-                return gate_msg
-
         try:
             return await handler(arguments)
         except Exception as exc:
             logger.exception("Tool %s failed", name)
             return json.dumps({"error": str(exc)})
 
-    def _check_pro_license(self, tool_name: str) -> str | None:
-        """Return JSON error string if PRO license is missing, else None."""
-        try:
-            from cognigraph.licensing import has_feature
-
-            feature = _PRO_FEATURE_MAP.get(tool_name, tool_name)
-            if not has_feature(feature):
-                return json.dumps({
-                    "error": (
-                        f"'{tool_name}' requires CogniGraph Pro. "
-                        "Current tier: Free."
-                    ),
-                    "upgrade": "https://cognigraph.dev/pricing",
-                    "tip": (
-                        "Set COGNIGRAPH_LICENSE_KEY env var or place key "
-                        "in ~/.cognigraph/license.key"
-                    ),
-                })
-        except ImportError:
-            # Licensing module not present — development mode, allow through
-            pass
-        return None
 
     # ==================================================================
     # Tool handlers
@@ -1038,7 +1062,7 @@ class KogniDevServer:
             G = graph.to_networkx()
             data = nx.node_link_data(G)
             Path(self._graph_file).write_text(
-                json.dumps(data, indent=2, default=str)
+                json.dumps(data, indent=2, default=str), encoding="utf-8"
             )
             logger.info("Graph saved to %s", self._graph_file)
         except Exception as exc:
@@ -1124,6 +1148,11 @@ class KogniDevServer:
         Reads JSON-RPC requests from stdin (one per line),
         writes JSON-RPC responses to stdout (one per line).
         Diagnostic logging goes to stderr.
+
+        Uses a thread-based approach for stdin reads to avoid
+        ``loop.connect_read_pipe`` / ``connect_write_pipe`` which crash on
+        Windows ProactorEventLoop (OSError: [WinError 6] The handle is
+        invalid).  Works on Windows, Linux, and macOS.
         """
         # Redirect logging to stderr so stdout stays clean for JSON-RPC
         handler = logging.StreamHandler(sys.stderr)
@@ -1135,20 +1164,31 @@ class KogniDevServer:
 
         loop = asyncio.get_event_loop()
 
-        # Set up async stdin reader
-        reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(reader)
-        await loop.connect_read_pipe(lambda: protocol, sys.stdin.buffer)
+        # -- Cross-platform stdin reading via a background thread ----------
+        # ``sys.stdin.buffer.readline()`` is blocking, so we run it in the
+        # default ThreadPoolExecutor and await the future.
 
-        # Set up async stdout writer
-        w_transport, w_protocol = await loop.connect_write_pipe(
-            asyncio.streams.FlowControlMixin, sys.stdout.buffer
-        )
-        writer = asyncio.StreamWriter(w_transport, w_protocol, reader, loop)
+        import functools
+
+        def _blocking_readline() -> bytes:
+            """Read one line from stdin (blocking).  Returns b'' on EOF."""
+            try:
+                return sys.stdin.buffer.readline()
+            except (OSError, ValueError):
+                # stdin closed or invalid
+                return b""
+
+        def _write_stdout(data: bytes) -> None:
+            """Write *data* to stdout and flush (blocking-safe)."""
+            try:
+                sys.stdout.buffer.write(data)
+                sys.stdout.buffer.flush()
+            except (OSError, ValueError):
+                pass  # stdout closed
 
         while True:
             try:
-                line = await reader.readline()
+                line = await loop.run_in_executor(None, _blocking_readline)
                 if not line:
                     break  # EOF — client disconnected
 
@@ -1160,9 +1200,10 @@ class KogniDevServer:
                 response = await self._handle_jsonrpc(request)
 
                 if response is not None:
-                    out = json.dumps(response) + "\n"
-                    writer.write(out.encode("utf-8"))
-                    await writer.drain()
+                    out = (json.dumps(response) + "\n").encode("utf-8")
+                    await loop.run_in_executor(
+                        None, functools.partial(_write_stdout, out)
+                    )
 
             except json.JSONDecodeError as exc:
                 error_resp = {
@@ -1170,8 +1211,10 @@ class KogniDevServer:
                     "error": {"code": -32700, "message": f"Parse error: {exc}"},
                     "id": None,
                 }
-                writer.write((json.dumps(error_resp) + "\n").encode("utf-8"))
-                await writer.drain()
+                out = (json.dumps(error_resp) + "\n").encode("utf-8")
+                await loop.run_in_executor(
+                    None, functools.partial(_write_stdout, out)
+                )
 
             except Exception as exc:
                 logger.exception("Unhandled error in stdio loop")
@@ -1181,8 +1224,10 @@ class KogniDevServer:
                     "id": None,
                 }
                 try:
-                    writer.write((json.dumps(error_resp) + "\n").encode("utf-8"))
-                    await writer.drain()
+                    out = (json.dumps(error_resp) + "\n").encode("utf-8")
+                    await loop.run_in_executor(
+                        None, functools.partial(_write_stdout, out)
+                    )
                 except Exception:
                     break  # stdout broken, exit
 

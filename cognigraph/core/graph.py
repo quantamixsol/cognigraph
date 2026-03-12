@@ -47,6 +47,11 @@ class CogniGraph:
         self._activator: Any = None  # set lazily
         self._nx_graph: nx.Graph | None = None
 
+        # Mandatory quality gate: enrich + enforce descriptions
+        if self.nodes:
+            self._auto_enrich_descriptions()
+            self._enforce_no_empty_descriptions()
+
     # --- Construction ---
 
     @classmethod
@@ -106,9 +111,202 @@ class CogniGraph:
         import json
         from pathlib import Path
 
-        data = json.loads(Path(path).read_text())
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
         G = nx.node_link_graph(data)
         return cls.from_networkx(G, config=config)
+
+    # --- Node Enrichment & Validation ---
+
+    def _enforce_no_empty_descriptions(self) -> None:
+        """Enforce that no node has an empty description after enrichment.
+
+        This is a mandatory quality gate. Nodes without descriptions produce
+        agents that cannot reason, leading to low-confidence garbage answers.
+        After auto-enrichment, any remaining empty nodes are a data quality
+        issue that must be fixed by the KG builder.
+
+        Raises:
+            ValueError: If any nodes still have empty descriptions after
+                auto-enrichment, listing the offending node IDs.
+        """
+        empty_nodes = [
+            nid for nid, node in self.nodes.items()
+            if not (node.description or "").strip()
+        ]
+
+        if empty_nodes:
+            sample = empty_nodes[:10]
+            remaining = len(empty_nodes) - len(sample)
+            msg = (
+                f"KG Quality Error: {len(empty_nodes)}/{len(self.nodes)} nodes have "
+                f"empty descriptions. Agents cannot reason without descriptions.\n"
+                f"Empty nodes: {sample}"
+            )
+            if remaining > 0:
+                msg += f"\n... and {remaining} more"
+            msg += (
+                "\n\nFix: Add 'description' fields to your KG nodes. "
+                "Example: {\"id\": \"svc::auth\", \"description\": \"Authentication "
+                "service handling JWT tokens and session management\", ...}"
+            )
+            raise ValueError(msg)
+
+    def _auto_enrich_descriptions(self) -> None:
+        """Auto-generate descriptions for nodes that have empty descriptions.
+
+        When a KG is loaded with nodes that have metadata/properties but no
+        descriptions, the agents have nothing to reason from. This method
+        synthesizes a description from all available node data so every agent
+        has context.
+        """
+        enriched = 0
+        empty_count = 0
+
+        for nid, node in self.nodes.items():
+            if node.description and node.description.strip():
+                continue
+
+            empty_count += 1
+            parts = []
+
+            # Start with type and label
+            if node.entity_type and node.entity_type != "Entity":
+                parts.append(f"[{node.entity_type}]")
+            if node.label and node.label != nid:
+                parts.append(node.label)
+
+            # Add all properties as key-value context
+            if node.properties:
+                for key, val in node.properties.items():
+                    if key in ("id", "label", "type", "description"):
+                        continue
+                    val_str = str(val)
+                    if len(val_str) > 500:
+                        val_str = val_str[:500] + "..."
+                    if val_str:
+                        parts.append(f"{key}: {val_str}")
+
+            # Add edge context (what this node connects to)
+            neighbors_out = []
+            for eid in node.outgoing_edges:
+                if eid in self.edges:
+                    e = self.edges[eid]
+                    target = self.nodes.get(e.target_id)
+                    if target:
+                        neighbors_out.append(
+                            f"{e.relationship} -> {target.label or target.id}"
+                        )
+            neighbors_in = []
+            for eid in node.incoming_edges:
+                if eid in self.edges:
+                    e = self.edges[eid]
+                    source = self.nodes.get(e.source_id)
+                    if source:
+                        neighbors_in.append(
+                            f"{source.label or source.id} -> {e.relationship}"
+                        )
+
+            if neighbors_out:
+                parts.append(
+                    "Connects to: " + "; ".join(neighbors_out[:5])
+                )
+            if neighbors_in:
+                parts.append(
+                    "Connected from: " + "; ".join(neighbors_in[:5])
+                )
+
+            if parts:
+                node.description = ". ".join(parts)
+                enriched += 1
+
+        if empty_count > 0:
+            pct = (empty_count / len(self.nodes)) * 100
+            if pct > 50:
+                logger.warning(
+                    f"KG Quality Warning: {empty_count}/{len(self.nodes)} nodes "
+                    f"({pct:.0f}%) had empty descriptions. Auto-enriched {enriched} "
+                    f"from metadata/properties. For better reasoning quality, add "
+                    f"rich descriptions to your nodes. See: "
+                    f"https://cognigraph.dev/docs/kg-quality"
+                )
+            elif empty_count > 0:
+                logger.info(
+                    f"Auto-enriched {enriched}/{empty_count} nodes with "
+                    f"empty descriptions from metadata."
+                )
+
+    def validate(self) -> dict:
+        """Validate knowledge graph quality for reasoning.
+
+        Returns a dict with quality metrics and warnings. Call this before
+        reasoning to ensure your KG will produce good results.
+
+        Returns:
+            dict with keys: total_nodes, nodes_with_descriptions,
+            nodes_without_descriptions, avg_description_length,
+            warnings, quality_score (0-100)
+        """
+        total = len(self.nodes)
+        with_desc = 0
+        desc_lengths = []
+        no_desc_ids = []
+
+        for nid, node in self.nodes.items():
+            desc = (node.description or "").strip()
+            if desc and len(desc) > 20:
+                with_desc += 1
+                desc_lengths.append(len(desc))
+            else:
+                no_desc_ids.append(nid)
+
+        avg_len = sum(desc_lengths) / len(desc_lengths) if desc_lengths else 0
+        pct_with = (with_desc / total * 100) if total > 0 else 0
+
+        warnings = []
+        if pct_with < 50:
+            warnings.append(
+                f"CRITICAL: Only {pct_with:.0f}% of nodes have descriptions. "
+                f"Agents will produce low-quality reasoning. Add descriptions "
+                f"to your nodes or use auto-enrichment."
+            )
+        elif pct_with < 80:
+            warnings.append(
+                f"WARNING: {100 - pct_with:.0f}% of nodes lack descriptions. "
+                f"Consider enriching them for better results."
+            )
+
+        if avg_len < 50 and avg_len > 0:
+            warnings.append(
+                f"WARNING: Average description length is only {avg_len:.0f} chars. "
+                f"Richer descriptions (100+ chars) produce better reasoning."
+            )
+
+        # Quality score: 0-100
+        score = min(100, int(
+            (pct_with * 0.6) +
+            (min(avg_len, 200) / 200 * 40)
+        ))
+
+        result = {
+            "total_nodes": total,
+            "total_edges": len(self.edges),
+            "nodes_with_descriptions": with_desc,
+            "nodes_without_descriptions": len(no_desc_ids),
+            "avg_description_length": round(avg_len, 1),
+            "quality_score": score,
+            "warnings": warnings,
+        }
+
+        if warnings:
+            for w in warnings:
+                logger.warning(w)
+        else:
+            logger.info(
+                f"KG quality: {score}/100 — {with_desc}/{total} nodes with "
+                f"descriptions (avg {avg_len:.0f} chars)"
+            )
+
+        return result
 
     # --- Model Assignment ---
 
@@ -218,9 +416,23 @@ class CogniGraph:
 
         # 3. Run orchestrator (with MasterObserver if configured)
         if self._orchestrator is None:
+            # Create SkillAdmin with hybrid scoring (Titan V2 preferred)
+            skill_admin = None
+            try:
+                from cognigraph.ontology.skill_admin import SkillAdmin
+                # SkillAdmin auto-initializes Titan V2 -> sentence-transformers -> regex
+                skill_admin = SkillAdmin(use_titan=True)
+            except Exception:
+                try:
+                    from cognigraph.ontology.skill_admin import SkillAdmin
+                    skill_admin = SkillAdmin(use_titan=False)
+                except Exception:
+                    pass
+
             self._orchestrator = Orchestrator(
                 config=self.config.orchestration,
                 observer_config=self.config.observer,
+                skill_admin=skill_admin,
             )
 
         result = await self._orchestrator.run(self, query, node_ids, max_rounds)
@@ -228,6 +440,9 @@ class CogniGraph:
         # 4. Deactivate nodes
         for nid in node_ids:
             self.nodes[nid].deactivate()
+
+        # 5. Record metrics
+        self._record_query_metrics(query, result, node_ids)
 
         return result
 
@@ -308,6 +523,63 @@ class CogniGraph:
                 final.append(r)
         return final
 
+    def _record_query_metrics(
+        self, query: str, result: ReasoningResult, node_ids: list[str]
+    ) -> None:
+        """Record query metrics for ROI tracking."""
+        try:
+            from cognigraph.metrics import get_metrics
+
+            engine = get_metrics()
+
+            # Start session if not active
+            if not engine._session_active:
+                engine.start_session()
+
+            # Record the query — estimate result tokens from answer length
+            result_tokens = len(result.answer) // 4  # ~4 chars per token
+            engine.record_query(query, result_tokens)
+
+            # Record node accesses
+            for nid in node_ids:
+                node = self.nodes.get(nid)
+                label = node.label if node else nid
+                tokens_returned = len(node.description) // 4 if node and node.description else 50
+                engine.record_context_load(nid, tokens_returned)
+
+            # Record graph stats
+            from collections import Counter
+            node_types = dict(Counter(n.entity_type for n in self.nodes.values()))
+            edge_types = dict(Counter(e.relationship for e in self.edges.values()))
+            engine.set_graph_stats(
+                nodes=len(self.nodes),
+                edges=len(self.edges),
+                node_types=node_types,
+                edge_types=edge_types,
+            )
+
+            # Record lessons applied (detect from answer content)
+            import re
+            lesson_refs = re.findall(r"LESSON[- ](\d+)", result.answer, re.IGNORECASE)
+            for lesson_num in set(lesson_refs):
+                engine.record_lesson_applied(
+                    f"LESSON-{lesson_num}", query[:80]
+                )
+
+            # Record mistakes prevented (detect from answer content)
+            mistake_refs = re.findall(r"MISTAKE[- ](\d+)", result.answer, re.IGNORECASE)
+            for mistake_num in set(mistake_refs):
+                engine.record_mistake_prevented(
+                    f"MISTAKE-{mistake_num}", "detected-in-reasoning"
+                )
+
+            logger.debug(
+                f"Metrics recorded: query tokens={result_tokens}, "
+                f"nodes={len(node_ids)}, lessons={len(lesson_refs)}"
+            )
+        except Exception as e:
+            logger.debug(f"Metrics recording skipped: {e}")
+
     def _activate_subgraph(self, query: str, strategy: str) -> list[str]:
         """Select nodes to activate for a query."""
         if strategy == "full":
@@ -378,11 +650,11 @@ class CogniGraph:
         return [self.edges[eid] for eid in self.nodes[node_id].outgoing_edges]
 
     def to_networkx(self) -> nx.Graph:
-        """Export to NetworkX graph."""
+        """Export to NetworkX graph (preserves directed/undirected from source)."""
         if self._nx_graph is not None:
             return self._nx_graph
 
-        G = nx.Graph()
+        G = nx.DiGraph()
         for nid, node in self.nodes.items():
             G.add_node(nid, label=node.label, type=node.entity_type,
                        description=node.description, **node.properties)
@@ -417,7 +689,11 @@ class CogniGraph:
             ),
             avg_degree=avg_deg,
             density=nx.density(G) if len(G) > 1 else 0.0,
-            connected_components=nx.number_connected_components(G),
+            connected_components=(
+                nx.number_weakly_connected_components(G)
+                if G.is_directed()
+                else nx.number_connected_components(G)
+            ),
             hub_nodes=hubs,
         )
 

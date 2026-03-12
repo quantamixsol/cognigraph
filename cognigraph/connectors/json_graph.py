@@ -27,7 +27,7 @@ class JSONGraphConnector(BaseConnector):
         if not self.path.exists():
             raise FileNotFoundError(f"Graph file not found: {self.path}")
 
-        data = json.loads(self.path.read_text())
+        data = json.loads(self.path.read_text(encoding="utf-8"))
         nodes = data.get("nodes", {})
         edges = data.get("edges", {})
         return nodes, edges
@@ -39,7 +39,7 @@ class JSONGraphConnector(BaseConnector):
     ) -> None:
         """Save graph to JSON file."""
         data = {"nodes": nodes, "edges": edges}
-        self.path.write_text(json.dumps(data, indent=2, default=str))
+        self.path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
 
     def validate(self) -> bool:
         return self.path.exists()
