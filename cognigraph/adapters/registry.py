@@ -45,7 +45,7 @@ class AdapterRegistry:
                 config_file = adapter_dir / "adapter_config.json"
                 if config_file.exists():
                     try:
-                        data = json.loads(config_file.read_text())
+                        data = json.loads(config_file.read_text(encoding="utf-8"))
                         config = AdapterConfig(
                             adapter_id=f"{domain_dir.name}/{adapter_dir.name}",
                             name=adapter_dir.name,

@@ -284,7 +284,7 @@ class GraphLearner:
         if not path.exists():
             return 0
 
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         applied = 0
         for eid, info in data.items():
             if eid in graph.edges:

@@ -44,6 +44,7 @@ class Orchestrator:
         constraint_graph: Any = None,
         ontology_router: Any = None,
         skill_resolver: Any = None,
+        skill_admin: Any = None,
         shacl_gate: Any = None,
         embedding_fn: Any = None,
     ) -> None:
@@ -55,6 +56,7 @@ class Orchestrator:
         self.constraint_graph = constraint_graph
         self.ontology_router = ontology_router
         self.skill_resolver = skill_resolver
+        self.skill_admin = skill_admin  # v3: Smart skill assignment
         self.shacl_gate = shacl_gate
         self.embedding_fn = embedding_fn
 
@@ -118,7 +120,7 @@ class Orchestrator:
         self._gov_stats = {k: 0 for k in self._gov_stats}
 
         # === v2: Pre-reasoning governance setup ===
-        self._setup_governance_constraints(graph, active_node_ids)
+        self._setup_governance_constraints(graph, active_node_ids, query=query)
 
         # Cost budget enforcement
         cost_config = getattr(getattr(graph, "config", None), "cost", None)
@@ -284,7 +286,8 @@ class Orchestrator:
         return result
 
     def _setup_governance_constraints(
-        self, graph: CogniGraph, active_node_ids: list[str]
+        self, graph: CogniGraph, active_node_ids: list[str],
+        query: str = "",
     ) -> None:
         """Pre-reasoning: propagate constraints, skills, and SHACL gate to nodes."""
         # Build constraint graph if available
@@ -305,8 +308,10 @@ class Orchestrator:
                 constraints = self.constraint_graph.get_constraints(nid)
                 node.constraint_text = constraints.to_prompt_text()
 
-            # Skills from skill resolver
-            if self.skill_resolver is not None:
+            # Skills: prefer SkillAdmin (smart, query-aware) over SkillResolver (basic)
+            if self.skill_admin is not None:
+                node.skills_text = self.skill_admin.assign_to_node(node, query)
+            elif self.skill_resolver is not None:
                 node.skills_text = self.skill_resolver.skills_to_prompt(
                     node.entity_type
                 )

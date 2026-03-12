@@ -391,18 +391,24 @@ class TestWriteGccStructure:
     def test_creates_full_structure(self, tmp_path):
         result = _write_gcc_structure(tmp_path)
         assert result is True
-        gcc = tmp_path / ".gcc"
-        assert gcc.exists()
-        assert (gcc / "main.md").exists()
-        assert (gcc / "registry.md").exists()
-        assert (gcc / "config.yaml").exists()
-        assert (gcc / "branches" / "main" / "commit.md").exists()
-        assert (gcc / "branches" / "main" / "log.md").exists()
-        assert (gcc / "branches" / "main" / "metadata.yaml").exists()
-        assert (gcc / "checkpoints" / ".gitkeep").exists()
+        kogni = tmp_path / ".kogni"
+        assert kogni.exists()
+        assert (kogni / "main.md").exists()
+        assert (kogni / "registry.md").exists()
+        assert (kogni / "config.yaml").exists()
+        assert (kogni / "branches" / "main" / "commit.md").exists()
+        assert (kogni / "branches" / "main" / "log.md").exists()
+        assert (kogni / "branches" / "main" / "metadata.yaml").exists()
+        assert (kogni / "checkpoints" / ".gitkeep").exists()
 
-    def test_skips_if_exists(self, tmp_path):
+    def test_skips_if_legacy_gcc_exists(self, tmp_path):
+        """Legacy .gcc/ is still respected — don't create duplicate."""
         (tmp_path / ".gcc").mkdir()
+        result = _write_gcc_structure(tmp_path)
+        assert result is False
+
+    def test_skips_if_kogni_exists(self, tmp_path):
+        (tmp_path / ".kogni").mkdir()
         result = _write_gcc_structure(tmp_path)
         assert result is False
 

@@ -25,7 +25,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from cognigraph.licensing.manager import check_license
 
 logger = logging.getLogger("cognigraph.evaluation.constrained_f1")
 
@@ -130,7 +129,6 @@ class ConstrainedF1Evaluator:
         coverage_weight: float = 0.2,
         rule_weight: float = 0.2,
     ) -> None:
-        check_license("constrained_f1")
         self._constraints = constraints or {}
         self._scope_weight = scope_weight
         self._attribution_weight = attribution_weight

@@ -109,7 +109,7 @@ class CogniNode:
     backend: ModelBackend | None = field(default=None, repr=False)
     adapter_id: str | None = None
     system_prompt: str | None = None
-    max_tokens: int = 512
+    max_tokens: int = 2048
     temperature: float = 0.3
 
     # State
@@ -293,7 +293,20 @@ class CogniNode:
         """
         chunks = self.properties.get("chunks", [])
         if not chunks:
-            return ""
+            # T3: Lazy load from file_path if available
+            file_path = self.properties.get("file_path")
+            if file_path:
+                try:
+                    from pathlib import Path
+                    fp = Path(file_path)
+                    if fp.exists():
+                        content = fp.read_text(encoding="utf-8", errors="ignore")[:6000]
+                        if content.strip():
+                            chunks = [{"text": content, "type": "full_file"}]
+                except Exception:
+                    pass
+            if not chunks:
+                return ""
 
         # Parse chunks into (text, type) pairs
         parsed = []
