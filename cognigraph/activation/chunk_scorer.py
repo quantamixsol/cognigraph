@@ -115,9 +115,17 @@ class ChunkScorer:
         return scores
 
     def activate(
-        self, graph: CogniGraph, query: str
+        self, graph: CogniGraph, query: str,
+        activation_boosts: dict[str, float] | None = None,
     ) -> list[str]:
         """Activate the top-N nodes by chunk-level scoring.
+
+        Args:
+            graph: CogniGraph instance
+            query: The reasoning query
+            activation_boosts: Optional {node_id: boost} from ActivationMemory.
+                Boosts are added to chunk scores to prioritize nodes that
+                have historically been useful for similar queries.
 
         Side effect: stores relevance scores in ``self.last_relevance``.
 
@@ -125,6 +133,18 @@ class ChunkScorer:
             List of activated node IDs, sorted by relevance descending.
         """
         scores = self.score(graph, query)
+
+        # v0.12: Apply activation memory boosts (cross-query learning)
+        if activation_boosts:
+            boosted_count = 0
+            for nid, boost in activation_boosts.items():
+                if nid in scores:
+                    scores[nid] += boost
+                    boosted_count += 1
+            if boosted_count:
+                logger.info(
+                    "Applied activation memory boosts to %d nodes", boosted_count
+                )
 
         # Filter by minimum score
         candidates = [
