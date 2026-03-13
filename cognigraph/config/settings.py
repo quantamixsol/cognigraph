@@ -58,9 +58,14 @@ class OrchestrationConfig(BaseModel):
 
 
 class ObserverConfig(BaseModel):
-    """MasterObserver configuration."""
+    """MasterObserver configuration.
 
-    enabled: bool = False
+    v0.12: Observer is enabled by default. It runs at zero cost
+    (rule-based, no LLM calls) and provides valuable transparency.
+    Disable explicitly with ``enabled: false`` if you want to suppress.
+    """
+
+    enabled: bool = True
     report_per_round: bool = False
     detect_conflicts: bool = True
     detect_patterns: bool = True

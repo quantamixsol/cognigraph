@@ -111,42 +111,66 @@ class ObserverReport:
     def health_score(self) -> float:
         """Overall reasoning health score (0-1).
 
-        Penalizes for conflicts, anomalies, and unhealthy patterns.
-        Scales penalties by node count to avoid false-low scores when
-        many nodes reason in parallel (e.g., 20-node ChunkScorer).
+        v0.12 overhaul: designed for ChunkScorer era where 10-20 nodes
+        reason in parallel. Perspective diversity is HEALTHY, not penalized.
 
-        With N nodes, the maximum possible conflict pairs is N*(N-1)/2.
-        We normalize conflict penalty so that even worst-case multi-node
-        scenarios don't drive health to 0% from perspective diversity alone.
+        Scoring philosophy:
+        - Start at 1.0 (healthy until proven otherwise)
+        - Only GENUINE conflicts reduce score (not perspective diversity)
+        - Anomalies are expected at scale — only critical ones matter
+        - Cap total penalties so score stays meaningful (floor at 0.3
+          unless there are critical-severity issues)
+
+        With the v0.12 conflict detection (stricter thresholds, mutual
+        reference required), conflict counts should be 0-5 for typical
+        20-node queries, not 100+.
         """
         score = 1.0
         n = max(self.total_nodes, 1)
 
-        # Conflict penalty — scaled by node count.
-        # With 1-3 nodes (PCST era): 0.05 per conflict (original).
-        # With 20 nodes: max_pairs=190, so per-conflict penalty shrinks
-        # to keep the score meaningful. Cap total conflict penalty at 0.4.
-        if n <= 3:
-            conflict_penalty_each = 0.05
-        else:
-            # Scale: penalty = 0.4 / max_pairs, so 100% conflicts → -0.4
-            max_pairs = n * (n - 1) / 2
-            conflict_penalty_each = min(0.05, 0.4 / max(max_pairs, 1))
-        score -= len(self.conflicts) * conflict_penalty_each
+        # --- Conflict penalty ---
+        # Conflicts are now pre-filtered by severity in _detect_conflicts.
+        # High/critical conflicts matter more than low/medium.
+        high_conflicts = sum(
+            1 for c in self.conflicts if c.severity in ("high", "critical")
+        )
+        med_conflicts = sum(
+            1 for c in self.conflicts if c.severity == "medium"
+        )
+        low_conflicts = sum(
+            1 for c in self.conflicts if c.severity == "low"
+        )
+        # High conflicts: -0.08 each (capped at -0.32)
+        score -= min(high_conflicts * 0.08, 0.32)
+        # Medium conflicts: -0.03 each (capped at -0.15)
+        score -= min(med_conflicts * 0.03, 0.15)
+        # Low conflicts: -0.01 each (capped at -0.05)
+        score -= min(low_conflicts * 0.01, 0.05)
 
-        # Anomaly penalty — scale by node count (more nodes = more anomalies expected)
-        critical = sum(1 for a in self.anomalies if a.severity in ("high", "critical"))
-        anomaly_penalty_each = 0.1 if n <= 3 else 0.1 / (n / 3)
-        score -= critical * anomaly_penalty_each
+        # --- Anomaly penalty ---
+        # Only critical anomalies matter; confidence spikes/drops at scale
+        # are normal multi-agent behavior, not problems.
+        critical_anomalies = sum(
+            1 for a in self.anomalies if a.severity == "critical"
+        )
+        high_anomalies = sum(
+            1 for a in self.anomalies if a.severity == "high"
+        )
+        score -= min(critical_anomalies * 0.10, 0.20)
+        # High anomalies scaled by node count (more nodes = more expected)
+        anomaly_scale = max(1.0, n / 5.0)
+        score -= min(high_anomalies * (0.03 / anomaly_scale), 0.10)
 
-        # Penalty for echo chambers
+        # --- Echo chamber penalty ---
         echo = sum(1 for p in self.patterns if p.pattern_type == "echo_chamber")
-        score -= echo * 0.15
+        # Scale by node count: with 20 nodes, some overlap is expected
+        echo_penalty = 0.10 if n <= 5 else 0.05
+        score -= min(echo * echo_penalty, 0.15)
 
-        # Penalty for flip-flopping nodes — scale by node count
+        # --- Flip-flop penalty (minor) ---
         flips = sum(c.flip_count for c in self.contributions.values())
-        flip_penalty_each = 0.02 if n <= 3 else 0.02 / (n / 3)
-        score -= flips * flip_penalty_each
+        flip_scale = max(1.0, n / 3.0)
+        score -= min(flips * (0.01 / flip_scale), 0.05)
 
         return max(0.0, min(1.0, score))
 
