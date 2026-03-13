@@ -46,6 +46,7 @@ class CogniGraph:
         self._orchestrator: Any = None  # set lazily
         self._activator: Any = None  # set lazily
         self._reformulator: Any = None  # set lazily (ADR-104)
+        self._activation_memory: Any = None  # v0.12: cross-query learning
         self._neo4j_connector: Any = None  # set by from_neo4j / to_neo4j
         self._nx_graph: nx.Graph | None = None
 
@@ -820,6 +821,9 @@ class CogniGraph:
         # 5. Record metrics
         self._record_query_metrics(query, result, node_ids)
 
+        # 6. Record activation memory (v0.12: cross-query learning)
+        self._record_activation_memory(query, node_ids, result)
+
         return result
 
     async def areason_stream(
@@ -960,6 +964,21 @@ class CogniGraph:
         except Exception as e:
             logger.debug(f"Metrics recording skipped: {e}")
 
+    def _record_activation_memory(
+        self, query: str, node_ids: list[str], result: ReasoningResult,
+    ) -> None:
+        """Record activation patterns for cross-query learning (v0.12)."""
+        try:
+            from cognigraph.learning.activation_memory import ActivationMemory
+
+            if self._activation_memory is None:
+                self._activation_memory = ActivationMemory()
+                self._activation_memory.load()
+
+            self._activation_memory.record(query, node_ids, result)
+        except Exception as e:
+            logger.debug(f"Activation memory recording skipped: {e}")
+
     def _reformulate_query(self, query: str, *, context: Any = None) -> str:
         """Apply query reformulation if configured (ADR-104).
 
@@ -1089,12 +1108,36 @@ class CogniGraph:
                     logger.warning("pcst_fast not installed, falling through to ChunkScorer")
 
             # ChunkScorer (new default) — chunk-level embedding search
+            # v0.12: Adaptive node count — simple queries don't need max_nodes.
             from cognigraph.activation.chunk_scorer import ChunkScorer
+            from cognigraph.activation.adaptive import QueryComplexityScorer
+
+            configured_max = self.config.activation.max_nodes
+            try:
+                scorer = QueryComplexityScorer()
+                profile = scorer.score(query)
+                tier_map = {
+                    "simple": max(4, configured_max // 4),
+                    "moderate": max(8, configured_max // 2),
+                    "complex": max(12, int(configured_max * 0.75)),
+                    "expert": configured_max,
+                }
+                adaptive_max = tier_map.get(profile.tier, configured_max)
+                logger.info(
+                    "Adaptive ChunkScorer: tier=%s, max_nodes=%d (configured=%d), "
+                    "composite=%.3f",
+                    profile.tier, adaptive_max, configured_max,
+                    profile.composite,
+                )
+            except Exception:
+                adaptive_max = configured_max
 
             if self._activator is None or not isinstance(self._activator, ChunkScorer):
                 self._activator = ChunkScorer(
-                    max_nodes=self.config.activation.max_nodes,
+                    max_nodes=adaptive_max,
                 )
+            else:
+                self._activator.max_nodes = adaptive_max
             return self._activator.activate(self, query)
 
     def _direct_file_lookup(self, query: str) -> list[str] | None:

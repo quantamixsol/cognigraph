@@ -10,7 +10,7 @@ One command. Any IDE. Any AI tool. Zero cloud infrastructure.
 [![PyPI version](https://badge.fury.io/py/cognigraph.svg)](https://pypi.org/project/cognigraph/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Tests: 745 passing](https://img.shields.io/badge/tests-745%20passing-brightgreen.svg)]()
+[![Tests: 760 passing](https://img.shields.io/badge/tests-760%20passing-brightgreen.svg)]()
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)]()
 [![Patent: EP26162901.8](https://img.shields.io/badge/patent-EP26162901.8-orange.svg)](NOTICE)
 
@@ -148,7 +148,7 @@ Your Codebase ──→ kogni init ──→ Knowledge Graph (cognigraph.json)
 
 ---
 
-## 14 Innovations (Patent EP26162901.8)
+## 15 Innovations (Patent EP26162901.8)
 
 | # | Innovation | What it does |
 |---|-----------|-------------|
@@ -166,8 +166,9 @@ Your Codebase ──→ kogni init ──→ Knowledge Graph (cognigraph.json)
 | 12 | **TAMR+ Connector** | Retrieval-to-reasoning pipeline |
 | 13 | **Multi-Resolution Embeddings** | Hybrid skill matching (regex + semantic) |
 | 14 | **CypherActivation** | Neo4j vector search on chunk embeddings — bypasses graph algorithms entirely (opt-in) |
+| 15 | **Activation Memory** | Cross-query learning — remembers which nodes were useful for which query patterns (v0.12.0) |
 
-All 14 innovations are **free for every developer**. No license key required.
+All 15 innovations are **free for every developer**. No license key required.
 
 ---
 
@@ -198,7 +199,7 @@ CogniGraph follows the **open-core model**: everything a solo developer needs is
 | | Community (Free) | Team | Enterprise |
 |---|:---:|:---:|:---:|
 | **Price** | **$0 forever** | $29/dev/month | Custom |
-| All 14 innovations | ✓ | ✓ | ✓ |
+| All 15 innovations | ✓ | ✓ | ✓ |
 | All MCP tools (7 tools) | ✓ | ✓ | ✓ |
 | All backends (Ollama, Anthropic, OpenAI, Bedrock, vLLM) | ✓ | ✓ | ✓ |
 | CLI + Python SDK + REST API | ✓ | ✓ | ✓ |
@@ -232,11 +233,33 @@ CogniGraph follows the **open-core model**: everything a solo developer needs is
 
 ## Governance
 
-The **SemanticSHACLGate** enforces 3-layer semantic validation on every reasoning output:
+**Governance is self-imposed** — boundary conditions defined in your codebase (ADRs, architecture docs, dependency rules, scope boundaries) become enforced constraints on every reasoning output. No external compliance system needed — the constraints live where the code lives.
 
-1. **Framework Fidelity** — agents cite correct regulatory frameworks
-2. **Scope Boundary** — responses stay within assigned domain
-3. **Cross-Reference Integrity** — proper attribution across domains
+The **SemanticSHACLGate** enforces 3-layer semantic validation:
+
+1. **Framework Fidelity** — agents cite their own domain correctly (security modules talk security, not UI)
+2. **Scope Boundary** — responses stay within assigned boundaries (as defined by your ADRs, architecture docs, or custom constraints)
+3. **Cross-Reference Integrity** — proper attribution when crossing domain boundaries
+
+**How it works in practice:**
+- Dependencies in `package.json` / `requirements.txt` → boundary constraints
+- ADRs (Architecture Decision Records) → reasoning rules
+- Module boundaries → scope constraints
+- Import relationships → valid cross-reference paths
+
+```python
+# Example: register your codebase's architecture as governance constraints
+from cognigraph.ontology.semantic_shacl_gate import SemanticConstraint
+
+constraint = SemanticConstraint(
+    own_framework_markers=["authentication", "JWT", "session"],
+    in_scope_topics=["auth flows", "token validation", "session management"],
+    out_of_scope_topics=["UI rendering", "analytics"],
+    reasoning_rules=["Always cite specific security patterns when discussing auth"],
+)
+```
+
+See [examples/governance_example.py](examples/governance_example.py) for a complete working example.
 
 **MultiGov-30 benchmark: 99.7% governance accuracy** (FF: 100%, SB: 100%, CR: 98.3%).
 
@@ -250,11 +273,54 @@ All 14 innovations are free to use under Apache 2.0. The patent protects the spe
 
 ---
 
+## What's New in v0.12.0
+
+**The "Adapts" Release — Cross-query learning, observer overhaul, adaptive activation.**
+
+Based on detailed external testing across 8 versions (v0.7.6 → v0.10.3), this release addresses every tester feedback point:
+
+### Observer Overhaul (fixes "0% health" / "100+ false conflicts")
+- **Conflict detection redesigned:** Perspective diversity is no longer punished as contradiction. With 20 nodes reasoning in parallel, most discuss different aspects — only flag when nodes make opposing claims about the same topic with explicit negation language.
+- **3-tier detection:** Explicit (CONTRADICTION type), Strong (mutual reference + negation phrase), One-directional (small node sets only).
+- **Health score redesigned:** Capped per-category penalties prevent health from reaching 0%. Critical anomalies penalized more, perspective diversity less.
+- **Adaptive anomaly thresholds:** Confidence variance thresholds scale with node count — natural at 20 nodes, suspicious at 3.
+
+### Adaptive Node Count (fixes "always activates max_nodes")
+- **QueryComplexityScorer wired into ChunkScorer:** Simple queries activate `max_nodes/4`, moderate `max_nodes/2`, complex `max_nodes*0.75`, expert uses full `max_nodes`.
+- **Cost savings:** Simple queries ("what is X?") now use ~4 nodes instead of 50, reducing cost by 90%.
+
+### Cross-Query Learning (new — "Activation Memory")
+- **ActivationMemory:** Tracks which nodes produced useful results for which query patterns. Over time, nodes that consistently contribute high-confidence answers get activation boosts for similar future queries.
+- **Keyword-based pattern matching:** Records query keywords per node, computes overlap for future queries.
+- **Persistent:** Saved to `.cognigraph/activation_memory.json`, survives across sessions.
+- **Innovation #15:** Listed in the patent innovations table.
+
+### Scanner: Call-Graph Edges
+- **DEFINES edges:** Scanner now extracts function/class definitions and creates `DEFINES` edges from file → function nodes.
+- **Richer graph:** Graph score moves from 8/10 → 9/10 with function-level nodes.
+
+### REST API Defaults Fixed
+- **Observer enabled by default:** Rule-based observer (zero LLM cost) now runs by default, providing transparency in every query.
+
+### Governance Examples
+- **New:** `examples/governance_example.py` — working SHACL governance constraints for a software engineering codebase (not just regulatory domains).
+
+**15 new tests.** **760 tests passing** (up from 745).
+
+---
+
+## What's New in v0.11.0
+
+**CogniGraph Studio — interactive dashboard:**
+- Studio dashboard at `/studio/` with D3 graph explorer, live reasoning trace, metrics analytics, and settings UI.
+
+---
+
 ## What's New in v0.10.3
 
 **Quality over cost — budget is now a soft limit:**
 
-- **Budget no longer kills reasoning:** Previously, exceeding `budget_per_query` would hard-stop reasoning mid-flow, producing incomplete answers. Now the budget is a **soft warning** — reasoning always completes convergence. Hard stop only triggers at **2x budget AND after at least 2 rounds**, ensuring quality is never sacrificed for cost.
+- **Budget no longer kills reasoning:** Previously, exceeding `budget_per_query` would hard-stop reasoning mid-flow, producing incomplete answers. Now the budget is a **soft warning** — reasoning always completes convergence. Hard stop only triggers at **3x budget AND after at least 2 rounds**, ensuring quality is never sacrificed for cost.
 - **Philosophy:** A graph that thinks should never stop thinking because of a dollar. The budget guides, it doesn't constrain.
 - **`kogni init` budget updated** to `$0.10` (was `$0.05`).
 
