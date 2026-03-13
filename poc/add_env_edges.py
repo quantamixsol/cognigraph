@@ -1,6 +1,6 @@
 """
 add_env_edges.py — Add env-var -> Lambda REQUIRED_BY edges and svc -> svc INVOKES edges
-to cognigraph.json.
+to graqle.json.
 
 Sources:
   1. .gcc/departments/engineering-kg.md (ENVVAR REQUIREMENTS + INVOCATION CHAIN)
@@ -16,7 +16,7 @@ from pathlib import Path
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 ROOT = Path(r"c:\Users\haris\CrawlQ")
-COGNIGRAPH = ROOT / "cognigraph.json"
+COGNIGRAPH = ROOT / "graqle.json"
 BACKEND = ROOT / "crawlq-athena-eu-backend" / "SemanticGraphEU"
 
 # ── 1. Env-var requirements from project-kg.md (ground truth) ───────────────
@@ -153,7 +153,7 @@ def build_env_nodes(all_env_ids: set[str]) -> list[dict]:
                 "var_name": env_id.upper(),
                 "source": "shared/eu_config.py + handler.py scans",
             },
-            "source_file": "cognigraph/poc/add_env_edges.py",
+            "source_file": "graqle/poc/add_env_edges.py",
             "confidence": 0.95,
             "description": descriptions.get(env_id, f"Environment variable: {env_id.upper()}"),
         })
@@ -214,7 +214,7 @@ def remove_old_env_and_call_edges(links: list[dict]) -> list[dict]:
 
 
 def main():
-    # Load cognigraph.json
+    # Load graqle.json
     with open(COGNIGRAPH, "r", encoding="utf-8") as f:
         graph = json.load(f)
 
@@ -222,7 +222,7 @@ def main():
     links = graph.get("links", [])
 
     edges_before = len(links)
-    print(f"=== CogniGraph Env-Var Edge Enrichment ===")
+    print(f"=== Graqle Env-Var Edge Enrichment ===")
     print(f"Nodes before:  {len(nodes)}")
     print(f"Edges before:  {edges_before}")
 

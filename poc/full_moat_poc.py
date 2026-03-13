@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""CogniGraph Full Moat POC — All 13 Patent-Protected Innovations.
+"""Graqle Full Moat POC — All 13 Patent-Protected Innovations.
 
-Demonstrates the complete CogniGraph innovation stack running on the
+Demonstrates the complete Graqle innovation stack running on the
 CrawlQ/TraceGov codebase knowledge graph (291 nodes).
 
 Requires:
-    - Enterprise license (installed at ~/.cognigraph/license.key)
+    - Enterprise license (installed at ~/.graqle/license.key)
     - ANTHROPIC_API_KEY environment variable
-    - cognigraph.json in the project root (from `kogni ingest`)
+    - graqle.json in the project root (from `graq ingest`)
 
 Usage:
-    cd c:/Users/haris/CrawlQ/cognigraph
+    cd c:/Users/haris/CrawlQ/graqle
     python poc/full_moat_poc.py
 
 Cost estimate: ~$0.05-0.15 (Haiku for node reasoning, Sonnet for ontology)
@@ -29,64 +29,64 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cognigraph.core.graph import CogniGraph
-from cognigraph.core.node import CogniNode
-from cognigraph.core.edge import CogniEdge
-from cognigraph.core.message import Message
-from cognigraph.core.types import ReasoningType, ReasoningResult
+from graqle.core.graph import Graqle
+from graqle.core.node import CogniNode
+from graqle.core.edge import CogniEdge
+from graqle.core.message import Message
+from graqle.core.types import ReasoningType, ReasoningResult
 
 # Backends
-from cognigraph.backends.api import AnthropicBackend
-from cognigraph.backends.fallback import BackendFallbackChain
+from graqle.backends.api import AnthropicBackend
+from graqle.backends.fallback import BackendFallbackChain
 
 # Innovation 1: PCST Activation
-from cognigraph.activation.pcst import PCSTActivation
-from cognigraph.activation.relevance import RelevanceScorer
+from graqle.activation.pcst import PCSTActivation
+from graqle.activation.relevance import RelevanceScorer
 
 # Innovation 2: Master Observer
-from cognigraph.orchestration.observer import MasterObserver
+from graqle.orchestration.observer import MasterObserver
 
 # Innovation 3: Convergent Message Passing
-from cognigraph.orchestration.message_passing import MessagePassingProtocol
-from cognigraph.orchestration.convergence import ConvergenceDetector
+from graqle.orchestration.message_passing import MessagePassingProtocol
+from graqle.orchestration.convergence import ConvergenceDetector
 
 # Innovation 4: Backend Fallback (imported above)
 
 # Innovation 5: Hierarchical Aggregation
-from cognigraph.orchestration.hierarchical import HierarchicalAggregation
+from graqle.orchestration.hierarchical import HierarchicalAggregation
 
 # Innovation 6: Semantic SHACL Gate
-from cognigraph.ontology.semantic_shacl_gate import SemanticSHACLGate, SemanticConstraint
+from graqle.ontology.semantic_shacl_gate import SemanticSHACLGate, SemanticConstraint
 
 # Innovation 7: Debate Protocol
-from cognigraph.orchestration.debate import DebateProtocol
+from graqle.orchestration.debate import DebateProtocol
 
 # Innovation 8: Explanation Traces
-from cognigraph.orchestration.explanation import ExplanationTrace
+from graqle.orchestration.explanation import ExplanationTrace
 
 # Innovation 9: Constrained F1
-from cognigraph.evaluation.constrained_f1 import ConstrainedF1Evaluator
+from graqle.evaluation.constrained_f1 import ConstrainedF1Evaluator
 
 # Innovation 10: OntologyGenerator
-from cognigraph.ontology.ontology_generator import OntologyGenerator
+from graqle.ontology.ontology_generator import OntologyGenerator
 
 # Innovation 11: Adaptive Activation
-from cognigraph.activation.adaptive import AdaptiveActivation
+from graqle.activation.adaptive import AdaptiveActivation
 
 # Innovation 12: Online Graph Learning
-from cognigraph.learning.graph_learner import GraphLearner
+from graqle.learning.graph_learner import GraphLearner
 
 # Innovation 13: LoRA Auto-Selection
-from cognigraph.adapters.auto_select import AdapterAutoSelector
+from graqle.adapters.auto_select import AdapterAutoSelector
 
 # Connectors
-from cognigraph.connectors.tamr import TAMRConnector, TAMRDocument, TAMRSubgraph, PipelineConfig
+from graqle.connectors.tamr import TAMRConnector, TAMRDocument, TAMRSubgraph, PipelineConfig
 
 # Licensing
-from cognigraph.licensing.manager import _get_manager, LicenseTier
+from graqle.licensing.manager import _get_manager, LicenseTier
 
 # Config
-from cognigraph.config.settings import CogniGraphConfig
+from graqle.config.settings import GraqleConfig
 
 # ── Logging ──────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -97,7 +97,7 @@ logging.basicConfig(
 logger = logging.getLogger("poc")
 
 # ── Constants ────────────────────────────────────────────────────────────
-KG_PATH = str(Path(__file__).resolve().parent.parent.parent / "cognigraph.json")
+KG_PATH = str(Path(__file__).resolve().parent.parent.parent / "graqle.json")
 QUERY = "How does the backend fallback chain work with the PCST activation module?"
 GOV_QUERY = "What governance constraints does the SHACL gate enforce on node reasoning outputs?"
 
@@ -106,7 +106,7 @@ GOV_QUERY = "What governance constraints does the SHACL gate enforce on node rea
 # HELPER: Build a small demo graph from the real CrawlQ KG
 # ══════════════════════════════════════════════════════════════════════════
 
-def build_demo_graph(max_nodes: int = 20) -> CogniGraph:
+def build_demo_graph(max_nodes: int = 20) -> Graqle:
     """Load CrawlQ KG and extract a connected subgraph for demo."""
     if Path(KG_PATH).exists():
         logger.info(f"Loading KG from {KG_PATH}")
@@ -118,7 +118,7 @@ def build_demo_graph(max_nodes: int = 20) -> CogniGraph:
         logger.warning(f"KG not found at {KG_PATH}, building synthetic demo graph")
         nodes_raw, links_raw = _synthetic_kg()
 
-    # Build CogniGraph from raw data
+    # Build Graqle from raw data
     nodes: dict[str, CogniNode] = {}
     for n in nodes_raw[:max_nodes]:
         nid = str(n.get("id", n.get("key", "")))
@@ -151,9 +151,9 @@ def build_demo_graph(max_nodes: int = 20) -> CogniGraph:
             nodes[src].outgoing_edges.append(eid)
             nodes[tgt].incoming_edges.append(eid)
 
-    config = CogniGraphConfig.default()
+    config = GraqleConfig.default()
     config.domain = "crawlq-tracegov"
-    graph = CogniGraph(nodes=nodes, edges=edges, config=config)
+    graph = Graqle(nodes=nodes, edges=edges, config=config)
     logger.info(f"Demo graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
     return graph
 
@@ -184,7 +184,7 @@ def _synthetic_kg() -> tuple[list[dict], list[dict]]:
         {"id": "lora_selector", "label": "LoRA Auto-Selector", "type": "Module",
          "description": "Automatic adapter selection based on node entity type and domain"},
         {"id": "tamr_connector", "label": "TAMR Connector", "type": "Module",
-         "description": "Bridges TAMR+ retrieval with CogniGraph reasoning via TRACE score priors"},
+         "description": "Bridges TAMR+ retrieval with Graqle reasoning via TRACE score priors"},
         {"id": "explanation", "label": "Explanation Trace", "type": "Module",
          "description": "Full provenance tracking: who said what, who influenced whom, across rounds"},
     ]
@@ -245,7 +245,7 @@ def demo_license_verification() -> None:
     print()
 
 
-def demo_pcst_activation(graph: CogniGraph) -> list[str]:
+def demo_pcst_activation(graph: Graqle) -> list[str]:
     """Innovation 1: PCST Subgraph Activation."""
     print("\n" + "=" * 70)
     print("  INNOVATION 1: PCST SUBGRAPH ACTIVATION")
@@ -274,7 +274,7 @@ def demo_pcst_activation(graph: CogniGraph) -> list[str]:
     return selected
 
 
-def demo_adaptive_activation(graph: CogniGraph) -> None:
+def demo_adaptive_activation(graph: Graqle) -> None:
     """Innovation 11: Adaptive Activation — dynamic Kmax based on query complexity."""
     print("\n" + "=" * 70)
     print("  INNOVATION 11: ADAPTIVE ACTIVATION")
@@ -333,13 +333,13 @@ def demo_semantic_shacl_gate() -> SemanticSHACLGate:
     constraints = {
         "Module": SemanticConstraint(
             entity_type="Module",
-            framework="CogniGraph SDK",
-            own_framework_markers=["CogniGraph", "cognigraph", "SDK"],
-            scope_description="Software module within the CogniGraph graph-of-agents framework",
+            framework="Graqle SDK",
+            own_framework_markers=["Graqle", "graqle", "SDK"],
+            scope_description="Software module within the Graqle graph-of-agents framework",
             in_scope_topics=["graph reasoning", "message passing", "activation", "aggregation"],
             out_of_scope_topics=["EU AI Act articles", "GDPR provisions", "financial regulation"],
             reasoning_rules=[
-                "Module descriptions must reference CogniGraph SDK, not external regulations",
+                "Module descriptions must reference Graqle SDK, not external regulations",
                 "Technical capabilities are described, not legal interpretations",
                 "Module interactions are WITHIN the SDK graph, not external systems",
             ],
@@ -352,7 +352,7 @@ def demo_semantic_shacl_gate() -> SemanticSHACLGate:
     gate = SemanticSHACLGate(constraints=constraints)
 
     # Test valid output
-    valid_output = "The PCST activation module in CogniGraph SDK selects optimal subgraphs using prize-collecting Steiner tree algorithm. CONFIDENCE: 85%"
+    valid_output = "The PCST activation module in Graqle SDK selects optimal subgraphs using prize-collecting Steiner tree algorithm. CONFIDENCE: 85%"
     result_valid = gate.validate("Module", valid_output, QUERY)
     print(f"  Valid output test:")
     print(f"    Input:   '{valid_output[:60]}...'")
@@ -384,8 +384,8 @@ def demo_constrained_f1(gate: SemanticSHACLGate) -> None:
         constraints=gate._constraints if hasattr(gate, '_constraints') else {},
     )
 
-    prediction = "The CogniGraph SDK PCST activation module selects optimal subgraphs using prize-collecting algorithm for graph reasoning."
-    reference = "PCST activation in CogniGraph SDK uses prize-collecting Steiner tree to select the minimum-cost maximum-prize subtree for graph reasoning and message passing."
+    prediction = "The Graqle SDK PCST activation module selects optimal subgraphs using prize-collecting algorithm for graph reasoning."
+    reference = "PCST activation in Graqle SDK uses prize-collecting Steiner tree to select the minimum-cost maximum-prize subtree for graph reasoning and message passing."
 
     result = evaluator.evaluate(prediction, reference, entity_type="Module")
     print(f"  Prediction: '{prediction[:60]}...'")
@@ -401,7 +401,7 @@ def demo_constrained_f1(gate: SemanticSHACLGate) -> None:
 
 
 async def demo_observer_and_message_passing(
-    graph: CogniGraph, backend: AnthropicBackend, active_nodes: list[str]
+    graph: Graqle, backend: AnthropicBackend, active_nodes: list[str]
 ) -> dict[str, list[Message]]:
     """Innovations 2, 3, 5: Observer + Message Passing + Hierarchical Aggregation."""
     print("\n" + "=" * 70)
@@ -495,7 +495,7 @@ async def demo_observer_and_message_passing(
 
 
 async def demo_debate_protocol(
-    graph: CogniGraph, backend: AnthropicBackend, active_nodes: list[str]
+    graph: Graqle, backend: AnthropicBackend, active_nodes: list[str]
 ) -> None:
     """Innovation 7: Debate Protocol — adversarial reasoning."""
     print("\n" + "=" * 70)
@@ -569,7 +569,7 @@ def demo_explanation_trace(all_messages: dict[str, list[Message]]) -> None:
     print()
 
 
-def demo_graph_learning(graph: CogniGraph, all_messages: dict[str, list[Message]]) -> None:
+def demo_graph_learning(graph: Graqle, all_messages: dict[str, list[Message]]) -> None:
     """Innovation 12: Online Graph Learning — Bayesian edge weight updates."""
     print("\n" + "=" * 70)
     print("  INNOVATION 12: ONLINE GRAPH LEARNING")
@@ -602,15 +602,15 @@ def demo_graph_learning(graph: CogniGraph, all_messages: dict[str, list[Message]
     print()
 
 
-def demo_lora_auto_selection(graph: CogniGraph) -> None:
+def demo_lora_auto_selection(graph: Graqle) -> None:
     """Innovation 13: LoRA Auto-Selection."""
     print("\n" + "=" * 70)
     print("  INNOVATION 13: LoRA AUTO-SELECTION")
     print("=" * 70)
 
     try:
-        from cognigraph.adapters.registry import AdapterRegistry
-        from cognigraph.adapters.config import AdapterConfig
+        from graqle.adapters.registry import AdapterRegistry
+        from graqle.adapters.config import AdapterConfig
 
         registry = AdapterRegistry()
         # Register some demo adapters
@@ -680,9 +680,9 @@ def demo_tamr_connector() -> None:
         pcst_nodes_selected=2,
     )
 
-    # Convert to CogniGraph
-    cg = connector.to_cognigraph(subgraph)
-    print(f"  TAMR subgraph: {len(docs)} documents → {len(cg.nodes)} CogniGraph nodes")
+    # Convert to Graqle
+    cg = connector.to_graqle(subgraph)
+    print(f"  TAMR subgraph: {len(docs)} documents → {len(cg.nodes)} Graqle nodes")
     print(f"  TRACE scores: {[d.trace_score for d in docs]}")
     print(f"  Frameworks: {list(set(d.framework for d in docs))}")
     for nid, node in cg.nodes.items():
@@ -698,7 +698,7 @@ async def demo_ontology_generator(backend: AnthropicBackend) -> None:
 
     # Use a small sample text to keep costs low
     sample_text = """
-    CogniGraph SDK Architecture:
+    Graqle SDK Architecture:
 
     The SDK provides a graph-of-agents framework where each knowledge graph node
     is an autonomous reasoning agent. Key modules include:
@@ -717,7 +717,7 @@ async def demo_ontology_generator(backend: AnthropicBackend) -> None:
     t0 = time.time()
     owl_hierarchy, constraints = await generator.generate_from_text(
         text=sample_text,
-        domain_name="cognigraph_sdk",
+        domain_name="graqle_sdk",
         max_text_length=5000,
     )
     elapsed = (time.time() - t0) * 1000
@@ -744,15 +744,15 @@ def demo_mcp_plugin() -> None:
     print("=" * 70)
 
     try:
-        from cognigraph.plugins.mcp_server import MCPServer
+        from graqle.plugins.mcp_server import MCPServer
         print("  MCP Server available: YES")
         print("  Tools exposed:")
-        print("    • kogni_context — 500-token focused context")
-        print("    • kogni_reason  — governed reasoning query")
-        print("    • kogni_inspect — graph structure inspection")
-        print("    • kogni_search  — semantic node search")
+        print("    • graq_context — 500-token focused context")
+        print("    • graq_reason  — governed reasoning query")
+        print("    • graq_inspect — graph structure inspection")
+        print("    • graq_search  — semantic node search")
         print("  Transport: JSON-RPC 2.0 over stdio")
-        print("  Usage: `kogni mcp serve` → Claude Code auto-discovers")
+        print("  Usage: `graq mcp serve` → Claude Code auto-discovers")
     except ImportError:
         print("  MCP Server: not available (missing dependencies)")
     print()
@@ -770,7 +770,7 @@ async def main():
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
     print("+" + "=" * 70 + "+")
-    print("|              CogniGraph Full Moat POC                              |")
+    print("|              Graqle Full Moat POC                              |")
     print("|              All 13 Patent-Protected Innovations                   |")
     print("|              Running on CrawlQ/TraceGov KG                         |")
     print("+" + "=" * 70 + "+")

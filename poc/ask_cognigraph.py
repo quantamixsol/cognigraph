@@ -1,6 +1,6 @@
-"""Ask CogniGraph a real question about the CrawlQ/TraceGov KG.
+"""Ask Graqle a real question about the CrawlQ/TraceGov KG.
 
-Uses the CogniGraph SDK to reason over the 291-node CrawlQ knowledge graph
+Uses the Graqle SDK to reason over the 291-node CrawlQ knowledge graph
 to answer: "What information and tests should be done before and after
 adding a new Lambda function?"
 """
@@ -10,12 +10,12 @@ import os
 import sys
 import time
 
-# Add cognigraph to path
+# Add graqle to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from cognigraph.core.graph import CogniGraph
-from cognigraph.config.settings import CogniGraphConfig, CostConfig
-from cognigraph.backends.api import AnthropicBackend, BedrockBackend
+from graqle.core.graph import Graqle
+from graqle.config.settings import GraqleConfig, CostConfig
+from graqle.backends.api import AnthropicBackend, BedrockBackend
 
 
 async def main():
@@ -25,19 +25,19 @@ async def main():
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     print("=" * 70)
-    print("CogniGraph -- Real Question on CrawlQ/TraceGov KG")
+    print("Graqle -- Real Question on CrawlQ/TraceGov KG")
     print("=" * 70)
 
     # 1. Load the CrawlQ KG
-    kg_path = os.path.join(os.path.dirname(__file__), "..", "..", "cognigraph.json")
+    kg_path = os.path.join(os.path.dirname(__file__), "..", "..", "graqle.json")
     kg_path = os.path.abspath(kg_path)
     print(f"\nLoading KG from: {kg_path}")
 
     # Increase cost budget to $0.10 for a complete answer
-    config = CogniGraphConfig.default()
+    config = GraqleConfig.default()
     config.cost = CostConfig(budget_per_query=0.10)
 
-    graph = CogniGraph.from_json(kg_path, config=config)
+    graph = Graqle.from_json(kg_path, config=config)
     print(f"Loaded: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
     print(f"Cost budget: ${config.cost.budget_per_query}")
 
@@ -83,7 +83,7 @@ async def main():
             elif chunk.chunk_type == "final_answer":
                 chunks.append(chunk)
         # Build a result-like object from streaming
-        from cognigraph.core.types import ReasoningResult
+        from graqle.core.types import ReasoningResult
         elapsed = time.time() - start
         final = chunks[-1] if chunks else None
         result = ReasoningResult(
@@ -134,7 +134,7 @@ async def main():
     print("=" * 70)
 
     try:
-        from cognigraph.metrics import get_metrics
+        from graqle.metrics import get_metrics
         engine = get_metrics()
 
         # End session to finalize
@@ -148,15 +148,15 @@ async def main():
         queries = summary["queries"]
 
         # Cost calculation
-        # Without CogniGraph: ~25K tokens per service lookup * $0.015/1K = $0.375 each
-        # With CogniGraph: ~500 tokens per context load * $0.015/1K = $0.0075 each
+        # Without Graqle: ~25K tokens per service lookup * $0.015/1K = $0.375 each
+        # With Graqle: ~500 tokens per context load * $0.015/1K = $0.0075 each
         brute_force_cost = context_loads * 25_000 * 0.015 / 1000
-        cognigraph_cost = result.cost_usd
-        cost_saved = brute_force_cost - cognigraph_cost
+        graqle_cost = result.cost_usd
+        cost_saved = brute_force_cost - graqle_cost
 
         # Time savings
-        # Without CogniGraph: manually reading 20+ files ~15 min per question
-        # With CogniGraph: ~30 seconds
+        # Without Graqle: manually reading 20+ files ~15 min per question
+        # With Graqle: ~30 seconds
         manual_time_min = queries * 15
         cogni_time_min = elapsed / 60
 
@@ -172,14 +172,14 @@ async def main():
 
         print(f"\n  --- Cost Impact ---")
         print(f"  Brute-force cost (25K tok/svc): ${brute_force_cost:.2f}")
-        print(f"  CogniGraph actual cost:         ${cognigraph_cost:.4f}")
+        print(f"  Graqle actual cost:         ${graqle_cost:.4f}")
         print(f"  Net savings:                    ${cost_saved:.2f}")
         if brute_force_cost > 0:
-            print(f"  Cost reduction:                 {brute_force_cost / max(cognigraph_cost, 0.001):.0f}x cheaper")
+            print(f"  Cost reduction:                 {brute_force_cost / max(graqle_cost, 0.001):.0f}x cheaper")
 
         print(f"\n  --- Time Impact ---")
         print(f"  Manual analysis estimate:       ~{manual_time_min} min (reading 20+ files)")
-        print(f"  CogniGraph reasoning:           {elapsed:.1f}s ({cogni_time_min:.1f} min)")
+        print(f"  Graqle reasoning:           {elapsed:.1f}s ({cogni_time_min:.1f} min)")
         if manual_time_min > 0:
             print(f"  Time savings:                   {manual_time_min - cogni_time_min:.0f} min saved")
             print(f"  Speed improvement:              {manual_time_min * 60 / max(elapsed, 1):.0f}x faster")

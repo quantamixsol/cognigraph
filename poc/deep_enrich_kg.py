@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Deep enrichment of cognigraph.json node descriptions.
+Deep enrichment of graqle.json node descriptions.
 
 Reads 5 source files and ADR files to produce rich (100+ char) descriptions
 for every node. Target: 0 nodes with <50 char descriptions.
@@ -19,7 +19,7 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 BASE = r"C:\Users\haris\CrawlQ"
-KG_PATH = os.path.join(BASE, "cognigraph.json")
+KG_PATH = os.path.join(BASE, "graqle.json")
 
 # ---------------------------------------------------------------------------
 # 1. Load all source files
@@ -196,7 +196,7 @@ adr_title_map = {
     "099": "Document Manifest Selector: 5-signal scoring, zero-LLM, ~10ms, pre-filters irrelevant documents",
     "100": "TRACE scoring v2.2: adaptive thresholds, blended coverage (60% doc util + 40% claim ratio)",
     "101": "TraceGov GTM engineering strategy: Regulation-Led Inbound, 5 channels, 3 moats",
-    "102": "CogniGraph architecture: Graph-of-Agents SDK, each KG node = autonomous SLM agent",
+    "102": "Graqle architecture: Graph-of-Agents SDK, each KG node = autonomous SLM agent",
 }
 
 # ---------------------------------------------------------------------------
@@ -373,8 +373,8 @@ def enrich_benchmark(node):
         "Runner": "TAMR benchmark runner script at Research/benchmark/tamr_benchmark.py. Supports local and live (production) testing modes. Executes EU-RegQA questions against TAMR+ pipeline and measures TRACE scores",
         "Results": "TAMR benchmark results v1 stored at Research/benchmark/results/benchmark_results.json. Contains TRACE scores per question, pipeline latency, and cost metrics from benchmark runs",
         "Competitor": "PageIndex competitor analysis at Research/pageindex-competitor/. Completed comparison: PageIndex charges $0.50-12.00/query vs TAMR+ $0.005/query (2,300x cheaper). Limited to single-doc retrieval",
-        "HotpotQA (dev distractor)": "HotpotQA multi-hop reasoning benchmark. 100-question subset from 7,405 dev-distractor set. Tests CogniGraph graph-of-agents reasoning vs single-agent and PCST baselines. Currently running",
-        "Baselines": "CogniGraph benchmark baselines: 3 methods compared -- Single-Agent (no graph), CogniGraph-Full (all nodes active), CogniGraph-PCST (prize-collecting Steiner tree activation). MultiGov-30 accuracy: 99.7%",
+        "HotpotQA (dev distractor)": "HotpotQA multi-hop reasoning benchmark. 100-question subset from 7,405 dev-distractor set. Tests Graqle graph-of-agents reasoning vs single-agent and PCST baselines. Currently running",
+        "Baselines": "Graqle benchmark baselines: 3 methods compared -- Single-Agent (no graph), Graqle-Full (all nodes active), Graqle-PCST (prize-collecting Steiner tree activation). MultiGov-30 accuracy: 99.7%",
     }
 
     if label in bench_details:
@@ -635,11 +635,11 @@ def enrich_package(node):
             "Modules: scoring.py (TRACE 5D), gap.py (attribution), manifest.py (document selector), classifier.py (zero-LLM query classifier), "
             "extraction.py (KG), chunking.py, profiles.py (domain scoring). GitHub: quantamixsol/tamr-plus-lite"
         ),
-        "cognigraph": (
-            "CogniGraph v0.4.0 -- Graph-of-Agents distributed reasoning SDK on PyPI (pip install cognigraph). "
-            "Each KG node = autonomous SLM agent. 546 tests passing. Apache 2.0. CLI: kogni (init, scan, reason, context, mcp serve). "
+        "graqle": (
+            "Graqle v0.4.0 -- Graph-of-Agents distributed reasoning SDK on PyPI (pip install graqle). "
+            "Each KG node = autonomous SLM agent. 546 tests passing. Apache 2.0. CLI: graq (init, scan, reason, context, mcp serve). "
             "Key innovations: PCST reasoning activation, MasterObserver, convergent message passing, backend fallback chain. "
-            "Benchmarks: MultiGov-30 99.7% accuracy, cF1 0.757. GitHub: quantamixsol/cognigraph"
+            "Benchmarks: MultiGov-30 99.7% accuracy, cF1 0.757. GitHub: quantamixsol/graqle"
         ),
     }
 

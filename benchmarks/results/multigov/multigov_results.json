@@ -157,9 +157,9 @@
       }
     ]
   },
-  "cognigraph-pcst": {
+  "graqle-pcst": {
     "summary": {
-      "method": "cognigraph-pcst",
+      "method": "graqle-pcst",
       "dataset": "MultiGov-30",
       "n_questions": 10,
       "avg_em": 0.0,
@@ -185,7 +185,7 @@
         "total_tokens": 948,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A02",
@@ -199,7 +199,7 @@
         "total_tokens": 739,
         "convergence_rounds": 2,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A03",
@@ -213,7 +213,7 @@
         "total_tokens": 852,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A04",
@@ -227,7 +227,7 @@
         "total_tokens": 561,
         "convergence_rounds": 2,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A05",
@@ -241,7 +241,7 @@
         "total_tokens": 1254,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A06",
@@ -255,7 +255,7 @@
         "total_tokens": 830,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A07",
@@ -269,7 +269,7 @@
         "total_tokens": 215,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A08",
@@ -283,7 +283,7 @@
         "total_tokens": 285,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A09",
@@ -297,7 +297,7 @@
         "total_tokens": 857,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       },
       {
         "question_id": "MG-A10",
@@ -311,7 +311,7 @@
         "total_tokens": 385,
         "convergence_rounds": 3,
         "active_nodes": 8,
-        "method": "cognigraph-pcst"
+        "method": "graqle-pcst"
       }
     ]
   }

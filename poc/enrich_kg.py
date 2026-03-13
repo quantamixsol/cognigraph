@@ -1,7 +1,7 @@
-"""Enrich cognigraph.json nodes with descriptions from source files.
+"""Enrich graqle.json nodes with descriptions from source files.
 
 Reads the actual content from engineering-kg.md, lessons-distilled.md,
-and other sources to populate node descriptions so CogniGraph agents
+and other sources to populate node descriptions so Graqle agents
 have real knowledge to reason from.
 """
 
@@ -114,7 +114,7 @@ def enrich_from_engineering_kg(text, descriptions):
 
 
 def main():
-    kg_path = os.path.join(os.path.dirname(__file__), "..", "..", "cognigraph.json")
+    kg_path = os.path.join(os.path.dirname(__file__), "..", "..", "graqle.json")
     kg_path = os.path.abspath(kg_path)
 
     print(f"Loading KG from: {kg_path}")

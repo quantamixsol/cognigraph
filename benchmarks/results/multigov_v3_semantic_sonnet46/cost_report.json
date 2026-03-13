@@ -11,7 +11,7 @@
   },
   "cost_summary": {
     "single_agent_total_cost": 1.986222,
-    "cognigraph_total_cost": 0.0,
+    "graqle_total_cost": 0.0,
     "total_benchmark_cost": 1.986222
   },
   "per_question_log": [
