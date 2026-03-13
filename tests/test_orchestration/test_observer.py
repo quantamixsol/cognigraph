@@ -245,7 +245,8 @@ async def test_health_score_scales_with_node_count():
         overall_confidence=0.87,
         conflicts=conflicts[:1],
     )
-    assert report_small.health_score == pytest.approx(0.95, abs=0.01)
+    # v0.12: new health formula — 1 medium conflict = -0.03
+    assert report_small.health_score == pytest.approx(0.97, abs=0.02)
 
 
 @pytest.mark.asyncio

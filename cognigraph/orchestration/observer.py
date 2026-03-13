@@ -361,14 +361,39 @@ class MasterObserver:
     def _detect_conflicts(
         self, messages: dict[str, Message], round_num: int
     ) -> None:
-        """Detect contradictions between node outputs."""
+        """Detect genuine contradictions between node outputs.
+
+        v0.12 overhaul: perspective diversity is NOT conflict.
+        With 20 nodes reasoning in parallel (ChunkScorer era), most nodes
+        discuss DIFFERENT aspects of the query. Only flag a conflict when
+        nodes make OPPOSING claims about the SAME topic.
+
+        Detection tiers:
+        - Explicit: node uses CONTRADICTION reasoning type → always flag
+        - Strong: both nodes reference each other AND use negation language
+        - Weak (suppressed at >8 nodes): one-directional reference + keyword
+        """
         msg_list = list(messages.items())
+        num_nodes = len(messages)
+
+        # Negation patterns that indicate genuine disagreement (not just
+        # different perspectives). Require verb negation, not just the
+        # presence of words like "but" which are normal in analysis.
+        _strong_contra = {
+            "is incorrect", "is wrong", "this contradicts",
+            "disagree with", "opposes", "but actually",
+            "that is not true", "inaccurate", "misrepresents",
+            "fails to account", "does not align",
+        }
+
         for i in range(len(msg_list)):
             for j in range(i + 1, len(msg_list)):
                 node_a, msg_a = msg_list[i]
                 node_b, msg_b = msg_list[j]
 
-                # Check if either message flags a contradiction
+                # Tier 1: Explicit CONTRADICTION reasoning type
+                # When a node explicitly declares CONTRADICTION, trust it.
+                # This is a strong signal from the reasoning engine itself.
                 if (msg_a.reasoning_type == ReasoningType.CONTRADICTION
                         or msg_b.reasoning_type == ReasoningType.CONTRADICTION):
                     self._conflicts.append(ConflictPair(
@@ -381,37 +406,37 @@ class MasterObserver:
                     ))
                     continue
 
-                # Check for semantic contradiction signals.
-                # With many nodes (>5), require BOTH nodes to reference
-                # each other AND use contradiction words — reduces false
-                # positives from perspective diversity (Bug 23).
-                contra_words = {"contradict", "disagree", "incorrect",
-                               "wrong", "oppose", "but actually"}
                 a_lower = msg_a.content.lower()
                 b_lower = msg_b.content.lower()
 
-                num_nodes = len(messages)
+                # Tier 2: Strong — mutual reference + strong negation phrase
+                references_each_other = (
+                    node_b.lower() in a_lower and node_a.lower() in b_lower
+                )
+                strong_hits = sum(
+                    1 for phrase in _strong_contra
+                    if phrase in a_lower or phrase in b_lower
+                )
+                if references_each_other and strong_hits >= 1:
+                    self._conflicts.append(ConflictPair(
+                        node_a=node_a,
+                        node_b=node_b,
+                        claim_a=msg_a.content[:200],
+                        claim_b=msg_b.content[:200],
+                        round_detected=round_num,
+                        severity="medium",
+                    ))
+                    continue
+
+                # Tier 3: One-directional — only for small node counts (≤5)
+                # where perspective diversity is limited. With strong
+                # negation language, this is still a meaningful signal.
+                # Suppressed for >5 nodes to avoid false positive flood.
                 if num_nodes <= 5:
-                    # Original logic: one-directional reference + keyword
-                    if (node_b in a_lower or node_a in b_lower) and \
-                       any(w in a_lower or w in b_lower for w in contra_words):
-                        self._conflicts.append(ConflictPair(
-                            node_a=node_a,
-                            node_b=node_b,
-                            claim_a=msg_a.content[:200],
-                            claim_b=msg_b.content[:200],
-                            round_detected=round_num,
-                            severity="medium",
-                        ))
-                else:
-                    # Stricter: require at least 2 contradiction keywords
-                    # across both messages to flag as conflict
-                    keyword_hits = sum(
-                        1 for w in contra_words
-                        if w in a_lower or w in b_lower
+                    one_directional = (
+                        node_b.lower() in a_lower or node_a.lower() in b_lower
                     )
-                    references_each_other = (node_b in a_lower and node_a in b_lower)
-                    if references_each_other and keyword_hits >= 2:
+                    if one_directional and strong_hits >= 1:
                         self._conflicts.append(ConflictPair(
                             node_a=node_a,
                             node_b=node_b,
@@ -424,7 +449,17 @@ class MasterObserver:
     def _detect_anomalies(
         self, messages: dict[str, Message], round_num: int
     ) -> None:
-        """Detect anomalies in reasoning behavior."""
+        """Detect anomalies in reasoning behavior.
+
+        v0.12: Adaptive thresholds based on node count. With 20 nodes,
+        confidence variance is expected — raise thresholds to avoid
+        flooding the report with false anomalies.
+        """
+        num_nodes = len(messages)
+        # Adaptive confidence delta threshold: stricter for few nodes,
+        # more lenient for many (perspective diversity causes natural variance)
+        conf_delta_threshold = 0.3 if num_nodes <= 5 else 0.5
+
         for node_id, msg in messages.items():
             history = self._node_history.get(node_id, [])
 
@@ -438,13 +473,15 @@ class MasterObserver:
                     severity="high",
                 ))
 
-            # Confidence spike/drop (>30% change between rounds)
+            # Confidence spike/drop — adaptive threshold
             if len(history) >= 2:
                 prev_conf = history[-2].confidence
                 curr_conf = msg.confidence
                 delta = abs(curr_conf - prev_conf)
-                if delta > 0.3:
+                if delta > conf_delta_threshold:
                     direction = "spike" if curr_conf > prev_conf else "drop"
+                    # Only flag as high severity for extreme swings
+                    severity = "high" if delta > 0.6 else "medium"
                     self._anomalies.append(AnomalyFlag(
                         anomaly_type=f"confidence_{direction}",
                         node_id=node_id,
@@ -453,20 +490,22 @@ class MasterObserver:
                             f"(Δ={delta:.0%})"
                         ),
                         round=round_num,
-                        severity="medium" if delta < 0.5 else "high",
+                        severity=severity,
                     ))
 
-            # Self-contradiction (contradicts own previous message)
+            # Self-contradiction — require stronger signals than just
+            # "actually" (which is common in normal reasoning refinement)
             if len(history) >= 2:
-                prev = history[-2].content.lower()
                 curr = msg.content.lower()
-                contra_signals = ["actually", "i was wrong", "correction",
-                                 "i now believe", "reconsidering"]
-                if any(s in curr for s in contra_signals):
+                strong_self_contra = [
+                    "i was wrong", "my previous answer was incorrect",
+                    "correction:", "i now realize my earlier",
+                ]
+                if any(s in curr for s in strong_self_contra):
                     self._anomalies.append(AnomalyFlag(
                         anomaly_type="contradicts_self",
                         node_id=node_id,
-                        description="Node appears to contradict its own previous position",
+                        description="Node explicitly contradicts its own previous position",
                         round=round_num,
                         severity="low",
                     ))

@@ -102,10 +102,11 @@ def _incremental_scan(root: Path, changed_files: list[str]) -> tuple[list[dict],
                     "relationship": "CONTAINS",
                 })
 
-            # Parse imports
+            # Parse imports + function definitions + calls (v0.12)
             try:
                 content = fpath.read_text(errors="ignore")
                 if fpath.suffix in py_exts:
+                    # Imports
                     for match in re.finditer(
                         r"(?:from|import)\s+([\w.]+)", content
                     ):
@@ -117,7 +118,27 @@ def _incremental_scan(root: Path, changed_files: list[str]) -> tuple[list[dict],
                                 "target": target,
                                 "relationship": "IMPORTS",
                             })
+                    # Function definitions → DEFINES edges
+                    for match in re.finditer(
+                        r"(?:def|class)\s+(\w+)", content
+                    ):
+                        func_name = match.group(1)
+                        func_id = f"{file_id}::{func_name}"
+                        if func_id not in node_ids:
+                            nodes.append({
+                                "id": func_id,
+                                "label": func_name,
+                                "type": "Function",
+                                "description": f"Function/Class {func_name} in {rel_path}",
+                            })
+                            node_ids.add(func_id)
+                        edges.append({
+                            "source": file_id,
+                            "target": func_id,
+                            "relationship": "DEFINES",
+                        })
                 elif fpath.suffix in js_exts:
+                    # Imports
                     for match in re.finditer(
                         r"""(?:import|require)\s*\(?\s*['"]([./][^'"]+)['"]\s*\)?""",
                         content,
@@ -126,6 +147,25 @@ def _incremental_scan(root: Path, changed_files: list[str]) -> tuple[list[dict],
                             "source": file_id,
                             "target": match.group(1),
                             "relationship": "IMPORTS",
+                        })
+                    # Function/component definitions → DEFINES edges
+                    for match in re.finditer(
+                        r"(?:function|const|class)\s+(\w+)", content
+                    ):
+                        func_name = match.group(1)
+                        func_id = f"{file_id}::{func_name}"
+                        if func_id not in node_ids:
+                            nodes.append({
+                                "id": func_id,
+                                "label": func_name,
+                                "type": "Function",
+                                "description": f"Function/Component {func_name} in {rel_path}",
+                            })
+                            node_ids.add(func_id)
+                        edges.append({
+                            "source": file_id,
+                            "target": func_id,
+                            "relationship": "DEFINES",
                         })
             except Exception:
                 pass
