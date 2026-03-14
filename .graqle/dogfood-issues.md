@@ -34,7 +34,29 @@
 
 ## Open Issues
 
-_None — all resolved in v0.21.1._
+### DF-005: `_save_graph_data` doesn't validate before overwriting
+- **Severity:** P1
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** MagicMock leak from test wrote mock strings into `graqle.json` `directed`/`multigraph` fields, wiping all 3,991 nodes to empty arrays.
+- **Expected:** Save function validates graph data before overwriting — checks directed/multigraph are booleans, nodes list is non-empty.
+- **Actual:** Save blindly overwrites. Corrupted graph saved with MagicMock strings and 0 nodes.
+- **Workaround:** Restore from git: `git checkout HEAD -- graqle.json`
+- **Root cause:** No guard rails on `_save_graph_data()` — any caller can write garbage. Test mock contamination reached production save path.
+- **Proposed fix:** Add pre-write validation: (1) check types, (2) refuse to save if node count drops >50% without `--force`, (3) write to `.tmp` then atomic rename.
+
+### DF-006: Concurrent `graq learn knowledge` writes cause data loss
+- **Severity:** P2
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** Run 4+ `graq learn knowledge` commands in parallel (background processes)
+- **Expected:** All knowledge nodes saved to graph
+- **Actual:** Race condition — concurrent reads and writes to graqle.json cause some nodes to be lost (22 → 20 in one test)
+- **Workaround:** Run `graq learn knowledge` commands sequentially, not in parallel
+- **Root cause:** No file-level locking on `graqle.json` writes. Multiple processes read same state, add their node, write back — last write wins, losing earlier additions.
+- **Proposed fix:** Implement cross-platform file locking (Windows: `msvcrt.locking`, Unix: `fcntl.flock`) as noted in ADR-108.
 
 ---
 
