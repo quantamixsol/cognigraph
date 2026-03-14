@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "cognigraph": {
+    "graqle": {
       "command": "c:/users/haris/appdata/local/packages/pythonsoftwarefoundation.python.3.10_qbz5n2kfra8p0/localcache/local-packages/python310/Scripts/graq.exe",
       "args": ["mcp", "serve", "--config", "graqle.yaml"],
       "env": {
