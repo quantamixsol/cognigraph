@@ -1,0 +1,15 @@
+{
+  "files_scanned": 396,
+  "total_files": 0,
+  "progress_pct": 0.0,
+  "total_nodes": 6354,
+  "total_edges": 6120,
+  "chunk_coverage": 100.0,
+  "description_coverage": 100.0,
+  "edge_integrity": 100.0,
+  "health": "HEALTHY",
+  "auto_repairs": 2111,
+  "degraded_nodes": 0,
+  "parse_failures": 0,
+  "insights_count": 136
+}

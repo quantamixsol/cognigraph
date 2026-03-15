@@ -32,9 +32,82 @@
 
 ---
 
-## Open Issues
+## Open Issues (from CrawlQ Studio project — v0.21.1)
 
-_No open issues._
+### DF-007: `exclude_patterns` not respected during `graq init` scan
+- **Severity:** P1
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** Set `scan.docs.exclude_patterns: ["crawlq-ui/", "crawlq-lambda/"]` in graqle.yaml, run `graq init`
+- **Expected:** Excluded directories skipped
+- **Actual:** Both excluded dirs scanned (95% of 3,939 nodes were from excluded sources)
+- **Root cause:** CLI commands never read `config.scan.docs.exclude_patterns`. DocumentScanner supports it, but CLI never passes it.
+
+### DF-008: `scan_dirs` config field is dead code
+- **Severity:** P1
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** Set `scan.docs.scan_dirs: [".", "../sibling-repo"]` — sibling repo produces 0 nodes
+- **Root cause:** `scan_dirs` defined in DocScanConfig but never read by any CLI command. All scanner invocations hardcode path from CLI arguments.
+
+### DF-009: `graq scan docs` ignores `exclude_patterns` from config
+- **Severity:** P1
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** `graq scan docs --verbose` with exclude_patterns set in graqle.yaml
+- **Root cause:** `scan_docs()` creates DocScanOptions without reading config exclude_patterns (defaults to empty list). No `--exclude` CLI flag exists either.
+
+### DF-010: `graq link merge` overwrites target instead of merging into existing
+- **Severity:** P2
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** `graq link merge a.json b.json --output graqle.json` (where graqle.json has learned/enriched data)
+- **Expected:** New nodes merged INTO existing enriched graph
+- **Actual:** `Path.write_text()` truncates and overwrites — all learned knowledge lost
+- **Impact:** Lost ~796 knowledge nodes and learned edges
+
+### DF-011: `graq ingest` extracts 0 entities from ADR markdown files
+- **Severity:** P2
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** `graq ingest --sources ".gsm/decisions/*.md" --merge --verbose`
+- **Root cause:** Markdown KG parser only recognizes `## Nodes` / `## Edges` table format, not ADR-style (Context/Decision/Consequences)
+
+### DF-012: `graq doctor` shows wrong backend
+- **Severity:** P3
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** Config says `backend: bedrock`, doctor shows "Backend: GPT (OpenAI)"
+- **Root cause:** Doctor checks installed packages via `importlib.import_module()` not configured backend from graqle.yaml
+
+### DF-013: `graq metrics` shows stale graph stats
+- **Severity:** P3
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** After scan/learn/ingest, `graq metrics` still shows node counts from initial init
+- **Root cause:** Graph stats only captured during `graq init`, not updated after subsequent operations
+
+### DF-014: `graq init` modifies graqle.yaml despite `--no-*` flags
+- **Severity:** P3
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Root cause:** Init merges its own defaults into existing graqle.yaml, replacing user comments and formatting
+
+### DF-015: `graq learn discover --semantic` hangs on large graphs
+- **Severity:** P3
+- **Found:** 2026-03-14
+- **Version:** v0.21.1
+- **Status:** OPEN
+- **Repro:** `graq learn discover --from handler.py --depth 3 --semantic` on 6K+ node graph
+- **Root cause:** No progress indicator or timeout mechanism. Users think tool is frozen.
 
 ---
 

@@ -1,8 +1,8 @@
 {
   "init_timestamp": "2026-03-12T00:27:27.998606+00:00",
-  "context_loads": 3842,
-  "queries": 857,
-  "tokens_saved": 48090158,
+  "context_loads": 7195,
+  "queries": 1621,
+  "tokens_saved": 54780536,
   "mistakes_prevented": 0,
   "lessons_applied": 1,
   "safety_checks": 0,
@@ -210,64 +210,64 @@
       "last_accessed": "2026-03-12T00:27:28.035225+00:00"
     },
     "n1": {
-      "count": 551,
-      "last_accessed": "2026-03-13T22:31:52.429222+00:00"
+      "count": 1038,
+      "last_accessed": "2026-03-15T22:34:06.108316+00:00"
     },
     "n2": {
-      "count": 551,
-      "last_accessed": "2026-03-13T22:31:52.430465+00:00"
+      "count": 1038,
+      "last_accessed": "2026-03-15T22:34:06.109090+00:00"
     },
     "n3": {
-      "count": 551,
-      "last_accessed": "2026-03-13T22:31:52.430465+00:00"
+      "count": 1038,
+      "last_accessed": "2026-03-15T22:34:06.110103+00:00"
     },
     "n4": {
-      "count": 551,
-      "last_accessed": "2026-03-13T22:31:52.431476+00:00"
+      "count": 1038,
+      "last_accessed": "2026-03-15T22:34:06.111105+00:00"
     },
     "n5": {
-      "count": 551,
-      "last_accessed": "2026-03-13T22:31:52.432480+00:00"
+      "count": 1038,
+      "last_accessed": "2026-03-15T22:34:06.112206+00:00"
     },
     "gdpr": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:34.669666+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:33.012725+00:00"
     },
     "ai_act": {
-      "count": 244,
-      "last_accessed": "2026-03-13T22:31:45.401895+00:00"
+      "count": 460,
+      "last_accessed": "2026-03-15T22:33:58.893973+00:00"
     },
     "art22": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:34.670669+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:33.012725+00:00"
     },
     "art6": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:34.671672+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:33.015758+00:00"
     },
     "consent": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:34.672694+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:33.015758+00:00"
     },
     "transparency": {
-      "count": 244,
-      "last_accessed": "2026-03-13T22:31:45.402900+00:00"
+      "count": 460,
+      "last_accessed": "2026-03-15T22:33:58.895481+00:00"
     },
     "hub": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:36.965712+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:35.653775+00:00"
     },
     "leaf1": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:36.966715+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:35.654777+00:00"
     },
     "leaf2": {
-      "count": 61,
-      "last_accessed": "2026-03-13T22:30:36.967764+00:00"
+      "count": 115,
+      "last_accessed": "2026-03-15T22:32:35.656088+00:00"
     },
     "high_risk": {
-      "count": 122,
-      "last_accessed": "2026-03-13T22:31:45.402900+00:00"
+      "count": 230,
+      "last_accessed": "2026-03-15T22:33:58.895481+00:00"
     }
   },
   "graph_stats": {
@@ -313,6 +313,16 @@
       "CONFLICTS_WITH": 1,
       "REFERENCES": 1
     },
-    "captured_at": "2026-03-13T22:31:52.433706+00:00"
+    "captured_at": "2026-03-15T22:34:06.112530+00:00"
+  },
+  "caller_stats": {
+    "dogfood-visual-planning": {
+      "queries": 1,
+      "last_seen": "2026-03-15T12:06:09.051351+00:00"
+    },
+    "dogfood": {
+      "queries": 5,
+      "last_seen": "2026-03-15T12:06:28.357904+00:00"
+    }
   }
 }

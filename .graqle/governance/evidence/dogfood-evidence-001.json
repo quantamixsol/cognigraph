@@ -1,0 +1,180 @@
+{
+  "chain_id": "dogfood-evidence-001",
+  "task": "Build governance layer",
+  "started": "2026-03-15T11:57:29.666363+00:00",
+  "decisions": [
+    {
+      "decision_id": "d-audit",
+      "timestamp": "2026-03-15T11:57:29.666363+00:00",
+      "action": "create",
+      "target": "graqle.intelligence.governance.audit",
+      "reasoning": "Built audit as part of TAMR+ governance mapping",
+      "agent": "",
+      "evidence": [
+        {
+          "type": "module_packet",
+          "source": "graqle.intelligence.governance.audit",
+          "content": "Risk: MEDIUM, Impact: 0 modules, Functions: 0",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.audit",
+          "content": "immutable entries",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "impact_analysis",
+          "source": "graqle.intelligence.governance.audit",
+          "content": "Consumed by 2 modules: middleware, drace",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "outcome": "pending",
+      "risk_level": "LOW",
+      "drace_score": null
+    },
+    {
+      "decision_id": "d-drace",
+      "timestamp": "2026-03-15T11:57:29.666363+00:00",
+      "action": "create",
+      "target": "graqle.intelligence.governance.drace",
+      "reasoning": "Built drace as part of TAMR+ governance mapping",
+      "agent": "",
+      "evidence": [
+        {
+          "type": "module_packet",
+          "source": "graqle.intelligence.governance.drace",
+          "content": "Risk: LOW, Impact: 0 modules, Functions: 0",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.drace",
+          "content": "TRACE alignment",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "impact_analysis",
+          "source": "graqle.intelligence.governance.drace",
+          "content": "Consumed by 1 modules: middleware",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "outcome": "pending",
+      "risk_level": "LOW",
+      "drace_score": null
+    },
+    {
+      "decision_id": "d-evidence",
+      "timestamp": "2026-03-15T11:57:29.666363+00:00",
+      "action": "create",
+      "target": "graqle.intelligence.governance.evidence",
+      "reasoning": "Built evidence as part of TAMR+ governance mapping",
+      "agent": "",
+      "evidence": [
+        {
+          "type": "module_packet",
+          "source": "graqle.intelligence.governance.evidence",
+          "content": "Risk: LOW, Impact: 0 modules, Functions: 0",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.evidence",
+          "content": "chain integrity",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "impact_analysis",
+          "source": "graqle.intelligence.governance.evidence",
+          "content": "Consumed by 1 modules: middleware",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "outcome": "pending",
+      "risk_level": "LOW",
+      "drace_score": null
+    },
+    {
+      "decision_id": "d-scope_gate",
+      "timestamp": "2026-03-15T11:57:29.666363+00:00",
+      "action": "create",
+      "target": "graqle.intelligence.governance.scope_gate",
+      "reasoning": "Built scope_gate as part of TAMR+ governance mapping",
+      "agent": "",
+      "evidence": [
+        {
+          "type": "module_packet",
+          "source": "graqle.intelligence.governance.scope_gate",
+          "content": "Risk: LOW, Impact: 0 modules, Functions: 0",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.scope_gate",
+          "content": "scope validation",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "outcome": "pending",
+      "risk_level": "LOW",
+      "drace_score": null
+    },
+    {
+      "decision_id": "d-middleware",
+      "timestamp": "2026-03-15T11:57:29.666363+00:00",
+      "action": "create",
+      "target": "graqle.intelligence.governance.middleware",
+      "reasoning": "Built middleware as part of TAMR+ governance mapping",
+      "agent": "",
+      "evidence": [
+        {
+          "type": "module_packet",
+          "source": "graqle.intelligence.governance.middleware",
+          "content": "Risk: MEDIUM, Impact: 0 modules, Functions: 0",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.middleware",
+          "content": "thin wrapper",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "constraint",
+          "source": "graqle.intelligence.governance.middleware",
+          "content": "no monolith",
+          "confidence": 1.0,
+          "metadata": {}
+        },
+        {
+          "type": "impact_analysis",
+          "source": "graqle.intelligence.governance.middleware",
+          "content": "Consumed by 1 modules: mcp_dev_server",
+          "confidence": 1.0,
+          "metadata": {}
+        }
+      ],
+      "outcome": "pending",
+      "risk_level": "LOW",
+      "drace_score": null
+    }
+  ],
+  "status": "completed",
+  "final_outcome": "Governance layer built and tested",
+  "final_drace_score": 0.986
+}

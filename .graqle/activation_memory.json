@@ -1,8 +1,8 @@
 {
-  "total_queries": 322,
+  "total_queries": 1080,
   "records": {
     "n1": {
-      "activations": 207,
+      "activations": 694,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -29,7 +29,7 @@
       ]
     },
     "n2": {
-      "activations": 207,
+      "activations": 694,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -56,7 +56,7 @@
       ]
     },
     "n3": {
-      "activations": 207,
+      "activations": 694,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -83,7 +83,7 @@
       ]
     },
     "n4": {
-      "activations": 207,
+      "activations": 694,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -110,7 +110,7 @@
       ]
     },
     "n5": {
-      "activations": 207,
+      "activations": 694,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -137,7 +137,7 @@
       ]
     },
     "gdpr": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -164,7 +164,7 @@
       ]
     },
     "ai_act": {
-      "activations": 92,
+      "activations": 308,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -191,7 +191,7 @@
       ]
     },
     "art22": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -218,7 +218,7 @@
       ]
     },
     "art6": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -245,7 +245,7 @@
       ]
     },
     "consent": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -272,7 +272,7 @@
       ]
     },
     "transparency": {
-      "activations": 92,
+      "activations": 308,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -299,7 +299,7 @@
       ]
     },
     "hub": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -326,7 +326,7 @@
       ]
     },
     "leaf1": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -353,7 +353,7 @@
       ]
     },
     "leaf2": {
-      "activations": 23,
+      "activations": 77,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
@@ -380,7 +380,7 @@
       ]
     },
     "high_risk": {
-      "activations": 46,
+      "activations": 154,
       "useful_activations": 0,
       "avg_confidence": 0.0,
       "query_patterns": [
