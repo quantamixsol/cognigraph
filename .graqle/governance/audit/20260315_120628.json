@@ -1,0 +1,24 @@
+{
+  "session_id": "20260315_120628",
+  "started": "2026-03-15T12:06:28.467224+00:00",
+  "task": "gate:graqle.intelligence.gate",
+  "status": "active",
+  "entries": [
+    {
+      "timestamp": "2026-03-15T12:06:28.467224+00:00",
+      "action": "gate",
+      "tool": "graq_gate",
+      "module": "graqle.intelligence.gate",
+      "input_summary": "Module: graqle.intelligence.gate, Action: context",
+      "output_summary": "Risk: LOW, Impact: 1",
+      "evidence_count": 2,
+      "nodes_consulted": 0,
+      "duration_ms": 0.0,
+      "caller": "",
+      "metadata": {},
+      "entry_hash": "88ba577a51095998",
+      "prev_hash": ""
+    }
+  ],
+  "drace_score": null
+}

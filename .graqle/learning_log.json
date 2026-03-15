@@ -1,0 +1,15 @@
+{
+  "total_learning_events": 0,
+  "total_recompiles": 1,
+  "domain_counts": {},
+  "skill_activations": {},
+  "events": [
+    {
+      "type": "recompile",
+      "trigger": "staleness_auto",
+      "modules_updated": 396,
+      "duration_seconds": 73.4,
+      "timestamp": "2026-03-15T22:42:39.600151+00:00"
+    }
+  ]
+}

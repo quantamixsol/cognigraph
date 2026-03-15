@@ -1,0 +1,24 @@
+{
+  "session_id": "20260315_120609",
+  "started": "2026-03-15T12:06:09.194815+00:00",
+  "task": "reason:What are the highest-impact visual surfaces for a ",
+  "status": "active",
+  "entries": [
+    {
+      "timestamp": "2026-03-15T12:06:09.205132+00:00",
+      "action": "reason",
+      "tool": "graq_reason",
+      "module": "What are the highest-impact visual surfaces for a ",
+      "input_summary": "Question: What are the highest-impact visual surfaces for a Studio dashboard that would showcase the intellige",
+      "output_summary": "Answer: No reasoning produced.",
+      "evidence_count": 0,
+      "nodes_consulted": 0,
+      "duration_ms": 46.999999991385266,
+      "caller": "dogfood-visual-planning",
+      "metadata": {},
+      "entry_hash": "fa5c669d28e7ae3e",
+      "prev_hash": ""
+    }
+  ],
+  "drace_score": null
+}

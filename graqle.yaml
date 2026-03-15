@@ -2,7 +2,12 @@
 # "Evolving Graqle with Graqle"
 
 graph:
-  path: graqle.json
+  connector: neo4j
+  uri: bolt://localhost:7687
+  username: neo4j
+  password: graqle2026
+  database: graqle
+  path: graqle.json  # JSON fallback if Neo4j unavailable
   auto_grow: true
 
 model:
