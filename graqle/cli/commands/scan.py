@@ -672,6 +672,7 @@ class RepoScanner:
         exclude_patterns: list[str] | None = None,
         follow_repos: bool = False,
         include_docs: bool = False,
+        max_files: int = 0,
     ) -> None:
         self.root = root.resolve()
         self.max_depth = max_depth
@@ -679,6 +680,7 @@ class RepoScanner:
         self.verbose = verbose
         self.follow_repos = follow_repos
         self.include_docs = include_docs
+        self.max_files = max_files
 
         self.py_analyzer = PythonAnalyzer()
         self.js_analyzer = JSAnalyzer()
@@ -784,6 +786,10 @@ class RepoScanner:
         files: list[Path] = []
         for item in self._walk(self.root, depth=0):
             files.append(item)
+        if self.max_files > 0 and len(files) > self.max_files:
+            if self.verbose:
+                console.print(f"[yellow]Limiting scan to {self.max_files} of {len(files)} files[/yellow]")
+            files = files[:self.max_files]
         return files
 
     def _walk(self, directory: Path, depth: int) -> list[Path]:
@@ -1932,6 +1938,7 @@ def _scan_repo_impl(
     config: str | None = None,
     follow_repos: bool = False,
     docs: bool = False,
+    max_files: int = 0,
 ) -> None:
     """Core scan logic — no Typer decorators. Safe to call from Python."""
     if verbose:
@@ -1988,6 +1995,7 @@ def _scan_repo_impl(
         exclude_patterns=all_excludes or None,
         follow_repos=follow_repos,
         include_docs=docs,
+        max_files=max_files,
     )
 
     data = scanner.scan()
@@ -2084,6 +2092,10 @@ def scan_repo(
         False, "--docs",
         help="Include .md documentation files (ADRs, plans, changelogs) as graph nodes",
     ),
+    max_files: int = typer.Option(
+        0, "--max-files",
+        help="Max files to analyze (0=unlimited). Safety valve for very large repos.",
+    ),
 ) -> None:
     """Scan a code repository and build a knowledge graph.
 
@@ -2096,7 +2108,7 @@ def scan_repo(
     _scan_repo_impl(
         path=path, output=output, depth=depth, include_tests=include_tests,
         verbose=verbose, exclude=exclude, config=config,
-        follow_repos=follow_repos, docs=docs,
+        follow_repos=follow_repos, docs=docs, max_files=max_files,
     )
 
 
