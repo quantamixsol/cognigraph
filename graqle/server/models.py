@@ -1,4 +1,4 @@
-"""Pydantic request/response models for the Graqle API server."""
+"""Pydantic request/response models for the GraQle API server."""
 
 # ── graqle:intelligence ──
 # module: graqle.server.models

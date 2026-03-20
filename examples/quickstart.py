@@ -1,4 +1,4 @@
-"""Graqle Quickstart — 5-minute demo with mock backend.
+"""GraQle Quickstart — 5-minute demo with mock backend.
 
 This example creates a small regulatory knowledge graph,
 assigns mock agents to each node, and runs a reasoning query.
@@ -66,7 +66,7 @@ async def main():
     # 1. Create graph
     G = create_regulatory_graph()
 
-    # 2. Build Graqle from NetworkX
+    # 2. Build GraQle from NetworkX
     graph = Graqle.from_networkx(G)
     print(f"Created: {graph}")
     print(f"Stats: {graph.stats}")

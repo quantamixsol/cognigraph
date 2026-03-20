@@ -1,6 +1,6 @@
 """graq team — team management commands.
 
-Manage your Graqle team for shared knowledge graphs.
+Manage your GraQle team for shared knowledge graphs.
 Team features require the Team plan ($29/dev/mo).
 
 Commands:
@@ -30,7 +30,7 @@ console = Console()
 
 team_app = typer.Typer(
     name="team",
-    help="Manage your Graqle team for shared knowledge graphs (Team plan).",
+    help="Manage your GraQle team for shared knowledge graphs (Team plan).",
     no_args_is_help=True,
 )
 
@@ -51,7 +51,7 @@ def _check_team_gate() -> bool:
         f"[bold yellow]Team features require Team plan[/bold yellow]\n\n"
         f"  Your plan: [bold]{plan.title()}[/bold]\n"
         f"  Required:  [bold cyan]Team[/bold cyan] ({PLAN_PRICING['team']['price']})\n\n"
-        f"[green]Why teams love Graqle Cloud:[/green]\n"
+        f"[green]Why teams love GraQle Cloud:[/green]\n"
         f"  * One developer teaches the graph, [bold]everyone benefits[/bold]\n"
         f"  * New team members onboard in seconds (not weeks)\n"
         f"  * Cloud observability — track graph health, usage, ROI\n"
@@ -119,7 +119,7 @@ def team_create(
         f"  1. Invite team members:  [cyan]graq team invite alice@company.com[/cyan]\n"
         f"  2. Push your graph:      [cyan]graq sync push[/cyan]\n"
         f"  3. Team members pull:    [cyan]graq sync pull[/cyan]\n\n"
-        f"[dim]Your team's knowledge graph will be hosted on Graqle Cloud.[/dim]",
+        f"[dim]Your team's knowledge graph will be hosted on GraQle Cloud.[/dim]",
         border_style="green",
         title="Team Created",
     ))

@@ -1,4 +1,4 @@
-"""Graqle Cloud Sync — delta-based graph synchronization.
+"""GraQle Cloud Sync — delta-based graph synchronization.
 
 Computes deltas between local and remote graph versions for efficient
 push/pull sync. Foundation for Team tier cloud sync via Neptune.

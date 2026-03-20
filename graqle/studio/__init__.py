@@ -1,4 +1,4 @@
-"""Graqle Studio — local visual dashboard for graph reasoning."""
+"""GraQle Studio — local visual dashboard for graph reasoning."""
 
 # ── graqle:intelligence ──
 # module: graqle.studio.__init__

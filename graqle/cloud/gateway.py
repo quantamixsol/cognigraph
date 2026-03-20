@@ -1,4 +1,4 @@
-"""Graqle Cloud Gateway client — API client for cloud-hosted services.
+"""GraQle Cloud Gateway client — API client for cloud-hosted services.
 
 The gateway provides:
 1. Graph sync (push/pull deltas to Neptune)
@@ -218,7 +218,7 @@ def check_upsell_triggers(
 # ---------------------------------------------------------------------------
 
 class CloudGateway:
-    """Client for Graqle Cloud Gateway API.
+    """Client for GraQle Cloud Gateway API.
 
     Phase 1 (foundation): All methods return local/stub responses.
     Phase 2+: Methods will call the actual cloud gateway (Lambda + API Gateway).
@@ -237,7 +237,7 @@ class CloudGateway:
         if not self.is_connected:
             return CloudServiceStatus(
                 available=False,
-                message="Not connected. Run 'graq login' to connect to Graqle Cloud.",
+                message="Not connected. Run 'graq login' to connect to GraQle Cloud.",
             )
         # Phase 1: Return stub status
         return CloudServiceStatus(
@@ -258,7 +258,7 @@ class CloudGateway:
         This is the real cloud upload — not a stub.
         """
         if not self.is_connected:
-            return {"error": "Not connected to Graqle Cloud", "code": "NOT_CONNECTED"}
+            return {"error": "Not connected to GraQle Cloud", "code": "NOT_CONNECTED"}
 
         import hashlib
         email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
@@ -296,7 +296,7 @@ class CloudGateway:
         Phase 1: Returns success stub. Phase 2+: actual API call.
         """
         if not self.is_connected:
-            return {"error": "Not connected to Graqle Cloud", "code": "NOT_CONNECTED"}
+            return {"error": "Not connected to GraQle Cloud", "code": "NOT_CONNECTED"}
 
         # Phase 1 stub
         logger.info(
@@ -317,7 +317,7 @@ class CloudGateway:
         Phase 1: Returns empty delta. Phase 2+: actual API call.
         """
         if not self.is_connected:
-            return {"error": "Not connected to Graqle Cloud", "code": "NOT_CONNECTED"}
+            return {"error": "Not connected to GraQle Cloud", "code": "NOT_CONNECTED"}
 
         # Phase 1 stub
         return {
@@ -334,7 +334,7 @@ class CloudGateway:
         Phase 1: Returns local config. Phase 2+: actual registration.
         """
         if not self.is_connected:
-            return {"error": "Not connected to Graqle Cloud", "code": "NOT_CONNECTED"}
+            return {"error": "Not connected to GraQle Cloud", "code": "NOT_CONNECTED"}
 
         return {
             "status": "registered_locally",

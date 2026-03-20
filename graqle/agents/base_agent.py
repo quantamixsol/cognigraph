@@ -1,4 +1,4 @@
-"""BaseAgent — abstract agent interface for Graqle nodes."""
+"""BaseAgent — abstract agent interface for GraQle nodes."""
 
 # ── graqle:intelligence ──
 # module: graqle.agents.base_agent

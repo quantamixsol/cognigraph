@@ -1,8 +1,8 @@
 """graq register — opt-in developer registration for updates and support.
 
-Captures email + optional info for the Graqle lead pipeline.
+Captures email + optional info for the GraQle lead pipeline.
 All data stored locally in ~/.graqle/profile.json and synced
-to the Graqle API for updates, tips, and priority support.
+to the GraQle API for updates, tips, and priority support.
 """
 
 # ── graqle:intelligence ──
@@ -39,7 +39,7 @@ def register_command(
         False, "--non-interactive", help="Skip interactive prompts"
     ),
 ) -> None:
-    """Register for Graqle updates, tips, and priority support.
+    """Register for GraQle updates, tips, and priority support.
 
     Your email is used for product updates and support only.
     Anonymous telemetry (opt-in) helps us improve Graqle.
@@ -74,7 +74,7 @@ def register_command(
     if not email and not non_interactive:
         console.print(
             Panel(
-                "[bold cyan]Graqle — Developer Registration[/bold cyan]\n\n"
+                "[bold cyan]GraQle — Developer Registration[/bold cyan]\n\n"
                 "Register for:\n"
                 "  [green]+[/green] Product updates and new features\n"
                 "  [green]+[/green] Tips for getting more from your knowledge graph\n"
@@ -92,7 +92,7 @@ def register_command(
             company = Prompt.ask("Company (optional)", default="")
         if not no_telemetry:
             no_telemetry = not Confirm.ask(
-                "Send anonymous usage telemetry to help improve Graqle?",
+                "Send anonymous usage telemetry to help improve GraQle?",
                 default=True,
             )
 

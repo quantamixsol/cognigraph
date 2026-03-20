@@ -1,4 +1,4 @@
-"""Internal tool for generating Graqle license keys.
+"""Internal tool for generating GraQle license keys.
 
 Usage::
 
@@ -38,7 +38,7 @@ def generate_license_key(
     email: str,
     duration_days: int | None = None,
 ) -> str:
-    """Generate a signed Graqle license key.
+    """Generate a signed GraQle license key.
 
     Parameters
     ----------

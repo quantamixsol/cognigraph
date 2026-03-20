@@ -602,7 +602,7 @@ async def cloud_status():
 
 @router.post("/cloud/connect")
 async def cloud_connect(request: Request):
-    """Connect to Graqle Cloud with API key."""
+    """Connect to GraQle Cloud with API key."""
     body = await request.json()
     api_key = body.get("api_key", "")
     email = body.get("email", "")
@@ -623,7 +623,7 @@ async def cloud_connect(request: Request):
 
 @router.post("/cloud/disconnect")
 async def cloud_disconnect():
-    """Disconnect from Graqle Cloud."""
+    """Disconnect from GraQle Cloud."""
     from graqle.cloud.credentials import clear_credentials
     clear_credentials()
     return {"success": True}

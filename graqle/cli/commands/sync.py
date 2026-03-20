@@ -1,6 +1,6 @@
 """graq sync — cloud graph synchronization commands.
 
-Sync your local knowledge graph with Graqle Cloud for team collaboration.
+Sync your local knowledge graph with GraQle Cloud for team collaboration.
 Requires Team plan ($29/dev/mo) for cloud sync features.
 
 Commands:
@@ -29,7 +29,7 @@ console = Console()
 
 sync_app = typer.Typer(
     name="sync",
-    help="Sync your knowledge graph with Graqle Cloud (Team plan).",
+    help="Sync your knowledge graph with GraQle Cloud (Team plan).",
     no_args_is_help=True,
 )
 
@@ -69,7 +69,7 @@ def sync_push(
     force: bool = typer.Option(False, "--force", "-f", help="Force push (overwrite remote)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be pushed"),
 ) -> None:
-    """Push local graph changes to Graqle Cloud.
+    """Push local graph changes to GraQle Cloud.
 
     \b
     Computes a delta of changes since your last sync and pushes
@@ -160,7 +160,7 @@ def sync_push(
 def sync_pull(
     force: bool = typer.Option(False, "--force", "-f", help="Force pull (overwrite local)"),
 ) -> None:
-    """Pull team graph changes from Graqle Cloud.
+    """Pull team graph changes from GraQle Cloud.
 
     \b
     Receives only changes from the team graph since your last pull.

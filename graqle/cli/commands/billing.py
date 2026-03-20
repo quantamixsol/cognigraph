@@ -28,7 +28,7 @@ logger = logging.getLogger("graqle.cli.billing")
 def billing_command(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show all features"),
 ) -> None:
-    """Show your Graqle license tier, usage stats, and upgrade options.
+    """Show your GraQle license tier, usage stats, and upgrade options.
 
     \b
     Examples:

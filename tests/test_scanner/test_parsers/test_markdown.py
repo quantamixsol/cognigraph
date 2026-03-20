@@ -217,7 +217,7 @@ class TestMarkdownParser:
         path = _write(tmp_path, """\
             # References
 
-            See [Graqle docs](https://graqle.com/docs) and
+            See [GraQle docs](https://graqle.com/docs) and
             [GitHub](https://github.com/quantamixsol/graqle).
         """)
         doc = parser.parse(path)

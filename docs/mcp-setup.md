@@ -1,8 +1,8 @@
-# Graqle MCP Integration for Claude Code
+# GraQle MCP Integration for Claude Code
 
-Graqle exposes a Model Context Protocol (MCP) server that gives Claude Code
+GraQle exposes a Model Context Protocol (MCP) server that gives Claude Code
 graph-powered context engineering tools. Instead of reading large flat files
-(20-60K tokens), Claude Code calls Graqle tools to get focused, governed
+(20-60K tokens), Claude Code calls GraQle tools to get focused, governed
 context in 300-500 tokens.
 
 ---
@@ -13,7 +13,7 @@ context in 300-500 tokens.
 - pip (or uv/pipx)
 - A project with source code to scan
 
-Install Graqle:
+Install GraQle:
 
 ```bash
 pip install graqle
@@ -322,7 +322,7 @@ The `graq` CLI is installed as a console script by pip. Common fixes:
 
 ### Wrong Python version
 
-Graqle requires Python 3.10+. Check with:
+GraQle requires Python 3.10+. Check with:
 
 ```bash
 python --version

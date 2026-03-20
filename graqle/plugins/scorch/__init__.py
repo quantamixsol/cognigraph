@@ -1,7 +1,7 @@
 """SCORCH — Surface Control & Optical Review for Crafted HTML.
 
 AI-powered Visual + Behavioral + Journey Psychology audit engine.
-A first-party Graqle SDK plugin.
+A first-party GraQle SDK plugin.
 
 Usage:
     from graqle.plugins.scorch import ScorchEngine, ScorchConfig

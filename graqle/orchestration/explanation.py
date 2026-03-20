@@ -16,7 +16,7 @@
 
 Tracks which nodes said what, how messages flowed through the graph,
 and how each node's output influenced the final answer. This creates
-an auditable trail that answers: "Why did Graqle say X?"
+an auditable trail that answers: "Why did GraQle say X?"
 """
 
 # ── graqle:intelligence ──

@@ -7,11 +7,11 @@
 
 ### The Bypass Problem
 
-Graqle v0.26 provides 22 MCP tools for knowledge graph reasoning. In practice, every AI coding
-tool (Claude Code, Cursor, Copilot, Windsurf) **bypasses Graqle** in favor of `grep`, `read`,
+GraQle v0.26 provides 22 MCP tools for knowledge graph reasoning. In practice, every AI coding
+tool (Claude Code, Cursor, Copilot, Windsurf) **bypasses GraQle** in favor of `grep`, `read`,
 and `bash`. This is not a bug — it is rational behavior:
 
-| Factor | grep/read | Graqle MCP |
+| Factor | grep/read | GraQle MCP |
 |--------|-----------|------------|
 | Latency | 50ms | 2-15s |
 | Predictability | Deterministic | Non-deterministic (LLM) |
@@ -19,8 +19,8 @@ and `bash`. This is not a bug — it is rational behavior:
 | Training prior | Millions of examples | Zero examples |
 | Failure mode | Graceful (empty result) | Timeout, error, irrelevant |
 
-**Root cause:** Graqle is positioned as a tool the AI *may choose to call*. Any voluntary tool
-competes on latency and reliability against built-in tools. Graqle loses both competitions.
+**Root cause:** GraQle is positioned as a tool the AI *may choose to call*. Any voluntary tool
+competes on latency and reliability against built-in tools. GraQle loses both competitions.
 
 ### The Validation Problem
 
@@ -69,9 +69,9 @@ team engineering standards.
 
 ## Decision
 
-### The "Q" in Graqle
+### The "Q" in GraQle
 
-Redefine the Q in Graqle from **Query** to **Quality Gate**.
+Redefine the Q in GraQle from **Query** to **Quality Gate**.
 
 ```
 GraQle = Graph + Quality Gate for development
@@ -328,12 +328,12 @@ SECOND 0-3: Structural Analysis (instant — file listing only)
 ─────────────────────────────────────────────────────────────
   $ graq init
 
-  ⚡ Graqle Quality Gate — initializing...
+  ⚡ GraQle Quality Gate — initializing...
 
   Project shape: 47 Python files, 12 JS/TS, 3 configs
   Detected: Python package, CLI (typer), FastAPI, pytest (1,655 tests)
 
-  [Already useful: user sees Graqle understands their project]
+  [Already useful: user sees GraQle understands their project]
 
 
 SECOND 3-10: Import Graph (fast — regex on imports only)
@@ -456,7 +456,7 @@ analysis (runs in background)."
 
 ```markdown
 <!-- graqle:intelligence -->
-## Graqle Quality Gate (auto-generated)
+## GraQle Quality Gate (auto-generated)
 
 ### Module Risk Map
 | Module | Risk | Impact | Constraints |
@@ -499,7 +499,7 @@ detected AI tool. Zero user configuration required.
 
 ### Governance Layer (Mapped from TAMR+)
 
-| TAMR+ Component | Graqle Equivalent | Purpose |
+| TAMR+ Component | GraQle Equivalent | Purpose |
 |-----------------|-------------------|---------|
 | `audit_trail.py` (SHA-256 chain) | `governance/audit.py` | Immutable reasoning session logs |
 | TRACE scoring (T+R+A+C+E) | DRACE scoring (D+R+A+C+E) | Per-session quality scoring |
@@ -579,7 +579,7 @@ Build the streaming pipeline + dashboard. This is the viral adoption moment.
 | 1i | Studio intelligence dashboard page | 1h |
 | 1j | `graq init` command (replaces raw `graq scan`) | 1a-1g |
 
-**Evidence checkpoint:** Run `graq init` on Graqle SDK. Record the 60-second experience.
+**Evidence checkpoint:** Run `graq init` on GraQle SDK. Record the 60-second experience.
 Show module packets, validation scorecard, dashboard screenshot. Demonstrate Claude Code
 using intelligence headers in a real coding session.
 
@@ -597,7 +597,7 @@ Layer B: inject intelligence into files the AI already reads.
 | 2f | `graq_gate` MCP tool (reads pre-compiled packets, <100ms) | Phase 1 |
 | 2g | `graq compile --eject` (clean removal of all injections) | 2a, 2c |
 
-**Evidence checkpoint:** Start a fresh Claude Code session on Graqle SDK. Compare reasoning
+**Evidence checkpoint:** Start a fresh Claude Code session on GraQle SDK. Compare reasoning
 quality with and without intelligence headers. Document: "Claude read chunk_scorer.py, saw
 the inline header, and immediately knew about the v0.25.0 incident without calling any tool."
 
@@ -616,7 +616,7 @@ Layer C: enforcement at commit and PR time.
 | 3g | `governance.yaml` schema + rule engine | — |
 | 3h | `graq constrain` command (add/remove constraints) | 3g |
 
-**Evidence checkpoint:** Make a real code change to Graqle SDK, commit, push PR. Show:
+**Evidence checkpoint:** Make a real code change to GraQle SDK, commit, push PR. Show:
 hook output with impact analysis, GitHub Action comment on PR, full governance loop.
 
 ### Phase 4: "The Transparency Layer" (v0.28 continued)
@@ -633,7 +633,7 @@ Governance visualization in Studio, mapped from TAMR+ patterns.
 | 4f | Studio: ChangeApprovalBox component | 4a |
 | 4g | Studio: ChangeReportBuilder (PDF/DOCX export) | 4a-4c |
 
-**Evidence checkpoint:** Run a multi-module reasoning session on Graqle SDK. Show the full
+**Evidence checkpoint:** Run a multi-module reasoning session on GraQle SDK. Show the full
 reasoning trail in Studio — which nodes activated, what each agent said, how consensus was
 reached, DRACE score, evidence chain. Export a change report.
 
@@ -665,7 +665,7 @@ Every component is **additive only**. Nothing modifies existing scan, reasoning,
 | DRACE scoring | New module | Nothing | Don't import it |
 
 **Existing test guarantee:** All 1,655+ existing tests must pass after each phase. The
-streaming pipeline is tested by running `graq init` on Graqle SDK and verifying the
+streaming pipeline is tested by running `graq init` on GraQle SDK and verifying the
 output matches or exceeds current `graq scan` quality.
 
 ## Consequences
@@ -689,7 +689,7 @@ output matches or exceeds current `graq scan` quality.
 5. **Transparency**: TAMR+-grade audit trails and evidence chains for development decisions.
    Teams get full visibility into how AI made every change.
 
-6. **Dogfooding**: Graqle SDK itself is the first proof case. Every claim is backed by
+6. **Dogfooding**: GraQle SDK itself is the first proof case. Every claim is backed by
    evidence from the SDK's own codebase.
 
 ### Negative

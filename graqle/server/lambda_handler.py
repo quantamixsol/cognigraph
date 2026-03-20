@@ -1,4 +1,4 @@
-"""AWS Lambda handler for Graqle API.
+"""AWS Lambda handler for GraQle API.
 
 Wraps the existing FastAPI application with Mangum for API Gateway / Function URL.
 Graph is loaded once per warm Lambda container and reused across invocations.

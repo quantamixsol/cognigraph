@@ -6,12 +6,12 @@ Usage:
 
 This runs 30 questions across 3 tiers:
     Tier A: Single-regulation (10Q) — baseline capability
-    Tier B: Cross-regulation (10Q) — Graqle advantage emerges
-    Tier C: Complex inter-domain (10Q) — Graqle significantly outperforms
+    Tier B: Cross-regulation (10Q) — GraQle advantage emerges
+    Tier C: Complex inter-domain (10Q) — GraQle significantly outperforms
 
 Methods compared:
     1. Single-Agent (all context concatenated, single LLM call)
-    2. Graqle-PCST (PCST subgraph activation + message passing)
+    2. GraQle-PCST (PCST subgraph activation + message passing)
 """
 
 # ── graqle:intelligence ──
@@ -58,7 +58,7 @@ async def main(
 ) -> None:
     """Run multi-governance benchmark."""
     print("=" * 70)
-    print("Graqle Multi-Governance 3-Tier Benchmark")
+    print("GraQle Multi-Governance 3-Tier Benchmark")
     print("=" * 70)
 
     # Build KG
@@ -122,7 +122,7 @@ async def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Graqle Multi-Governance Benchmark")
+    parser = argparse.ArgumentParser(description="GraQle Multi-Governance Benchmark")
     parser.add_argument("--model", default="qwen2.5:3b", help="Ollama model name")
     parser.add_argument("--host", default="http://localhost:11434", help="Ollama host URL")
     parser.add_argument("--tiers", default="ABC", help="Which tiers to run (A, B, C, or any combination)")

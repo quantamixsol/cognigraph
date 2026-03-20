@@ -12,15 +12,15 @@
 # Contact: legal@quantamix.io
 # ──────────────────────────────────────────────────────────────────
 
-"""TAMRConnector — end-to-end TAMR+ retrieval -> Graqle reasoning pipeline.
+"""TAMRConnector — end-to-end TAMR+ retrieval -> GraQle reasoning pipeline.
 
-Connects TAMR+ (patent-protected retrieval, EP26162901.8) with Graqle
+Connects TAMR+ (patent-protected retrieval, EP26162901.8) with GraQle
 (governed multi-agent reasoning) in a unified pipeline:
 
 1. TAMR+ retrieves relevant subgraph + TRACE scores via API
-2. TAMRConnector converts TAMR+ output to Graqle format
+2. TAMRConnector converts TAMR+ output to GraQle format
 3. TRACE scores initialize node priors (higher TRACE = higher activation prize)
-4. Graqle reasons over the TAMR+-selected subgraph
+4. GraQle reasons over the TAMR+-selected subgraph
 
 Supports both live TAMR+ API calls and offline JSON import.
 """
@@ -69,7 +69,7 @@ class TAMRSubgraph:
 
 @dataclass
 class PipelineConfig:
-    """Configuration for the TAMR+ -> Graqle pipeline."""
+    """Configuration for the TAMR+ -> GraQle pipeline."""
     # TAMR+ API settings (for live mode)
     tamr_api_url: str = ""
     tamr_api_key: str = ""
@@ -77,13 +77,13 @@ class PipelineConfig:
     trace_weight: float = 0.0
     relevance_weight: float = 0.0
     gap_weight: float = 0.0
-    # Graqle reasoning settings
+    # GraQle reasoning settings
     max_rounds: int = 3
     activation_strategy: str = "pcst"
 
 
 class TAMRConnector:
-    """Connect TAMR+ retrieval with Graqle reasoning.
+    """Connect TAMR+ retrieval with GraQle reasoning.
 
     Usage (offline — from JSON):
         connector = TAMRConnector()
@@ -145,7 +145,7 @@ class TAMRConnector:
             config: Optional GraqleConfig
 
         Returns:
-            Graqle instance with TRACE-informed node priors
+            GraQle instance with TRACE-informed node priors
         """
         import networkx as nx
 
@@ -176,7 +176,7 @@ class TAMRConnector:
                     weight=edge.get("weight", 1.0),
                 )
 
-        # Build Graqle from NetworkX
+        # Build GraQle from NetworkX
         from graqle.core.graph import Graqle
         graph = Graqle.from_networkx(G, config=config)
 
@@ -188,7 +188,7 @@ class TAMRConnector:
                 node.properties["activation_prior"] = self.compute_node_prior(doc)
 
         logger.info(
-            f"Built Graqle from TAMR+ subgraph: "
+            f"Built GraQle from TAMR+ subgraph: "
             f"{len(graph.nodes)} nodes, {len(graph.edges)} edges"
         )
         return graph
@@ -199,17 +199,17 @@ class TAMRConnector:
         backend: Any = None,
         max_rounds: int | None = None,
     ) -> Any:
-        """Full pipeline: TAMR+ retrieve -> Graqle reason.
+        """Full pipeline: TAMR+ retrieve -> GraQle reason.
 
         Requires tamr_api_url and tamr_api_key in config.
 
         Args:
             query: The reasoning query
-            backend: ModelBackend for Graqle agents
+            backend: ModelBackend for GraQle agents
             max_rounds: Override max reasoning rounds
 
         Returns:
-            ReasoningResult from Graqle
+            ReasoningResult from GraQle
         """
         cfg = self._config
         if not cfg.tamr_api_url:
@@ -218,7 +218,7 @@ class TAMRConnector:
         # Call TAMR+ API
         subgraph = await self._call_tamr_api(query)
 
-        # Convert to Graqle
+        # Convert to GraQle
         graph = self.to_graqle(subgraph)
 
         # Set backend

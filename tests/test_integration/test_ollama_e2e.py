@@ -74,7 +74,7 @@ class TestOllamaBackendDirect:
 
 @skip_no_ollama
 class TestGraqleWithOllama:
-    """End-to-end: Graqle reasoning with real Ollama GPU backend."""
+    """End-to-end: GraQle reasoning with real Ollama GPU backend."""
 
     @pytest.fixture
     def small_graph(self):

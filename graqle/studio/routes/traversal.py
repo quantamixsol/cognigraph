@@ -1,4 +1,4 @@
-"""Graqle Studio — Neo4j-native traversal API routes.
+"""GraQle Studio — Neo4j-native traversal API routes.
 
 Exposes Cypher-native graph traversal operations for the Studio frontend:
 - Shortest path between nodes

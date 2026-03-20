@@ -1,6 +1,6 @@
-# Graqle API Reference
+# GraQle API Reference
 
-Graqle can be queried from **any tool, any language, any IDE** through 4 interfaces.
+GraQle can be queried from **any tool, any language, any IDE** through 4 interfaces.
 Pick whichever fits your workflow:
 
 | Interface | Best For | Setup |
@@ -240,7 +240,7 @@ Works in any terminal: VS Code, JetBrains, Replit, Codex, plain bash/zsh.
 ## 4. MCP Server (for AI-powered IDEs)
 
 MCP (Model Context Protocol) is supported by Claude Code, Cursor, VS Code, and Windsurf.
-Graqle auto-configures the right MCP file for your IDE:
+GraQle auto-configures the right MCP file for your IDE:
 
 ```bash
 graq init                    # Auto-detect IDE
@@ -268,7 +268,7 @@ MCP tools available inside your IDE:
 ### GitHub Copilot (via REST API)
 1. Start `graq serve` in your project
 2. Copilot Chat can reference the API via custom instructions
-3. Or use the Copilot Extensions API to wrap Graqle
+3. Or use the Copilot Extensions API to wrap GraQle
 
 ### JetBrains AI Assistant
 1. `graq init --ide generic`

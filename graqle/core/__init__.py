@@ -23,7 +23,7 @@ from graqle.core.types import (
 
 __all__ = [
     "CogniEdge",
-    "Graqle",
+    "GraQle",
     "CogniNode",
     "Message",
     "NodeState",

@@ -1,4 +1,4 @@
-"""graq login / graq logout — Graqle Cloud authentication.
+"""graq login / graq logout — GraQle Cloud authentication.
 
 Cloud features are optional. Local features (Studio, CLI, MCP) work
 without any account. Cloud enables: graph backup, team sync, usage analytics.
@@ -37,7 +37,7 @@ def login_command(
         False, "--status", "-s", help="Check current cloud connection status"
     ),
 ) -> None:
-    """Connect to Graqle Cloud (optional — local features work without login).
+    """Connect to GraQle Cloud (optional — local features work without login).
 
     \b
     Cloud features:
@@ -63,14 +63,14 @@ def login_command(
             console.print(f"  Plan: {cloud['plan']}")
             console.print(f"  Cloud: {cloud['cloud_url']}")
         else:
-            console.print("[yellow]Not connected to Graqle Cloud[/yellow]")
+            console.print("[yellow]Not connected to GraQle Cloud[/yellow]")
             console.print("  Local features work without login.")
             console.print("  Run [cyan]graq login --api-key <key>[/cyan] to connect.")
         return
 
     # Interactive mode if no key provided
     if not api_key:
-        console.print("[bold cyan]Graqle Cloud Login[/bold cyan]")
+        console.print("[bold cyan]GraQle Cloud Login[/bold cyan]")
         console.print()
         console.print("Cloud features are [bold]optional[/bold]. Your graph, your machine, your data.")
         console.print("Cloud adds: backup, team sync, usage analytics.")
@@ -122,7 +122,7 @@ def login_command(
     except ImportError:
         console.print("[dim]httpx not installed — skipping online validation. Key saved locally.[/dim]")
     except Exception:
-        console.print("[yellow]Could not reach Graqle Cloud. Key saved locally.[/yellow]")
+        console.print("[yellow]Could not reach GraQle Cloud. Key saved locally.[/yellow]")
 
     # Save credentials
     creds = CloudCredentials(
@@ -134,7 +134,7 @@ def login_command(
     save_credentials(creds)
 
     console.print()
-    console.print("[green]Connected to Graqle Cloud![/green]")
+    console.print("[green]Connected to GraQle Cloud![/green]")
     if validated_email:
         console.print(f"  Email: {validated_email}")
     console.print(f"  Plan:  {validated_plan.title()}")
@@ -148,14 +148,14 @@ def login_command(
 
 
 def logout_command() -> None:
-    """Disconnect from Graqle Cloud. Local features continue to work."""
+    """Disconnect from GraQle Cloud. Local features continue to work."""
     from graqle.cloud.credentials import clear_credentials, load_credentials
 
     creds = load_credentials()
     if not creds.is_authenticated:
-        console.print("[yellow]Not currently connected to Graqle Cloud.[/yellow]")
+        console.print("[yellow]Not currently connected to GraQle Cloud.[/yellow]")
         return
 
     clear_credentials()
-    console.print("[green]Logged out of Graqle Cloud.[/green]")
+    console.print("[green]Logged out of GraQle Cloud.[/green]")
     console.print("Local features (Studio, CLI, MCP) continue to work.")

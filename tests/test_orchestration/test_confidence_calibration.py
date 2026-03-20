@@ -40,7 +40,7 @@ def _make_orchestrator():
 
 
 def _make_graph(node_ids):
-    """Create a mock Graqle with specified nodes."""
+    """Create a mock GraQle with specified nodes."""
     graph = MagicMock()
     graph.config = MagicMock()
     graph.config.cost = MagicMock()

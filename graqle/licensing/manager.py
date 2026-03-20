@@ -1,4 +1,4 @@
-"""Graqle License Manager — offline verification with HMAC signing.
+"""GraQle License Manager — offline verification with HMAC signing.
 
 License keys are self-contained: base64(json_payload).base64(hmac_sha256).
 No network calls required for verification. Keys can be provided via:
@@ -126,7 +126,7 @@ _TIER_ORDER: list[LicenseTier] = list(LicenseTier)
 
 @dataclass
 class License:
-    """Represents a verified Graqle license."""
+    """Represents a verified GraQle license."""
 
     tier: LicenseTier
     holder: str
@@ -287,7 +287,7 @@ class LicenseManager:
 
         tier_label = required_tier.value.title() if required_tier else "Pro"
         raise LicenseError(
-            f"Feature '{feature}' requires Graqle {tier_label}. "
+            f"Feature '{feature}' requires GraQle {tier_label}. "
             f"Current tier: {self.current_tier.value.title()}. "
             f"Upgrade at https://graqle.dev/pricing"
         )

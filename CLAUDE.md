@@ -1,7 +1,7 @@
 # 
 
 <!-- graqle:intelligence -->
-## Graqle Quality Gate (auto-generated)
+## GraQle Quality Gate (auto-generated)
 
 ### Module Risk Map
 | Module | Risk | Impact | Functions | Consumers |

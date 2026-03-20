@@ -50,7 +50,7 @@ TIERS = [
             "   ollama pull llama3.1:8b      # balanced, 5GB",
             "3. Start Ollama (runs in background):",
             "   ollama serve",
-            "4. Initialize Graqle:",
+            "4. Initialize GraQle:",
             "   graq init --backend ollama --model qwen2.5:3b --no-interactive",
             "",
             "No API key needed. No data leaves your machine.",
@@ -87,11 +87,11 @@ TIERS = [
             "   # Windows (CMD):",
             '   setx ANTHROPIC_API_KEY "sk-ant-your-key-here"',
             "",
-            "5. Initialize Graqle:",
+            "5. Initialize GraQle:",
             "   graq init --backend anthropic --model claude-sonnet-4-6 --no-interactive",
             "",
             "Free tier: $5 credits, enough for ~1,600 queries with Sonnet.",
-            "Sonnet is recommended for Graqle — best balance of quality and cost.",
+            "Sonnet is recommended for GraQle — best balance of quality and cost.",
         ],
         "env_var": "ANTHROPIC_API_KEY",
         "package": "anthropic",
@@ -125,7 +125,7 @@ TIERS = [
             "   # Windows (CMD):",
             '   setx OPENAI_API_KEY "sk-your-key-here"',
             "",
-            "5. Initialize Graqle:",
+            "5. Initialize GraQle:",
             "   graq init --backend openai --model gpt-4o-mini --no-interactive",
             "",
             "Free tier: $5 credits (requires adding payment method first).",
@@ -165,7 +165,7 @@ TIERS = [
             "   export AWS_SECRET_ACCESS_KEY=...",
             "   export AWS_DEFAULT_REGION=eu-central-1",
             "",
-            "4. Initialize Graqle:",
+            "4. Initialize GraQle:",
             "   graq init --backend bedrock --model anthropic.claude-3-5-haiku-20241022-v1:0 --no-interactive",
             "",
             "AWS Free Tier: 12 months free for new accounts.",
@@ -217,7 +217,7 @@ def setup_guide_command(
         help="Show setup for a specific backend: ollama, anthropic, openai, bedrock",
     ),
 ) -> None:
-    """Step-by-step setup guide for Graqle backends.
+    """Step-by-step setup guide for GraQle backends.
 
     Shows all available LLM options with quality ratings, pricing,
     and exact commands to get each API key configured.
@@ -231,7 +231,7 @@ def setup_guide_command(
     from graqle.__version__ import __version__
 
     console.print(Panel.fit(
-        f"[bold cyan]Graqle Setup Guide[/bold cyan] v{__version__}\n"
+        f"[bold cyan]GraQle Setup Guide[/bold cyan] v{__version__}\n"
         "Choose your AI backend for graph reasoning",
         border_style="cyan",
     ))

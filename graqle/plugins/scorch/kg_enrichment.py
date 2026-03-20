@@ -1,4 +1,4 @@
-"""Auto-enrich the Graqle knowledge graph with SCORCH findings."""
+"""Auto-enrich the GraQle knowledge graph with SCORCH findings."""
 from __future__ import annotations
 
 import logging

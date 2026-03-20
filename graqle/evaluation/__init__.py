@@ -1,4 +1,4 @@
-"""Graqle evaluation — governance-aware metrics."""
+"""GraQle evaluation — governance-aware metrics."""
 
 # ── graqle:intelligence ──
 # module: graqle.evaluation.__init__

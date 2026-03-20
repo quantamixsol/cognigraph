@@ -1,1 +1,1 @@
-"""Bridge skills that make companion plugins Graqle-aware."""
+"""Bridge skills that make companion plugins GraQle-aware."""
