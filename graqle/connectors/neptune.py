@@ -126,7 +126,7 @@ def _execute_with_iam(data: dict):
     )
 
 
-# ─── Graph Query Functions (Graqle-specific) ─────────────────────────────────
+# ─── Graph Query Functions (GraQle-specific) ─────────────────────────────────
 
 def get_nodes(project_id: str) -> list[dict]:
     """Get all nodes for a project. Returns D3-compatible node dicts."""

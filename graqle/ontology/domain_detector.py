@@ -1,4 +1,4 @@
-"""Graqle Domain Detector -- Analyze ANY codebase and generate a domain-specific ontology.
+"""GraQle Domain Detector -- Analyze ANY codebase and generate a domain-specific ontology.
 
 Detects the domain/context of a codebase by analyzing project metadata files,
 directory structure, file content, and documentation. Then uses an LLM (preferring

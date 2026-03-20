@@ -1,4 +1,4 @@
-"""Graqle Cloud Team management — team config and membership.
+"""GraQle Cloud Team management — team config and membership.
 
 Manages team configuration for the Team tier ($29/dev/mo).
 Teams share a cloud-hosted graph via Neptune, enabling:
@@ -152,7 +152,7 @@ def create_team(
     """Create a new team (local config — cloud registration via gateway).
 
     In Phase 1 (foundation), this creates the local config.
-    Phase 2+ will register with the Graqle Cloud Gateway.
+    Phase 2+ will register with the GraQle Cloud Gateway.
     """
     config = TeamConfig(
         team_id=f"team-{team_name.lower().replace(' ', '-')}",

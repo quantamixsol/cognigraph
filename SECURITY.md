@@ -10,7 +10,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Graqle, please report it responsibly.
+If you discover a security vulnerability in GraQle, please report it responsibly.
 
 **Email:** security@quantamixsolutions.com
 
@@ -26,9 +26,9 @@ We will acknowledge receipt within 48 hours and provide an initial assessment wi
 
 ### Local-First Architecture
 
-Graqle runs entirely on your machine by default:
+GraQle runs entirely on your machine by default:
 
-- **No telemetry.** Graqle does not phone home, collect usage data, or send analytics.
+- **No telemetry.** GraQle does not phone home, collect usage data, or send analytics.
 - **No code upload.** Your source code never leaves your machine unless you explicitly enable cloud sync.
 - **Cloud sync is opt-in.** When enabled, only the knowledge graph (node/edge metadata) is uploaded — never source code.
 - **API keys stay local.** LLM provider keys are stored in your local `graqle.yaml` config file.
@@ -47,12 +47,12 @@ The knowledge graph does **not** contain:
 
 ### LLM Provider Communication
 
-When using cloud LLM backends (Anthropic, OpenAI, etc.), Graqle sends:
+When using cloud LLM backends (Anthropic, OpenAI, etc.), GraQle sends:
 - The user's query
 - Relevant graph context (node descriptions, relationships)
 - System prompts for reasoning
 
-Graqle does **not** send full source files to LLM providers. Only graph-level context is transmitted.
+GraQle does **not** send full source files to LLM providers. Only graph-level context is transmitted.
 
 ### Dependencies
 
@@ -67,4 +67,4 @@ We monitor dependencies for known vulnerabilities using GitHub Dependabot. All d
 
 ## License
 
-Graqle source code is fully auditable. See [LICENSE](LICENSE) for terms. The codebase is available at [github.com/quantamixsol/graqle](https://github.com/quantamixsol/graqle).
+GraQle source code is fully auditable. See [LICENSE](LICENSE) for terms. The codebase is available at [github.com/quantamixsol/graqle](https://github.com/quantamixsol/graqle).

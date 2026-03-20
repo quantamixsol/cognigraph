@@ -1,6 +1,6 @@
-"""Smart query router — classifies questions and recommends Graqle vs external tools.
+"""Smart query router — classifies questions and recommends GraQle vs external tools.
 
-This is the answer to "when should an AI assistant use Graqle?" — it provides
+This is the answer to "when should an AI assistant use GraQle?" — it provides
 a programmatic routing recommendation so Claude Code / Cursor / etc. know
 whether to call graq_reason or go straight to CloudWatch.
 """
@@ -50,26 +50,26 @@ class RouteRecommendation:
 
 # (regex_pattern, category, graqle_priority)
 _ROUTE_PATTERNS: list[tuple[str, str, str]] = [
-    # Architecture — Graqle excels
+    # Architecture — GraQle excels
     (r"what\s+(depends|imports|calls|uses|connects)", "ARCHITECTURE", "HIGH"),
     (r"(depend|import|call|use)\s+on", "ARCHITECTURE", "HIGH"),
     (r"(architecture|structure|module|component)\s+(of|for|in)", "ARCHITECTURE", "HIGH"),
     (r"how\s+(does|do|is)\s+.*(structured|organized|architected)", "ARCHITECTURE", "HIGH"),
     (r"relationship\s+between", "ARCHITECTURE", "HIGH"),
 
-    # Impact analysis — Graqle's sweet spot
+    # Impact analysis — GraQle's sweet spot
     (r"what\s+(breaks|happens|changes|affected)\s+if", "IMPACT", "HIGH"),
     (r"impact\s+(of|analysis|if|when)", "IMPACT", "HIGH"),
     (r"(downstream|upstream|ripple)\s+effect", "IMPACT", "HIGH"),
     (r"safe\s+to\s+(change|modify|remove|delete)", "IMPACT", "HIGH"),
     (r"blast\s+radius", "IMPACT", "HIGH"),
 
-    # Decision / ADR — Graqle has these in the KG
+    # Decision / ADR — GraQle has these in the KG
     (r"why\s+did\s+we\s+(choose|use|pick|select)", "DECISION", "HIGH"),
     (r"(decision|adr|rationale)\s+(for|behind|about)", "DECISION", "HIGH"),
     (r"trade.?off", "DECISION", "HIGH"),
 
-    # Runtime / debugging — Graqle LOW, external HIGH
+    # Runtime / debugging — GraQle LOW, external HIGH
     (r"(timeout|timed?\s*out|504|502|500)", "RUNTIME", "LOW"),
     (r"(error|fail|crash|exception)\s+in\s+(production|prod|lambda|api)", "RUNTIME", "LOW"),
     (r"(why|what)\s+is\s+.*(failing|broken|down|slow|timing)", "RUNTIME", "LOW"),
@@ -81,17 +81,17 @@ _ROUTE_PATTERNS: list[tuple[str, str, str]] = [
     (r"(slow|performance|bottleneck|optimize)", "PERFORMANCE", "LOW"),
     (r"(throughput|qps|rps|load\s+test)", "PERFORMANCE", "LOW"),
 
-    # Code navigation — Graqle MEDIUM, grep/read as fallback
+    # Code navigation — GraQle MEDIUM, grep/read as fallback
     (r"where\s+is\s+.*(defined|declared|implemented|located)", "CODE_NAV", "MEDIUM"),
     (r"find\s+(the|all)\s+(function|class|file|module)", "CODE_NAV", "MEDIUM"),
     (r"(show|list)\s+(all|the)\s+(endpoints|routes|handlers)", "CODE_NAV", "MEDIUM"),
 
-    # Historical — git + Graqle hybrid
+    # Historical — git + GraQle hybrid
     (r"when\s+did\s+we\s+(add|change|remove|introduce)", "HISTORICAL", "MEDIUM"),
     (r"(history|changelog|last\s+changed|git\s+log)", "HISTORICAL", "MEDIUM"),
     (r"who\s+(wrote|added|changed|owns)", "HISTORICAL", "MEDIUM"),
 
-    # Lessons / safety — Graqle HIGH
+    # Lessons / safety — GraQle HIGH
     (r"(lesson|mistake|gotcha|pitfall|avoid)", "LESSONS", "HIGH"),
     (r"(safety|boundary|constraint|rule)\s+(for|about|when)", "LESSONS", "HIGH"),
     (r"what\s+went\s+wrong", "LESSONS", "HIGH"),
@@ -104,19 +104,19 @@ _TOOL_MAP: dict[str, dict[str, Any]] = {
         "recommendation": "graqle_first",
         "graqle_tools": ["graq_context", "graq_reason"],
         "external_tools": [],
-        "reasoning": "Architecture questions are Graqle's strength — the KG captures all module relationships.",
+        "reasoning": "Architecture questions are GraQle's strength — the KG captures all module relationships.",
     },
     "IMPACT": {
         "recommendation": "graqle_only",
         "graqle_tools": ["graq_impact", "graq_preflight"],
         "external_tools": [],
-        "reasoning": "Impact analysis requires dependency graph traversal. Graqle does this natively.",
+        "reasoning": "Impact analysis requires dependency graph traversal. GraQle does this natively.",
     },
     "DECISION": {
         "recommendation": "graqle_first",
         "graqle_tools": ["graq_reason", "graq_lessons"],
         "external_tools": [],
-        "reasoning": "ADRs and design decisions are stored as KG nodes. Graqle can retrieve them directly.",
+        "reasoning": "ADRs and design decisions are stored as KG nodes. GraQle can retrieve them directly.",
     },
     "RUNTIME": {
         "recommendation": "hybrid",
@@ -134,19 +134,19 @@ _TOOL_MAP: dict[str, dict[str, Any]] = {
         "recommendation": "hybrid",
         "graqle_tools": ["graq_inspect", "graq_context"],
         "external_tools": ["grep", "read"],
-        "reasoning": "Graqle finds entities fast via the KG. Use grep/read for exact line-level code.",
+        "reasoning": "GraQle finds entities fast via the KG. Use grep/read for exact line-level code.",
     },
     "HISTORICAL": {
         "recommendation": "hybrid",
         "graqle_tools": ["graq_context"],
         "external_tools": ["git_log", "git_blame"],
-        "reasoning": "Git is authoritative for history. Graqle adds context about why changes happened.",
+        "reasoning": "Git is authoritative for history. GraQle adds context about why changes happened.",
     },
     "LESSONS": {
         "recommendation": "graqle_only",
         "graqle_tools": ["graq_lessons", "graq_preflight"],
         "external_tools": [],
-        "reasoning": "Lessons and safety boundaries live in the KG. Graqle is the only source for these.",
+        "reasoning": "Lessons and safety boundaries live in the KG. GraQle is the only source for these.",
     },
 }
 

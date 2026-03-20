@@ -1,4 +1,4 @@
-"""Tests for Graqle."""
+"""Tests for GraQle."""
 
 # ── graqle:intelligence ──
 # module: tests.test_core.test_graph

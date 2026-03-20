@@ -1,4 +1,4 @@
-"""Tests for TAMRConnector — TAMR+ to Graqle pipeline."""
+"""Tests for TAMRConnector — TAMR+ to GraQle pipeline."""
 
 # ── graqle:intelligence ──
 # module: tests.test_connectors.test_tamr
@@ -116,7 +116,7 @@ def test_compute_node_prior_clamped():
 
 
 def test_to_graqle(sample_tamr_data):
-    """Convert subgraph to Graqle and verify nodes/edges."""
+    """Convert subgraph to GraQle and verify nodes/edges."""
     connector = TAMRConnector()
     subgraph = connector.load_from_dict(sample_tamr_data)
 

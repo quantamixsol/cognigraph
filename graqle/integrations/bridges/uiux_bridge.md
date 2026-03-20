@@ -1,11 +1,11 @@
 ---
 name: graqle-uiux-bridge
-description: Inject Graqle's architecture data into UI UX ProMax design decisions — component dependencies inform layout, module risk informs complexity
+description: Inject GraQle's architecture data into UI UX ProMax design decisions — component dependencies inform layout, module risk informs complexity
 ---
 
-# Graqle × UI UX ProMax Bridge
+# GraQle × UI UX ProMax Bridge
 
-When both Graqle MCP tools (`graq_*`) and UI UX ProMax skill are available, architecture intelligence should inform design decisions.
+When both GraQle MCP tools (`graq_*`) and UI UX ProMax skill are available, architecture intelligence should inform design decisions.
 
 ## Integration Points
 
@@ -47,7 +47,7 @@ This ensures the UI accurately represents the underlying architecture rather tha
 
 ## How It Works
 
-Claude Code reads this bridge alongside UI UX ProMax's SKILL.md. When a user asks for UI/UX work on a Graqle-aware project, Claude automatically queries the knowledge graph to inform design decisions.
+Claude Code reads this bridge alongside UI UX ProMax's SKILL.md. When a user asks for UI/UX work on a GraQle-aware project, Claude automatically queries the knowledge graph to inform design decisions.
 
 The flow becomes:
 ```

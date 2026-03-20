@@ -2,7 +2,7 @@
 
 Ensures every node has fresh chunks from its source files so that
 reasoning agents have evidence to cite. Run this after:
-  - Installing/upgrading Graqle
+  - Installing/upgrading GraQle
   - Changing source files in your project
   - Loading a KG that was built without chunks (e.g., hand-built KGs)
 

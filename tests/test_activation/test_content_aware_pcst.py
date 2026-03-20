@@ -5,7 +5,7 @@ over empty structural connectors (Directory, Namespace).
 
 Layer 1: Content richness multiplier in RelevanceScorer.score()
 Layer 2: Post-PCST content filter in PCSTActivation._content_filter()
-Layer 3: Direct file lookup bypass in Graqle._direct_file_lookup()
+Layer 3: Direct file lookup bypass in GraQle._direct_file_lookup()
 """
 
 # ── graqle:intelligence ──

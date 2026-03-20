@@ -1,4 +1,4 @@
-"""graq self-update — upgrade Graqle while handling MCP server lock on Windows."""
+"""graq self-update — upgrade GraQle while handling MCP server lock on Windows."""
 
 # ── graqle:intelligence ──
 # module: graqle.cli.commands.selfupdate
@@ -32,7 +32,7 @@ def selfupdate_command(
         help="Restart MCP server after upgrade (default: yes)",
     ),
 ) -> None:
-    """Upgrade Graqle, handling MCP server file locks on Windows.
+    """Upgrade GraQle, handling MCP server file locks on Windows.
 
     On Windows, running MCP servers lock the graq.exe entry point,
     preventing pip from overwriting it.  This command:
@@ -53,12 +53,12 @@ def selfupdate_command(
     mcp_was_running = False
 
     if sys.platform == "win32":
-        console.print("[cyan]Checking for running Graqle processes...[/cyan]")
+        console.print("[cyan]Checking for running GraQle processes...[/cyan]")
         stopped_pids, mcp_was_running = _stop_graq_processes()
         if stopped_pids:
             console.print(f"  Stopped {len(stopped_pids)} process(es): {stopped_pids}")
         else:
-            console.print("  No running Graqle processes found.")
+            console.print("  No running GraQle processes found.")
 
     # Step 2: pip upgrade
     pkg = f"graqle=={version}" if version else "graqle"
@@ -83,7 +83,7 @@ def selfupdate_command(
 
         import graqle.__version__
         importlib.reload(graqle.__version__)
-        console.print(f"[green]Graqle upgraded to v{graqle.__version__.__version__}[/green]")
+        console.print(f"[green]GraQle upgraded to v{graqle.__version__.__version__}[/green]")
     except Exception:
         console.print("[green]Upgrade complete.[/green]")
 

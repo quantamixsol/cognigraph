@@ -1,4 +1,4 @@
-"""Graqle Ontology Schema — SHACL-like shape validation for KG node types.
+"""GraQle Ontology Schema — SHACL-like shape validation for KG node types.
 
 Defines a formal ontology with shape constraints for all node types found in
 markdown knowledge graph files (.gcc/departments/, .gcc/project-kg.md,

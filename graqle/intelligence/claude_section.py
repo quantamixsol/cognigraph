@@ -45,7 +45,7 @@ def generate_section(
 ) -> str:
     """Generate the intelligence section content."""
     lines = [OPEN_MARKER]
-    lines.append("## Graqle Quality Gate (auto-generated)")
+    lines.append("## GraQle Quality Gate (auto-generated)")
     lines.append("")
     lines.append("### Module Risk Map")
     lines.append("| Module | Risk | Impact | Functions | Consumers |")

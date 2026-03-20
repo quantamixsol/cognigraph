@@ -1,8 +1,8 @@
-"""Graqle lead capture and anonymous usage telemetry.
+"""GraQle lead capture and anonymous usage telemetry.
 
 Captures opt-in developer registrations and anonymous usage signals.
 All data is stored locally first (offline-safe), then synced to the
-Graqle lead endpoint when connectivity is available.
+GraQle lead endpoint when connectivity is available.
 
 Privacy guarantees:
 - No source code, queries, or secrets are ever transmitted
@@ -375,7 +375,7 @@ def get_milestone_nudge(milestone: int) -> str:
     elif milestone >= 100:
         return (
             f"[bold cyan]Milestone: {milestone} queries![/bold cyan] "
-            f"Graqle is saving you time. "
+            f"GraQle is saving you time. "
             f"[dim]Share feedback: graq register[/dim]"
         )
     else:

@@ -1,4 +1,4 @@
-"""Tests for Graqle Cloud credentials manager."""
+"""Tests for GraQle Cloud credentials manager."""
 
 # ── graqle:intelligence ──
 # module: tests.test_cloud.test_credentials

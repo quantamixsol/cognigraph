@@ -1,4 +1,4 @@
-"""Graqle License Gating System.
+"""GraQle License Gating System.
 
 Provides offline license verification with tiered feature access.
 Free tier includes core innovations (1-5), GCC/GSD/Ralph protocols,

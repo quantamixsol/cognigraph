@@ -5,7 +5,7 @@ tasks/lessons-distilled.md, etc.), extracts entities and edges using a formal
 ontology with SHACL-like validation, and produces a networkx-compatible JSON
 graph file.
 
-This is the core ingestion pipeline for Graqle:
+This is the core ingestion pipeline for GraQle:
   1. Discover source files (from graqle.yaml departments list, or .gcc/ scan)
   2. Parse each file with the context-aware markdown parser
   3. Deduplicate entities by ID
@@ -259,7 +259,7 @@ def ingest_command(
         help="Config file path",
     ),
 ) -> None:
-    """Ingest markdown KG files into a structured Graqle knowledge graph.
+    """Ingest markdown KG files into a structured GraQle knowledge graph.
 
     Parses markdown knowledge graph files, extracts entities and edges
     using a formal ontology with SHACL-like validation, and produces
@@ -289,7 +289,7 @@ def ingest_command(
     config_path = Path(config)
 
     console.print(Panel(
-        "[bold cyan]Graqle Knowledge Ingestion[/bold cyan]\n"
+        "[bold cyan]GraQle Knowledge Ingestion[/bold cyan]\n"
         "[dim]Extracting structured knowledge from markdown KG files[/dim]",
         border_style="cyan",
     ))

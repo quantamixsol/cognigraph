@@ -1,6 +1,6 @@
 """Task-based model routing — match tasks to the right model.
 
-Users teach Graqle routing rules that map task types and entity types
+Users teach GraQle routing rules that map task types and entity types
 to specific backends. The router recommends models based on user
 preferences, never auto-switches without explicit configuration.
 

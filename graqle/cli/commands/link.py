@@ -1,7 +1,7 @@
 """graq link — Multi-project graph operations.
 
 Merge multiple project KGs into a unified graph and create cross-project
-edges. This enables Graqle reasoning across your entire ecosystem.
+edges. This enables GraQle reasoning across your entire ecosystem.
 
 Examples:
     graq link merge project1/graqle.json project2/graqle.json -o merged.json

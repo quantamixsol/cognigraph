@@ -1,6 +1,6 @@
 """graq cloud — cloud graph management commands.
 
-Upload your knowledge graph to Graqle Cloud so it appears on graqle.com/dashboard.
+Upload your knowledge graph to GraQle Cloud so it appears on graqle.com/dashboard.
 
 Commands:
     graq cloud push      Upload graph + intelligence to cloud
@@ -31,7 +31,7 @@ console = Console()
 
 cloud_app = typer.Typer(
     name="cloud",
-    help="Upload and manage your knowledge graph on Graqle Cloud.",
+    help="Upload and manage your knowledge graph on GraQle Cloud.",
     no_args_is_help=True,
 )
 
@@ -48,7 +48,7 @@ def _get_credentials():
     creds = load_credentials()
     if not creds.is_authenticated:
         console.print(Panel(
-            "[bold red]Not logged in to Graqle Cloud[/bold red]\n\n"
+            "[bold red]Not logged in to GraQle Cloud[/bold red]\n\n"
             "  Log in with your API key:\n"
             "  [bold cyan]graq login --api-key grq_your_key_here[/bold cyan]\n\n"
             "  Generate a key at: [bold]https://graqle.com/dashboard/account[/bold]",
@@ -228,7 +228,7 @@ def cloud_push(
         help="Project root directory.",
     ),
 ) -> None:
-    """Upload knowledge graph + intelligence to Graqle Cloud.
+    """Upload knowledge graph + intelligence to GraQle Cloud.
 
     Your graph will appear on graqle.com/dashboard under your projects.
     """
@@ -238,7 +238,7 @@ def cloud_push(
     # Detect project name
     proj_name = project or _detect_project_name(root_path)
 
-    console.print(f"\n[bold cyan]Pushing[/bold cyan] [bold]{proj_name}[/bold] to Graqle Cloud...")
+    console.print(f"\n[bold cyan]Pushing[/bold cyan] [bold]{proj_name}[/bold] to GraQle Cloud...")
 
     # Check graph exists
     graph_path = root_path / "graqle.json"
@@ -378,14 +378,14 @@ def cloud_pull(
         help="Target directory.",
     ),
 ) -> None:
-    """Download knowledge graph from Graqle Cloud."""
+    """Download knowledge graph from GraQle Cloud."""
     creds = _get_credentials()
     root_path = Path(root).resolve()
 
     proj_name = project or _detect_project_name(root_path)
     email_h = _email_hash(creds.email)
 
-    console.print(f"\n[bold cyan]Pulling[/bold cyan] [bold]{proj_name}[/bold] from Graqle Cloud...")
+    console.print(f"\n[bold cyan]Pulling[/bold cyan] [bold]{proj_name}[/bold] from GraQle Cloud...")
 
     # Download via public-facing API (no AWS creds needed)
     import httpx
@@ -407,7 +407,7 @@ def cloud_pull(
             timeout=30,
         )
         if list_resp.status_code != 200:
-            console.print("[red]Failed to connect to Graqle Cloud[/red]")
+            console.print("[red]Failed to connect to GraQle Cloud[/red]")
             raise typer.Exit(1)
 
         projects_data = list_resp.json().get("projects", [])
@@ -445,7 +445,7 @@ def cloud_status() -> None:
 
     creds = load_credentials()
 
-    table = Table(title="Graqle Cloud Status", border_style="dim")
+    table = Table(title="GraQle Cloud Status", border_style="dim")
     table.add_column("Setting", style="cyan")
     table.add_column("Value")
 

@@ -1,4 +1,4 @@
-"""Graqle Ontology Module — Governance-Constrained Reasoning.
+"""GraQle Ontology Module — Governance-Constrained Reasoning.
 
 Provides OWL-like class hierarchy, SHACL validation gates, constraint
 propagation, ontology-based message routing, and skill resolution.

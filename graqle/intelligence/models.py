@@ -1,4 +1,4 @@
-"""Data models for the Graqle Intelligence Pipeline.
+"""Data models for the GraQle Intelligence Pipeline.
 
 Every file scanned produces a FileIntelligenceUnit — an atomic, validated
 package of nodes, edges, intelligence packet, and coverage report.

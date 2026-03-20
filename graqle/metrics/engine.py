@@ -26,7 +26,7 @@ _DEFAULT_TOKENS_WITHOUT = 2_000  # avg tokens when loading a file manually (real
 
 
 class MetricsEngine:
-    """Track and report Graqle usage metrics.
+    """Track and report GraQle usage metrics.
 
     Metrics are stored in a single JSON file and updated incrementally.
     A *session* spans from ``start_session()`` to ``end_session()`` and
@@ -97,7 +97,7 @@ class MetricsEngine:
         tokens_returned:
             Actual tokens returned by Graqle.
         tokens_without:
-            Estimated tokens that would have been loaded without Graqle
+            Estimated tokens that would have been loaded without GraQle
             (defaults to 25 000 — the average full-file load).
         """
         self.context_loads += 1
@@ -304,7 +304,7 @@ class MetricsEngine:
 
         lines = [
             "=" * 60,
-            "  Graqle ROI Report",
+            "  GraQle ROI Report",
             "=" * 60,
             "",
             f"  Initialised:          {self.init_timestamp[:10]}",

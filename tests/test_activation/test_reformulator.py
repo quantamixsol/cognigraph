@@ -619,7 +619,7 @@ class TestEdgeCases:
 # ── Test Graph Integration ──────────────────────────────────────
 
 class TestGraphIntegration:
-    """Test that reformulator integrates correctly with Graqle.reason()."""
+    """Test that reformulator integrates correctly with GraQle.reason()."""
 
     def test_config_has_reformulator_field(self):
         from graqle.config.settings import GraqleConfig, ReformulatorConfig

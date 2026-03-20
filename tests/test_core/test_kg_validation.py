@@ -1,6 +1,6 @@
 """Tests for mandatory KG quality validation.
 
-These tests ensure that Graqle enforces node description completeness.
+These tests ensure that GraQle enforces node description completeness.
 Nodes without descriptions produce agents that cannot reason, leading to
 low-confidence garbage answers. This was discovered during the CrawlQ POC
 where 291 nodes with empty descriptions produced 22% confidence answers,

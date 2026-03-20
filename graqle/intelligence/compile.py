@@ -20,7 +20,7 @@ Orchestrates the full streaming intelligence pipeline:
 3. Streaming deep scan (per-file validation + intelligence)
 4. Emit to all outputs (JSON packets, inline headers, CLAUDE.md)
 
-This is the core command that makes Graqle's Quality Gate operational.
+This is the core command that makes GraQle's Quality Gate operational.
 
 See ADR-105 §Implementation Plan, Phase 1.
 """
@@ -95,7 +95,7 @@ def compile_intelligence(
 
     # ─── Phase 1: Structural Pass (<3s) ──────────────────────────
     phase1_start = time.perf_counter()
-    console.print("\n⚡ [bold]Graqle Quality Gate[/bold] — compiling intelligence...\n")
+    console.print("\n⚡ [bold]GraQle Quality Gate[/bold] — compiling intelligence...\n")
 
     shape = structural_pass(root)
     phase1_time = time.perf_counter() - phase1_start
@@ -414,7 +414,7 @@ def compile_main(
         if uninstall_hook(root):
             console.print("[green]✓ Pre-commit hook removed.[/green]")
         else:
-            console.print("[dim]No Graqle hook found.[/dim]")
+            console.print("[dim]No GraQle hook found.[/dim]")
         raise typer.Exit(0)
 
     result = compile_intelligence(root, inject=inject, eject=eject, verbose=verbose)

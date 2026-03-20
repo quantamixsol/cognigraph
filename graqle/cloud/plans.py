@@ -1,4 +1,4 @@
-"""Graqle Cloud Plans — plan limits and monetization gating.
+"""GraQle Cloud Plans — plan limits and monetization gating.
 
 Defines tier limits and gates features behind plan boundaries.
 The gating is soft (helpful suggestions, not hard blocks for most features)

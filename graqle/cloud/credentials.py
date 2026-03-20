@@ -1,4 +1,4 @@
-"""Graqle Cloud credentials — local API key storage.
+"""GraQle Cloud credentials — local API key storage.
 
 Stores cloud API key in ~/.graqle/credentials.json.
 Used by Studio cloud features and `graq login` command.

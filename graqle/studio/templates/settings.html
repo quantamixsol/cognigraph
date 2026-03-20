@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Settings — Graqle Studio{% endblock %}
+{% block title %}Settings — GraQle Studio{% endblock %}
 {% block nav_settings %}active{% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
 
 <!-- Cloud Connection -->
 <div class="panel" x-data="cloudConnect()" x-init="checkStatus()">
-    <h3>Graqle Cloud</h3>
+    <h3>GraQle Cloud</h3>
     <p class="text-muted" style="margin-bottom: 16px;">
         Cloud features are optional. Your graph, your machine, your data.
     </p>
@@ -18,7 +18,7 @@
     <!-- Connected state -->
     <div x-show="connected" style="display:none">
         <div class="status-banner green" style="margin-bottom: 16px;">
-            <strong>Connected to Graqle Cloud</strong>
+            <strong>Connected to GraQle Cloud</strong>
         </div>
         <div class="metric-row"><span>Email</span><strong x-text="email"></strong></div>
         <div class="metric-row"><span>Plan</span><strong x-text="plan"></strong></div>
@@ -130,7 +130,7 @@
 
 <div class="panel">
     <h3>About</h3>
-    <div class="metric-row"><span>Graqle Version</span><strong>v{{ version }}</strong></div>
+    <div class="metric-row"><span>GraQle Version</span><strong>v{{ version }}</strong></div>
     <div class="metric-row"><span>Patent</span><strong>EP26162901.8</strong></div>
     <div class="metric-row"><span>License</span><strong>Apache 2.0</strong></div>
     <div class="metric-row"><span>Innovations</span><strong>15</strong></div>

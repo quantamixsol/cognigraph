@@ -1,8 +1,8 @@
 """graq plugins — discover and integrate companion Claude Code plugins.
 
-Graqle works alongside other Claude Code plugins/skills via MCP.
+GraQle works alongside other Claude Code plugins/skills via MCP.
 This command helps users discover, install, and configure plugins
-that complement Graqle's intelligence layer.
+that complement GraQle's intelligence layer.
 
 Usage:
     graq plugins list          # Show available companion plugins
@@ -31,7 +31,7 @@ console = Console()
 logger = logging.getLogger("graqle.cli.plugins")
 
 # ──────────────────────────────────────────────────────────────────────
-# Plugin registry — companion tools that work alongside Graqle
+# Plugin registry — companion tools that work alongside GraQle
 # ──────────────────────────────────────────────────────────────────────
 
 COMPANION_PLUGINS: dict[str, dict[str, Any]] = {
@@ -42,7 +42,7 @@ COMPANION_PLUGINS: dict[str, dict[str, Any]] = {
         "install_type": "claude-plugin",
         "install_cmd": "git clone https://github.com/obra/superpowers.git",
         "install_dir": "superpowers",
-        "synergy": "Combines with Graqle's impact analysis for safer refactoring workflows",
+        "synergy": "Combines with GraQle's impact analysis for safer refactoring workflows",
         "category": "methodology",
         "bridge": "superpowers_bridge.md",
     },
@@ -53,7 +53,7 @@ COMPANION_PLUGINS: dict[str, dict[str, Any]] = {
         "install_type": "claude-skill",
         "install_cmd": "git clone https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
         "install_dir": "ui-ux-pro-max-skill",
-        "synergy": "Uses Graqle's graph data to inform UI layout decisions for dashboards",
+        "synergy": "Uses GraQle's graph data to inform UI layout decisions for dashboards",
         "category": "design",
         "bridge": "uiux_bridge.md",
     },
@@ -64,7 +64,7 @@ COMPANION_PLUGINS: dict[str, dict[str, Any]] = {
         "install_type": "mcp-server",
         "install_cmd": "curl -fsSL https://install.cmem.ai/openclaw.sh | bash",
         "install_dir": None,
-        "synergy": "Structural memory (Graqle KG) + temporal memory (Claude-Mem) = complete context",
+        "synergy": "Structural memory (GraQle KG) + temporal memory (Claude-Mem) = complete context",
         "category": "memory",
     },
 }
@@ -84,7 +84,7 @@ app = typer.Typer(
 @app.command("list")
 def list_plugins():
     """Show available companion plugins that work with Graqle."""
-    table = Table(title="Companion Plugins for Graqle", show_lines=True)
+    table = Table(title="Companion Plugins for GraQle", show_lines=True)
     table.add_column("ID", style="cyan", width=16)
     table.add_column("Name", style="bold")
     table.add_column("Category", style="dim")
@@ -105,7 +105,7 @@ def list_plugins():
     console.print(table)
     console.print()
     console.print("[dim]Install with:[/dim] graq plugins install <id>")
-    console.print("[dim]These plugins complement Graqle — they are NOT bundled.[/dim]")
+    console.print("[dim]These plugins complement GraQle — they are NOT bundled.[/dim]")
     console.print("[dim]Each plugin has its own license and maintainer.[/dim]")
 
 
@@ -197,7 +197,7 @@ def _is_installed(plugin_id: str) -> bool:
 
 
 def _deploy_bridge(plugin_id: str, plugin: dict):
-    """Deploy the Graqle bridge skill that makes the plugin Graqle-aware.
+    """Deploy the GraQle bridge skill that makes the plugin GraQle-aware.
 
     Bridge skills are .md files shipped inside the graqle SDK package.
     They get copied into the user's .claude/skills/ so Claude Code reads them
@@ -225,8 +225,8 @@ def _deploy_bridge(plugin_id: str, plugin: dict):
     target = target_dir / bridge_file
     shutil.copy2(str(source), str(target))
 
-    console.print(f"[green]Graqle bridge deployed:[/green] {target}")
-    console.print(f"  [dim]Claude Code will now combine {plugin['name']} with Graqle's intelligence[/dim]")
+    console.print(f"[green]GraQle bridge deployed:[/green] {target}")
+    console.print(f"  [dim]Claude Code will now combine {plugin['name']} with GraQle's intelligence[/dim]")
 
 
 def _install_claude_plugin(plugin_id: str, plugin: dict):
@@ -248,7 +248,7 @@ def _install_claude_plugin(plugin_id: str, plugin: dict):
         console.print(f"[green]✓ {plugin['name']} installed successfully![/green]")
         console.print(f"[dim]Location: {target}[/dim]")
         _deploy_bridge(plugin_id, plugin)
-        console.print(f"\n[cyan]Synergy with Graqle:[/cyan] {plugin['synergy']}")
+        console.print(f"\n[cyan]Synergy with GraQle:[/cyan] {plugin['synergy']}")
     except subprocess.CalledProcessError as e:
         console.print(f"[red]Installation failed: {e.stderr}[/red]")
         raise typer.Exit(1)
@@ -281,7 +281,7 @@ def _install_claude_skill(plugin_id: str, plugin: dict):
         console.print(f"[green]✓ {plugin['name']} installed successfully![/green]")
         console.print(f"[dim]Location: {target}[/dim]")
         _deploy_bridge(plugin_id, plugin)
-        console.print(f"\n[cyan]Synergy with Graqle:[/cyan] {plugin['synergy']}")
+        console.print(f"\n[cyan]Synergy with GraQle:[/cyan] {plugin['synergy']}")
     except subprocess.CalledProcessError as e:
         console.print(f"[red]Installation failed: {e.stderr}[/red]")
         raise typer.Exit(1)

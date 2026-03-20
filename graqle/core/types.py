@@ -90,7 +90,7 @@ class GraphConnector(Protocol):
 
 @dataclass
 class ReasoningResult:
-    """Result of a Graqle reasoning query."""
+    """Result of a GraQle reasoning query."""
 
     query: str
     answer: str
@@ -130,7 +130,7 @@ class ExplanationTrace:
 
 @dataclass
 class GraphStats:
-    """Statistics about a Graqle instance."""
+    """Statistics about a GraQle instance."""
 
     total_nodes: int
     total_edges: int

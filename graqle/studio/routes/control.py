@@ -1,9 +1,9 @@
-"""Graqle Studio — Control Plane & Share API routes.
+"""GraQle Studio — Control Plane & Share API routes.
 
 Sprint 4: Multi-instance management and shareable badges.
 
 Routes:
-- GET  /instances        → List detected Graqle instances
+- GET  /instances        → List detected GraQle instances
 - GET  /instance/{name}  → Instance detail (health, nodes, DRACE)
 - GET  /badges/drace     → Shareable DRACE badge (SVG)
 - GET  /badges/health    → Shareable health badge (SVG)
@@ -48,7 +48,7 @@ def _read_json(path: Path) -> Any:
 
 
 def _discover_instances(root: Path) -> list[dict[str, Any]]:
-    """Discover Graqle instances in current and parent directories."""
+    """Discover GraQle instances in current and parent directories."""
     instances = []
 
     # Current instance
@@ -68,7 +68,7 @@ def _discover_instances(root: Path) -> list[dict[str, Any]]:
 
 
 def _build_instance_info(path: Path) -> dict[str, Any]:
-    """Build instance summary from a Graqle project directory."""
+    """Build instance summary from a GraQle project directory."""
     graqle_dir = path / ".graqle"
     name = path.name
 
@@ -117,7 +117,7 @@ def _build_instance_info(path: Path) -> dict[str, Any]:
 
 @router.get("/instances")
 async def list_instances(request: Request):
-    """List all detected Graqle instances."""
+    """List all detected GraQle instances."""
     root = _get_root(request)
     instances = _discover_instances(root)
     return {
@@ -308,7 +308,7 @@ async def drace_badge(request: Request):
     elif score is not None and score >= 0.6:
         label_text = "DRACE OK"
 
-    svg = _badge_svg("Graqle", f"{label_text} {value}", _drace_color(score))
+    svg = _badge_svg("GraQle", f"{label_text} {value}", _drace_color(score))
     return Response(content=svg, media_type="image/svg+xml")
 
 
@@ -319,7 +319,7 @@ async def health_badge(request: Request):
     scorecard = _read_json(root / ".graqle" / "scorecard.json")
     health = scorecard.get("health", "UNKNOWN") if scorecard else "UNKNOWN"
 
-    svg = _badge_svg("Graqle", health, _health_color(health))
+    svg = _badge_svg("GraQle", health, _health_color(health))
     return Response(content=svg, media_type="image/svg+xml")
 
 
@@ -330,7 +330,7 @@ async def nodes_badge(request: Request):
     scorecard = _read_json(root / ".graqle" / "scorecard.json")
     nodes = scorecard.get("total_nodes", scorecard.get("nodes", 0)) if scorecard else 0
 
-    svg = _badge_svg("Graqle Nodes", str(nodes), "#007ec6")
+    svg = _badge_svg("GraQle Nodes", str(nodes), "#007ec6")
     return Response(content=svg, media_type="image/svg+xml")
 
 
@@ -361,5 +361,5 @@ async def share_config(request: Request):
                 "html": f'<img src="{prefix}/badges/nodes" alt="Node Count"/>',
             },
         },
-        "embed_tip": "Add these to your README.md for live-updating Graqle badges.",
+        "embed_tip": "Add these to your README.md for live-updating GraQle badges.",
     }

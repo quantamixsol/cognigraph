@@ -1,7 +1,7 @@
 """graq grow — incrementally update the knowledge graph.
 
 Called automatically by the git post-commit hook. Can also be run manually.
-This is the core of Graqle's promise: the graph adapts and grows with
+This is the core of GraQle's promise: the graph adapts and grows with
 every commit. It does an incremental scan + ingest + merge.
 
 The grow command:

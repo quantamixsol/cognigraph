@@ -26,7 +26,7 @@ from unittest.mock import patch
 # ---------------------------------------------------------------------------
 
 def _make_test_graph(tmp_path: Path) -> tuple:
-    """Create a minimal Graqle graph for testing."""
+    """Create a minimal GraQle graph for testing."""
     from graqle.core.edge import CogniEdge
     from graqle.core.graph import Graqle
     from graqle.core.node import CogniNode

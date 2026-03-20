@@ -77,7 +77,7 @@ def upgrade_command(
         pw = typer.prompt("Neo4j password", hide_input=True)
 
     console.print(Panel.fit(
-        "[bold cyan]Graqle Backend Upgrade[/bold cyan]\n"
+        "[bold cyan]GraQle Backend Upgrade[/bold cyan]\n"
         f"Target: [bold]{target}[/bold] → {uri}/{database}",
         border_style="cyan",
     ))
@@ -256,7 +256,7 @@ def upgrade_command(
         f"Config: graqle.yaml updated\n"
         f"Intelligence: PageRank + 2-hop neighborhoods pre-computed\n\n"
         f"[dim]Your JSON backup is at: {result['backup_path']}[/dim]\n"
-        f"[dim]All Graqle tools (MCP, server, learn) now use Neo4j automatically.[/dim]",
+        f"[dim]All GraQle tools (MCP, server, learn) now use Neo4j automatically.[/dim]",
         border_style="green",
         title="Migration Complete",
     ))

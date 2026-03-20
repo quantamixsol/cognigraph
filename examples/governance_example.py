@@ -1,4 +1,4 @@
-"""Graqle Governance Example — SHACL constraints for a codebase KG.
+"""GraQle Governance Example — SHACL constraints for a codebase KG.
 
 This example shows how to apply governance constraints to a software
 engineering knowledge graph. The constraints ensure that:
@@ -198,14 +198,14 @@ def register_codebase_governance(graph: Graqle) -> None:
 async def main():
     """Demonstrate governance-constrained reasoning on a codebase KG."""
     print("=" * 60)
-    print("Graqle Governance Example — Codebase KG")
+    print("GraQle Governance Example — Codebase KG")
     print("=" * 60)
 
     # Build the graph
     graph_data = build_example_graph()
     print(f"\nGraph: {len(graph_data['nodes'])} nodes, {len(graph_data['links'])} edges")
 
-    # Load into Graqle
+    # Load into GraQle
     config = GraqleConfig.default()
     config.activation.max_nodes = 5  # Small graph, use all nodes
     config.observer.enabled = True   # v0.12: on by default

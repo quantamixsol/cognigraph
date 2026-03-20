@@ -1,4 +1,4 @@
-# Try Graqle in 60 Seconds
+# Try GraQle in 60 Seconds
 
 > Turn any codebase into a knowledge graph. Query your architecture, not your files.
 

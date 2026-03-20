@@ -1,6 +1,6 @@
-# Contributing to Graqle
+# Contributing to GraQle
 
-Thanks for your interest in contributing to Graqle. Here's how to get started.
+Thanks for your interest in contributing to GraQle. Here's how to get started.
 
 ## Development Setup
 

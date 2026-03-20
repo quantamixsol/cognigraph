@@ -7,14 +7,14 @@ Tier A: Single-Regulation (10 questions)
 
 Tier B: Cross-Regulation (10 questions)
     Tests reasoning across 2 regulations (e.g., AI Act + GDPR).
-    Graqle advantage: PCST activates nodes from both frameworks.
+    GraQle advantage: PCST activates nodes from both frameworks.
 
 Tier C: Complex Inter-Domain (10 questions)
     Tests reasoning across 3+ regulations with conditional logic.
-    Graqle should significantly outperform: requires message passing
+    GraQle should significantly outperform: requires message passing
     across distant nodes, conflict detection, and hierarchical aggregation.
 
-This benchmark demonstrates Graqle's core thesis:
+This benchmark demonstrates GraQle's core thesis:
     "Graph topology-aware distributed reasoning outperforms
      single-agent approaches on multi-hop regulatory queries."
 """

@@ -1,4 +1,4 @@
-"""Graqle Runtime — live observability data for the knowledge graph.
+"""GraQle Runtime — live observability data for the knowledge graph.
 
 Auto-detects cloud environment (AWS, Azure, GCP) or local dev,
 fetches logs/metrics, and builds RUNTIME_EVENT nodes in the KG.

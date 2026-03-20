@@ -1,4 +1,4 @@
-"""Tests for Graqle.from_neo4j() and to_neo4j()."""
+"""Tests for GraQle.from_neo4j() and to_neo4j()."""
 
 # ── graqle:intelligence ──
 # module: tests.test_core.test_graph_neo4j
@@ -21,7 +21,7 @@ def _mock_neo4j_module():
 
 
 class TestFromNeo4j:
-    """Tests for Graqle.from_neo4j()."""
+    """Tests for GraQle.from_neo4j()."""
 
     def test_from_neo4j_creates_graph(self):
         """from_neo4j loads nodes and edges from Neo4j."""
@@ -113,7 +113,7 @@ class TestFromNeo4j:
 
 
 class TestToNeo4j:
-    """Tests for Graqle.to_neo4j()."""
+    """Tests for GraQle.to_neo4j()."""
 
     def test_to_neo4j_writes_graph(self):
         """to_neo4j should call save and save_chunks on connector."""

@@ -288,7 +288,7 @@ class Neo4jConnector(BaseConnector):
     # --- Schema management ---
 
     def create_schema(self) -> None:
-        """Create constraints and vector index for Graqle schema."""
+        """Create constraints and vector index for GraQle schema."""
         driver = self._get_driver()
 
         with driver.session(database=self._database) as session:

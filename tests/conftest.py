@@ -1,4 +1,4 @@
-"""Shared test fixtures for Graqle."""
+"""Shared test fixtures for GraQle."""
 
 # ── graqle:intelligence ──
 # module: tests.conftest
@@ -51,7 +51,7 @@ def sample_nx_graph():
 
 @pytest.fixture
 def sample_graph(sample_nx_graph):
-    """A Graqle built from the sample NetworkX graph."""
+    """A GraQle built from the sample NetworkX graph."""
     return Graqle.from_networkx(sample_nx_graph)
 
 

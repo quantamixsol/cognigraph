@@ -1,6 +1,6 @@
 """llama.cpp backend — CPU inference via GGUF quantized models.
 
-Enables Graqle reasoning on machines without GPUs. Uses
+Enables GraQle reasoning on machines without GPUs. Uses
 llama-cpp-python bindings for efficient CPU inference with
 GGUF quantization (Q4_K_M: 15-25 tok/s on modern CPUs).
 """

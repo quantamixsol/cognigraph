@@ -1,4 +1,4 @@
-"""Graqle — the reasoning graph where every node is an agent."""
+"""GraQle — the reasoning graph where every node is an agent."""
 
 # ── graqle:intelligence ──
 # module: graqle.core.graph
@@ -225,7 +225,7 @@ def _read_modify_write(file_path: str, modify_fn) -> None:
 class Graqle:
     """The reasoning graph — a knowledge graph where every node is an agent.
 
-    Graqle is the primary entry point for the SDK. It wraps a
+    GraQle is the primary entry point for the SDK. It wraps a
     knowledge graph (from NetworkX, Neo4j, or other sources) and
     provides reasoning capabilities through distributed model agents.
     """
@@ -267,7 +267,7 @@ class Graqle:
         node_desc_key: str = "description",
         edge_rel_key: str = "relationship",
     ) -> Graqle:
-        """Create a Graqle from a NetworkX graph."""
+        """Create a GraQle from a NetworkX graph."""
         nodes: dict[str, CogniNode] = {}
         edges: dict[str, CogniEdge] = {}
 
@@ -325,7 +325,7 @@ class Graqle:
     def from_json(
         cls, path: str, config: GraqleConfig | str | None = None
     ) -> Graqle:
-        """Create a Graqle from a JSON file.
+        """Create a GraQle from a JSON file.
 
         Parameters
         ----------
@@ -364,7 +364,7 @@ class Graqle:
         database: str = "neo4j",
         config: GraqleConfig | None = None,
     ) -> Graqle:
-        """Create a Graqle from a Neo4j database.
+        """Create a GraQle from a Neo4j database.
 
         Loads nodes and edges via Cypher, attaches chunks as node properties,
         and stores the connector for runtime Cypher vector search.

@@ -1,4 +1,4 @@
-"""Upload Graqle graph data to Neptune Serverless.
+"""Upload GraQle graph data to Neptune Serverless.
 
 Reads the existing graqle.json and pushes all nodes + edges to Neptune
 using the production neptune client (SigV4 IAM auth, openCypher HTTPS).
@@ -126,7 +126,7 @@ def upload_in_batches(project_id: str, nodes: list[dict], edges: list[dict], bat
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Upload Graqle graph to Neptune')
+    parser = argparse.ArgumentParser(description='Upload GraQle graph to Neptune')
     parser.add_argument('--graph-path', default='graqle.json', help='Path to graqle.json')
     parser.add_argument('--project-id', default='graqle-sdk', help='Project ID for Neptune isolation')
     parser.add_argument('--batch-size', type=int, default=50, help='Batch size for uploads')

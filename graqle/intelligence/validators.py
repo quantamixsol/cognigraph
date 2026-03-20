@@ -1,4 +1,4 @@
-"""6 Validation Gates for the Graqle Intelligence Pipeline.
+"""6 Validation Gates for the GraQle Intelligence Pipeline.
 
 Every file passes through all 6 gates sequentially. If a gate fails,
 auto-repair is attempted before moving to the next gate. No file exits

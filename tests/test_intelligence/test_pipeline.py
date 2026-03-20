@@ -1,7 +1,7 @@
 """Tests for the Streaming Intelligence Pipeline.
 
 Tests structural pass, import graph, priority ordering, file processing,
-and the full streaming pipeline — all against the real Graqle SDK codebase.
+and the full streaming pipeline — all against the real GraQle SDK codebase.
 """
 
 # ── graqle:intelligence ──
@@ -48,7 +48,7 @@ class TestStructuralPass:
 
     def test_detects_ai_tools(self):
         shape = structural_pass(SDK_ROOT)
-        # SDK root might not have CLAUDE.md, but parent Graqle dir does
+        # SDK root might not have CLAUDE.md, but parent GraQle dir does
         # This test just verifies detection logic runs without error
         assert isinstance(shape.ai_tools, list)
 
