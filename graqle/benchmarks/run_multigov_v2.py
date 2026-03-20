@@ -155,7 +155,7 @@ async def run_v2_benchmark(
 ) -> dict[str, BenchmarkSummary]:
     """Run the v2 governance-constrained benchmark."""
     print("=" * 70)
-    print("Graqle v2: Governance-Constrained Reasoning Benchmark")
+    print("GraQle v2: Governance-Constrained Reasoning Benchmark")
     print("=" * 70)
 
     # 1. Build KG
@@ -289,7 +289,7 @@ async def run_v2_benchmark(
                 method="single-agent",
             ))
 
-        # --- Graqle-PCST v2 (governance-constrained) ---
+        # --- GraQle-PCST v2 (governance-constrained) ---
         try:
             config = GraqleConfig.default()
             config.orchestration.max_rounds = max_rounds
@@ -401,7 +401,7 @@ async def run_v2_benchmark(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Graqle v2 Multi-Governance Benchmark"
+        description="GraQle v2 Multi-Governance Benchmark"
     )
     parser.add_argument("--model", default="deepseek-r1:7b", help="Reasoning model")
     parser.add_argument("--observer-model", default="qwen2.5:3b", help="Observer model")

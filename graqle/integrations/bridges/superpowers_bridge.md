@@ -1,11 +1,11 @@
 ---
 name: graqle-superpowers-bridge
-description: Automatically inject Graqle intelligence into Superpowers workflows — preflight before plans, impact during TDD, lessons during code review
+description: Automatically inject GraQle intelligence into Superpowers workflows — preflight before plans, impact during TDD, lessons during code review
 ---
 
-# Graqle × Superpowers Bridge
+# GraQle × Superpowers Bridge
 
-When both Graqle MCP tools (`graq_*`) and Superpowers skills are available in the same session, they should complement each other automatically. This bridge defines how.
+When both GraQle MCP tools (`graq_*`) and Superpowers skills are available in the same session, they should complement each other automatically. This bridge defines how.
 
 ## Integration Points
 
@@ -54,7 +54,7 @@ This surfaces past mistakes related to the module being changed. The code review
 graq_impact(component=<changed modules>)
 ```
 
-Verify that ALL consumers identified by Graqle's impact analysis have been tested. If any consumer was not tested, verification FAILS — go back and add tests.
+Verify that ALL consumers identified by GraQle's impact analysis have been tested. If any consumer was not tested, verification FAILS — go back and add tests.
 
 ### 5. During Brainstorming (brainstorming skill)
 

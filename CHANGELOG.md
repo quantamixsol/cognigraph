@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to Graqle are documented in this file.
+All notable changes to GraQle are documented in this file.
 
 ---
 
 ## v0.29.0 — Cloud Sync + Multi-Project Dashboard (2026-03-17)
 
-**Push your knowledge graph to Graqle Cloud. View it anywhere. Share with your team.**
+**Push your knowledge graph to GraQle Cloud. View it anywhere. Share with your team.**
 
 The cloud release: `graq cloud push` sends your knowledge graph to [graqle.com/dashboard](https://graqle.com/dashboard). Pull it on any machine. See all your projects in one control plane.
 
@@ -28,7 +28,7 @@ graq cloud status                     # List cloud projects + connection info
 
 ### Enhanced Login
 
-`graq login --api-key grq_xxx` now validates the key against the Graqle Cloud API:
+`graq login --api-key grq_xxx` now validates the key against the GraQle Cloud API:
 - Returns email, plan tier, and validation status
 - Falls back gracefully when offline — key saved locally
 - Key format validation (`grq_` prefix required)
@@ -216,11 +216,11 @@ None. All new features are additive. Existing configs work unchanged.
 
 ## v0.20.0 — Document Intelligence + Auto-Scaling (2026-03-14)
 
-**The biggest release since v0.9.0.** Graqle now understands documents, JSON configs, and code in a single unified graph — and auto-scales to Neo4j when your graph grows past 5,000 nodes.
+**The biggest release since v0.9.0.** GraQle now understands documents, JSON configs, and code in a single unified graph — and auto-scales to Neo4j when your graph grows past 5,000 nodes.
 
 ### Document-Aware Scanning (Phases 1-4)
 
-Graqle is now the first tool that connects code intelligence to document intelligence in one graph. 8 out of 10 real developer questions hit documents, not code — now those answers are in the graph.
+GraQle is now the first tool that connects code intelligence to document intelligence in one graph. 8 out of 10 real developer questions hit documents, not code — now those answers are in the graph.
 
 - **6-format parser pipeline:** Markdown, plain text, PDF, DOCX, PPTX, XLSX. Zero-dependency for MD/TXT; optional `pip install graqle[docs]` for rich formats.
 - **Heading-aware document chunker:** Preserves document structure (heading hierarchy, page numbers, code blocks, tables). Configurable chunk sizes with overlap.
@@ -274,7 +274,7 @@ graq scan json .             # Scan only JSON files
 
 ### Cross-Source Deduplication Engine (Phase 6)
 
-Without deduplication, multi-source scanning produces a noisy graph where the same entity appears as 3-7 disconnected nodes. Now Graqle unifies them automatically.
+Without deduplication, multi-source scanning produces a noisy graph where the same entity appears as 3-7 disconnected nodes. Now GraQle unifies them automatically.
 
 - **3-layer deduplication pipeline:**
   1. **Canonical IDs** — Deterministic SHA-256 hashing by type+source. Re-scanning produces same IDs, so nodes update instead of duplicating. Supports: FUNCTION, CLASS, MODULE, ENDPOINT, CONFIG, DEPENDENCY, SECTION, DECISION, DOCUMENT, RESOURCE, SCHEMA, TOOL_RULE, SCRIPT.
@@ -395,7 +395,7 @@ Adds: `pdfplumber>=0.9`, `python-docx>=0.8`, `python-pptx>=0.6`, `openpyxl>=3.1`
 
 ## v0.18.0 — Cloud Connect + Ontology Intelligence (2026-03-13)
 
-- Graqle Cloud (`graq login` / `graq logout`) — optional, zero signup for local features
+- GraQle Cloud (`graq login` / `graq logout`) — optional, zero signup for local features
 - OntologyRefiner — analyzes activation memory to suggest ontology improvements
 - GitHub Action workflow (`graqle-scan.yml`)
 - Studio Cloud Connect panel
@@ -410,9 +410,9 @@ Adds: `pdfplumber>=0.9`, `python-docx>=0.8`, `python-pptx>=0.6`, `openpyxl>=3.1`
 - `.graqle-ignore` support
 - 901 tests passing
 
-## v0.16.0 — Graqle Rebrand (2026-03-13)
+## v0.16.0 — GraQle Rebrand (2026-03-13)
 
-- CogniGraph → Graqle. `pip install graqle`, CLI: `graq`, MCP: `graq_*`
+- CogniGraph → GraQle. `pip install graqle`, CLI: `graq`, MCP: `graq_*`
 - Backward compat: `pip install cognigraph` auto-installs graqle
 
 ## v0.15.0

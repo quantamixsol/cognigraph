@@ -385,7 +385,7 @@ class TestHasFeature:
 
     def test_check_feature_raises_on_missing(self):
         mgr = _make_manager_safe()
-        with pytest.raises(LicenseError, match="requires Graqle Team"):
+        with pytest.raises(LicenseError, match="requires GraQle Team"):
             mgr.check_feature("shared_kg_sync")
 
     def test_check_feature_ok_for_free(self):

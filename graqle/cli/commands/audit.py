@@ -110,7 +110,7 @@ def audit_command(
 
 
 def _run_audit(graph: Any) -> dict[str, Any]:
-    """Run a comprehensive chunk audit on a loaded Graqle graph."""
+    """Run a comprehensive chunk audit on a loaded GraQle graph."""
     total = len(graph.nodes)
     nodes_with_chunks = 0
     nodes_without_chunks = 0

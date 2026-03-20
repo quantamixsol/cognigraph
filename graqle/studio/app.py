@@ -1,4 +1,4 @@
-"""Graqle Studio — mount studio routes onto FastAPI app."""
+"""GraQle Studio — mount studio routes onto FastAPI app."""
 
 # ── graqle:intelligence ──
 # module: graqle.studio.app
@@ -78,4 +78,4 @@ def mount_studio(app: Any, state: dict) -> None:
 
     app.add_middleware(StudioRingFenceMiddleware)
 
-    logger.info("Graqle Studio mounted at /studio/ (ring-fence: active)")
+    logger.info("GraQle Studio mounted at /studio/ (ring-fence: active)")

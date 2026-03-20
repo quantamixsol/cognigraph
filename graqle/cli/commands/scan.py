@@ -1925,7 +1925,7 @@ def _format_summary(
 # CLI Entry Point
 # ---------------------------------------------------------------------------
 
-scan_app = typer.Typer(help="Scan a codebase to build a Graqle knowledge graph.")
+scan_app = typer.Typer(help="Scan a codebase to build a GraQle knowledge graph.")
 
 
 def _scan_repo_impl(

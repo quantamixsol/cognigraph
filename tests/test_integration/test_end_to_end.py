@@ -1,4 +1,4 @@
-"""End-to-end integration tests for Graqle."""
+"""End-to-end integration tests for GraQle."""
 
 # ── graqle:intelligence ──
 # module: tests.test_integration.test_end_to_end
@@ -40,7 +40,7 @@ async def test_full_reasoning_pipeline():
     G.add_edge("ai_act", "transparency", relationship="REQUIRES")
     G.add_edge("consent", "transparency", relationship="RELATED_TO")
 
-    # Build Graqle
+    # Build GraQle
     graph = Graqle.from_networkx(G)
     assert len(graph) == 6
 

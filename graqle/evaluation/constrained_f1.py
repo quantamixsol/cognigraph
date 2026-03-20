@@ -139,7 +139,7 @@ class ConstrainedF1Evaluator:
     3. **Coverage Penalty**: Missing in-scope topics that appear in the
        reference reduces recall (you missed something important).
 
-    .. note:: Requires Graqle Pro license (``constrained_f1`` feature).
+    .. note:: Requires GraQle Pro license (``constrained_f1`` feature).
     """
 
     def __init__(

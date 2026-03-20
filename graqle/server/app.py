@@ -1,6 +1,6 @@
-"""Graqle API server — FastAPI application.
+"""GraQle API server — FastAPI application.
 
-Exposes Graqle reasoning as a REST API with streaming support.
+Exposes GraQle reasoning as a REST API with streaming support.
 Start with: `graq serve` or `uvicorn graqle.server.app:create_app`
 
 Production features:
@@ -137,7 +137,7 @@ def create_app(
         model_cls.model_rebuild()
 
     app = FastAPI(
-        title="Graqle API",
+        title="GraQle API",
         description="Graph-of-Agents reasoning engine",
         version=__version__,
     )
@@ -446,7 +446,7 @@ def create_app(
 
         The graph becomes self-discovering and self-evolving:
         - Users add business-level nodes
-        - Graqle activates relevant skills autonomously
+        - GraQle activates relevant skills autonomously
         - The graph discovers new areas users can't think of
 
         Body:

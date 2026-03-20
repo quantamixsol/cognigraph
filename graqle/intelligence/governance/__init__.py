@@ -1,4 +1,4 @@
-"""Graqle Governance — Transparency Layer for AI-assisted development.
+"""GraQle Governance — Transparency Layer for AI-assisted development.
 
 Mapped from TAMR+ regulatory governance patterns to the development domain:
 - audit.py → immutable reasoning session logs (from audit_trail.py)

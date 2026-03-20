@@ -1,14 +1,14 @@
 """Query Reformulator — context-aware query enhancement before PCST activation.
 
-ADR-104: When Graqle runs inside an AI tool (Claude Code, Cursor, Codex),
+ADR-104: When GraQle runs inside an AI tool (Claude Code, Cursor, Codex),
 the tool already has rich conversation history and project context. The
 reformulator leverages this context to produce a clearer, more precise query
 that yields better PCST node activation and higher-quality reasoning.
 
 Architecture:
-    1. Auto-detect: Is Graqle running inside an AI tool? (env vars)
+    1. Auto-detect: Is GraQle running inside an AI tool? (env vars)
     2. If yes: reformulate using the chat context (zero extra model calls —
-       the AI tool does the reformulation before calling Graqle)
+       the AI tool does the reformulation before calling GraQle)
     3. If no: optionally use a lightweight LLM call to clarify the query
     4. Pass-through: if disabled or detection fails, raw query flows through
 
@@ -100,7 +100,7 @@ class Attachment:
 class ReformulationContext:
     """Chat history and project context passed from the AI tool.
 
-    When Graqle is invoked from Claude Code / Cursor / Codex, the AI tool
+    When GraQle is invoked from Claude Code / Cursor / Codex, the AI tool
     can attach conversation context that helps reformulate vague queries.
 
     Attributes:
@@ -111,7 +111,7 @@ class ReformulationContext:
         tool_name: Which AI tool is providing the context
         attachments: Screenshots, files, or other media the user attached.
                      The AI tool should pre-describe these (vision/OCR) before
-                     passing to Graqle — we only use the text descriptions.
+                     passing to GraQle — we only use the text descriptions.
     """
 
     chat_history: list[tuple[str, str]] = field(default_factory=list)
@@ -142,7 +142,7 @@ class ReformulationResult:
 
 
 class QueryReformulator:
-    """Context-aware query reformulator for Graqle.
+    """Context-aware query reformulator for GraQle.
 
     The reformulator enhances raw user queries with contextual clarity before
     they reach the PCST activation layer. It operates in three modes:
@@ -379,7 +379,7 @@ class QueryReformulator:
         # When users paste screenshots, upload files, or share error logs,
         # the AI tool should pre-describe them (vision/OCR) and pass the
         # textual description here. We inject that into the query so
-        # Graqle can activate the right nodes.
+        # GraQle can activate the right nodes.
         if context.attachments:
             attachment_parts: list[str] = []
             for att in context.attachments[:3]:  # Max 3 attachments

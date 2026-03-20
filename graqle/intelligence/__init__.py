@@ -1,6 +1,6 @@
-"""Graqle Intelligence — streaming intelligence pipeline with per-file validation.
+"""GraQle Intelligence — streaming intelligence pipeline with per-file validation.
 
-The Q in Graqle: Quality Gate for development.
+The Q in GraQle: Quality Gate for development.
 Every file passes through 6 validation gates, producing guaranteed-complete
 intelligence packets that AI tools consume naturally.
 

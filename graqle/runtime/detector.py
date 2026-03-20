@@ -50,7 +50,7 @@ def detect_environment() -> EnvironmentInfo:
     3. GCP — gcloud CLI or GOOGLE_* env vars
     4. Local — fallback (always available)
     """
-    # Try AWS first (most common for Graqle users)
+    # Try AWS first (most common for GraQle users)
     aws = _detect_aws()
     if aws and aws.confidence >= 0.7:
         return aws

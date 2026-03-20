@@ -1,1 +1,1 @@
-"""Graqle integrations — bridges to companion plugins."""
+"""GraQle integrations — bridges to companion plugins."""

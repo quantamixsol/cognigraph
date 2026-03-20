@@ -2,7 +2,7 @@
 """Run Multi-Governance Benchmark v3 — Multi-Backend Comparison.
 
 Thesis: "Reasoning without governance is creativity at scale with compliance risk."
-Graqle delivers governance-enforced reasoning at fraction of cost.
+GraQle delivers governance-enforced reasoning at fraction of cost.
 
 Usage:
     # Sonnet 4.6 via Bedrock (fast, ~$5-10):
@@ -180,7 +180,7 @@ async def run_v3_benchmark(
     cost_log = []  # Per-question cost tracking
 
     print("=" * 70)
-    print("Graqle v3: Governed Intelligence Benchmark")
+    print("GraQle v3: Governed Intelligence Benchmark")
     print("Thesis: Governance-enforced reasoning at fraction of cost")
     print("=" * 70)
     print(f"  Backend: {backend_type} | Model: {model}")
@@ -350,9 +350,9 @@ async def run_v3_benchmark(
             ))
             q_cost_entry["sa_error"] = str(e)[:100]
 
-        # --- Graqle-PCST v2 (governance-constrained) ---
+        # --- GraQle-PCST v2 (governance-constrained) ---
         try:
-            # Track cost before Graqle calls
+            # Track cost before GraQle calls
             cg_cost_before = 0.0
             if hasattr(reasoning_backend, 'total_cost_usd'):
                 cg_cost_before = reasoning_backend.total_cost_usd
@@ -545,7 +545,7 @@ async def run_v3_benchmark(
     sa_summary = summaries["single-agent"]
     cg_summary = summaries["graqle-pcst-v2"]
 
-    print(f"\n{'Metric':<30} {'Single-Agent':>15} {'Graqle-v2':>15} {'Delta':>15}")
+    print(f"\n{'Metric':<30} {'Single-Agent':>15} {'GraQle-v2':>15} {'Delta':>15}")
     print("-" * 75)
     print(f"{'Token F1':<30} {sa_summary.avg_f1:>15.4f} {cg_summary.avg_f1:>15.4f} {cg_summary.avg_f1 - sa_summary.avg_f1:>+15.4f}")
     print(f"{'Constrained F1':<30} {sa_summary.avg_constrained_f1:>15.4f} {cg_summary.avg_constrained_f1:>15.4f} {cg_summary.avg_constrained_f1 - sa_summary.avg_constrained_f1:>+15.4f}")
@@ -564,7 +564,7 @@ async def run_v3_benchmark(
     print("-" * 70)
     for tier in ["A", "B", "C"]:
         tier_name = {"A": "Single-Reg", "B": "Cross-Reg", "C": "Inter-Domain"}[tier]
-        for method_key, method_label in [("single-agent", "Single-Agent"), ("graqle-pcst-v2", "Graqle-v2")]:
+        for method_key, method_label in [("single-agent", "Single-Agent"), ("graqle-pcst-v2", "GraQle-v2")]:
             tier_results = [r for r in results[method_key]
                           if hasattr(r, 'question_id') and r.question_id.split("-")[1][0] == tier]
             if tier_results:
@@ -614,7 +614,7 @@ async def run_v3_benchmark(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Graqle v3 — Governed Intelligence Benchmark"
+        description="GraQle v3 — Governed Intelligence Benchmark"
     )
     parser.add_argument("--backend", default="bedrock", choices=["bedrock", "ollama"],
                        help="Backend type (bedrock or ollama)")

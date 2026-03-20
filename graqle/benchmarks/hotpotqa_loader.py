@@ -1,4 +1,4 @@
-"""HotpotQA dataset loader — converts multi-hop QA into Graqle KG format.
+"""HotpotQA dataset loader — converts multi-hop QA into GraQle KG format.
 
 Each HotpotQA question has:
 - 10 context paragraphs (2 gold + 8 distractors)
@@ -7,7 +7,7 @@ Each HotpotQA question has:
 - Type: "comparison" or "bridge"
 - Level: "easy", "medium", "hard"
 
-Conversion to Graqle KG:
+Conversion to GraQle KG:
 - Each paragraph title → KG node (entity)
 - Supporting fact links → edges between nodes
 - Node description = concatenated paragraph sentences

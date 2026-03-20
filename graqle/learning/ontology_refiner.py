@@ -59,7 +59,7 @@ class OntologyRefiner:
     def __init__(
         self,
         activation_memory: Any,  # ActivationMemory
-        graph: Any,  # Graqle graph
+        graph: Any,  # GraQle graph
         min_queries: int = 10,
         underuse_threshold: float = 0.05,
         coactivation_threshold: float = 0.7,

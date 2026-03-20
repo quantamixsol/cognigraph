@@ -1,4 +1,4 @@
-"""Graqle MCP Server — governed context engineering for Claude Code.
+"""GraQle MCP Server — governed context engineering for Claude Code.
 
 Provides Model Context Protocol tools that Claude Code can call:
 1. graq_context — Get focused 500-token context for a service/entity
@@ -63,7 +63,7 @@ class MCPToolResult:
 
 
 class MCPServer:
-    """Graqle MCP Server for Claude Code integration.
+    """GraQle MCP Server for Claude Code integration.
 
     Exposes 4 tools via Model Context Protocol:
     - graq_context: Focused context for a service/entity

@@ -1,13 +1,13 @@
-"""Graqle Benchmark Runner — Full pipeline comparison.
+"""GraQle Benchmark Runner — Full pipeline comparison.
 
-Runs the complete Graqle pipeline (PCST activation → multi-agent
+Runs the complete GraQle pipeline (PCST activation → multi-agent
 message passing → convergence → aggregation) against single-agent baselines
 on standard reasoning benchmarks.
 
 Baselines:
 1. Single-Agent (all context concatenated, single model call)
-2. Graqle-Full (all nodes activated, no PCST pruning)
-3. Graqle-PCST (PCST subgraph activation, message passing)
+2. GraQle-Full (all nodes activated, no PCST pruning)
+3. GraQle-PCST (PCST subgraph activation, message passing)
 
 Metrics: EM (exact match), F1, latency, cost, tokens, rounds
 """
@@ -207,9 +207,9 @@ async def _run_single_agent(
 # ── Benchmark Runner ──
 
 class BenchmarkRunner:
-    """Run Graqle benchmarks against baselines.
+    """Run GraQle benchmarks against baselines.
 
-    Uses the full Graqle pipeline:
+    Uses the full GraQle pipeline:
     1. Build KG from question context
     2. PCST subgraph activation (or full activation)
     3. Multi-agent message passing with convergence
@@ -230,7 +230,7 @@ class BenchmarkRunner:
         self.backend = OllamaBackend(model=model, host=host)
 
     def _build_config(self, strategy: str) -> GraqleConfig:
-        """Build Graqle config for a specific strategy."""
+        """Build GraQle config for a specific strategy."""
         config = GraqleConfig.default()
         config.orchestration.max_rounds = self.max_rounds
         config.orchestration.async_mode = True  # sequential node calls (parallel=False) for local Ollama
@@ -411,7 +411,7 @@ class BenchmarkRunner:
 
         Uses a shared multi-governance KG (EU AI Act + GDPR + DORA + NIS2)
         with thick nodes and evidence chunks. Reports per-tier results
-        to demonstrate Graqle's increasing advantage on cross-regulation
+        to demonstrate GraQle's increasing advantage on cross-regulation
         and complex inter-domain queries.
         """
         methods = methods or ["single-agent", "graqle-pcst"]
@@ -552,7 +552,7 @@ class BenchmarkRunner:
                 method=method,
             )
 
-        # Graqle methods: build graph and run full pipeline
+        # GraQle methods: build graph and run full pipeline
         strategy = "full" if method == "graqle-full" else "pcst"
         config = self._build_config(strategy)
         graph = Graqle.from_networkx(kg, config=config)
@@ -687,8 +687,8 @@ def _generate_multigov_latex(
             n = len(valid) or 1
             display = {
                 "single-agent": "Single-Agent",
-                "graqle-full": "Graqle-Full",
-                "graqle-pcst": "Graqle-PCST",
+                "graqle-full": "GraQle-Full",
+                "graqle-pcst": "GraQle-PCST",
             }.get(method, method)
             avg_f1 = sum(r.f1 for r in valid) / n
             avg_lat = sum(r.latency_ms for r in valid) / n
@@ -728,8 +728,8 @@ def _generate_latex_table(
     for method, s in summaries.items():
         display_name = {
             "single-agent": "Single-Agent (concat.)",
-            "graqle-full": "Graqle-Full",
-            "graqle-pcst": "Graqle-PCST",
+            "graqle-full": "GraQle-Full",
+            "graqle-pcst": "GraQle-PCST",
         }.get(method, method)
 
         rows.append(

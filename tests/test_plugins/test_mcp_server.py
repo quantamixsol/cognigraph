@@ -1,4 +1,4 @@
-"""Tests for Graqle MCP Server plugin."""
+"""Tests for GraQle MCP Server plugin."""
 
 # ── graqle:intelligence ──
 # module: tests.test_plugins.test_mcp_server

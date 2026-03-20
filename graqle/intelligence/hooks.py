@@ -29,14 +29,14 @@ HOOK_MARKER_START = "# ── graqle:pre-commit ──"
 HOOK_MARKER_END = "# ── /graqle:pre-commit ──"
 
 HOOK_SCRIPT = f"""{HOOK_MARKER_START}
-# Graqle Quality Gate — pre-commit verification
+# GraQle Quality Gate — pre-commit verification
 # Checks staged changes against compiled intelligence.
 # Remove with: graq compile --unhook
 if command -v graq >/dev/null 2>&1; then
     graq verify --strict
     if [ $? -ne 0 ]; then
         echo ""
-        echo "\\033[1;31mGraqle Quality Gate: BLOCKED\\033[0m"
+        echo "\\033[1;31mGraQle Quality Gate: BLOCKED\\033[0m"
         echo "Run 'graq verify' to see details."
         echo "Use 'git commit --no-verify' to bypass (not recommended)."
         exit 1
@@ -62,7 +62,7 @@ def install_hook(root: Path) -> bool:
     if hook_path.exists():
         content = hook_path.read_text(encoding="utf-8")
         if HOOK_MARKER_START in content:
-            logger.info("Graqle hook already installed.")
+            logger.info("GraQle hook already installed.")
             return False
         # Append to existing hook
         new_content = content.rstrip("\n") + "\n\n" + HOOK_SCRIPT + "\n"
@@ -83,7 +83,7 @@ def install_hook(root: Path) -> bool:
 def uninstall_hook(root: Path) -> bool:
     """Remove the graq verify pre-commit hook.
 
-    Only removes the Graqle section, preserving other hooks.
+    Only removes the GraQle section, preserving other hooks.
     Returns True if hook was removed.
     """
     hook_path = root / ".git" / "hooks" / "pre-commit"
@@ -94,7 +94,7 @@ def uninstall_hook(root: Path) -> bool:
     if HOOK_MARKER_START not in content:
         return False
 
-    # Remove the Graqle section
+    # Remove the GraQle section
     import re
     pattern = (
         r"\n?" + re.escape(HOOK_MARKER_START) +
@@ -112,7 +112,7 @@ def uninstall_hook(root: Path) -> bool:
 
 
 def has_hook(root: Path) -> bool:
-    """Check if the Graqle pre-commit hook is installed."""
+    """Check if the GraQle pre-commit hook is installed."""
     hook_path = root / ".git" / "hooks" / "pre-commit"
     if not hook_path.exists():
         return False

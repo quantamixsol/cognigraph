@@ -1,4 +1,4 @@
-"""Build RUNTIME_EVENT nodes from fetched log data into the Graqle KG."""
+"""Build RUNTIME_EVENT nodes from fetched log data into the GraQle KG."""
 
 # ── graqle:intelligence ──
 # module: graqle.runtime.kg_builder

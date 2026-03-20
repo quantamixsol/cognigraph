@@ -1,4 +1,4 @@
-"""Graqle CLI — graq command-line interface."""
+"""GraQle CLI — graq command-line interface."""
 
 # ── graqle:intelligence ──
 # module: graqle.cli.main
@@ -68,7 +68,7 @@ def main(
         help="Show version and exit.",
     ),
 ) -> None:
-    """Graqle CLI — graphs that think."""
+    """GraQle CLI — graphs that think."""
 
 
 app.add_typer(scan_app, name="scan")
@@ -124,7 +124,7 @@ def mcp_serve(
         False, "--read-only", help="Read-only mode: blocks mutation tools (graq_learn, graq_reload)"
     ),
 ) -> None:
-    """Start the Graqle MCP development server (stdio transport).
+    """Start the GraQle MCP development server (stdio transport).
 
     Exposes development intelligence tools over JSON-RPC stdio:
       graq_context, graq_inspect, graq_reason, graq_preflight,
@@ -240,7 +240,7 @@ def run(
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
 ) -> None:
-    """Run a reasoning query on the Graqle.
+    """Run a reasoning query on the GraQle.
 
     \b
     Protocols:
@@ -552,7 +552,7 @@ def inspect(
     config: str = typer.Option("graqle.yaml", "--config", "-c"),
     stats: bool = typer.Option(False, "--stats", help="Show graph statistics"),
 ) -> None:
-    """Inspect the Graqle — show nodes, edges, stats."""
+    """Inspect the GraQle — show nodes, edges, stats."""
     from pathlib import Path
 
     from graqle.config.settings import GraqleConfig
@@ -593,7 +593,7 @@ def serve(
     reload: bool = typer.Option(False, "--reload", help="Auto-reload on changes"),
     read_only: bool = typer.Option(False, "--read-only", help="Read-only mode: disables /learn and /reload endpoints"),
 ) -> None:
-    """Start the Graqle API server.
+    """Start the GraQle API server.
 
     Use --read-only to disable mutation endpoints (/learn, /reload).
     This is useful for multi-agent setups where only one agent should write.
@@ -642,7 +642,7 @@ def studio(
     port: int = typer.Option(8888, "--port", "-p", help="Bind port"),
     no_browser: bool = typer.Option(False, "--no-browser", help="Don't auto-open browser"),
 ) -> None:
-    """Launch Graqle Studio — local visual dashboard.
+    """Launch GraQle Studio — local visual dashboard.
 
     \b
     Opens an interactive dashboard at http://127.0.0.1:8888/studio/ with:
@@ -711,7 +711,7 @@ def studio(
 
     from graqle.studio.app import mount_studio
 
-    app_instance = FastAPI(title="Graqle Studio", version="0.11.0")
+    app_instance = FastAPI(title="GraQle Studio", version="0.11.0")
 
     state = {
         "graph": graph,
@@ -891,7 +891,7 @@ def validate(
 
 @app.command()
 def version() -> None:
-    """Show Graqle version."""
+    """Show GraQle version."""
     from graqle.__version__ import __version__
     console.print(f"{BRAND_NAME} v{__version__}")
 
@@ -1328,7 +1328,7 @@ def safety_check_command(
 ) -> None:
     """Combined safety check: impact → preflight → reasoning (if risk warrants).
 
-    Chains three Graqle tools into a single pipeline to give a complete
+    Chains three GraQle tools into a single pipeline to give a complete
     safety picture before making a change. Reasoning is only triggered
     if the preflight risk level is medium or high.
 
@@ -1581,7 +1581,7 @@ def runtime_command(
             console.print(f"[yellow]  Hint: {health['hint']}[/yellow]")
         raise typer.Exit(1)
 
-    console.print(f"[bold cyan]Graqle Runtime[/bold cyan] — {env.provider} ({env.region or 'local'})")
+    console.print(f"[bold cyan]GraQle Runtime[/bold cyan] — {env.provider} ({env.region or 'local'})")
     console.print(f"  Fetching last {hours}h | severity >= {severity} | service: {service or 'all'}")
 
     result = asyncio.run(
@@ -1638,7 +1638,7 @@ def route_command(
     question: str = typer.Argument(..., help="The question to route"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Classify a question and recommend Graqle vs external tools.
+    """Classify a question and recommend GraQle vs external tools.
 
     Smart router that tells you whether to use graq_reason, graq_impact,
     CloudWatch logs, grep, or git for a given investigation.
@@ -1663,11 +1663,11 @@ def route_command(
 
     console.print("[bold cyan]Query Router[/bold cyan]")
     console.print(f"  Category: [bold]{rec.category}[/bold]")
-    console.print(f"  Graqle priority: [{p_color}]{rec.graqle_priority}[/{p_color}]")
+    console.print(f"  GraQle priority: [{p_color}]{rec.graqle_priority}[/{p_color}]")
     console.print(f"  Strategy: [bold]{rec.recommendation}[/bold] (confidence: {rec.confidence:.0%})")
 
     if rec.graqle_tools:
-        console.print(f"  Graqle tools: {', '.join(rec.graqle_tools)}")
+        console.print(f"  GraQle tools: {', '.join(rec.graqle_tools)}")
     if rec.external_tools:
         console.print(f"  External tools: {', '.join(rec.external_tools)}")
 
@@ -1848,7 +1848,7 @@ def reason(
 
 
 def _load_graph(cfg):
-    """Load graph from config or auto-discover. Returns Graqle or None."""
+    """Load graph from config or auto-discover. Returns GraQle or None."""
     from pathlib import Path
 
     from graqle.core.graph import Graqle

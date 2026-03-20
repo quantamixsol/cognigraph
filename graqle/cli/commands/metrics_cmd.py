@@ -1,4 +1,4 @@
-"""graq metrics — show Graqle usage metrics and ROI.
+"""graq metrics — show GraQle usage metrics and ROI.
 
 Displays cumulative usage statistics, token savings, safety check
 effectiveness, and optionally generates a markdown dashboard or
@@ -42,7 +42,7 @@ def metrics_command(
         False, "--json", "-j", help="Output as JSON"
     ),
 ) -> None:
-    """Show Graqle usage metrics and ROI."""
+    """Show GraQle usage metrics and ROI."""
     metrics_dir = Path.cwd() / ".graqle"
     engine = MetricsEngine(metrics_dir=metrics_dir)
 
@@ -79,7 +79,7 @@ def metrics_command(
     # Header panel
     console.print(
         Panel(
-            f"[bold cyan]Graqle Metrics[/bold cyan]\n"
+            f"[bold cyan]GraQle Metrics[/bold cyan]\n"
             f"Tracking since {summary['init_timestamp'][:10]}",
             border_style="cyan",
         )
@@ -125,8 +125,8 @@ def metrics_command(
         eff_table.add_column("Metric", style="dim", min_width=30)
         eff_table.add_column("Value", justify="right")
 
-        eff_table.add_row("Avg tokens without Graqle", "25,000")
-        eff_table.add_row("Avg tokens with Graqle", f"{avg_returned:,}")
+        eff_table.add_row("Avg tokens without GraQle", "25,000")
+        eff_table.add_row("Avg tokens with GraQle", f"{avg_returned:,}")
         eff_table.add_row("Reduction factor", f"{reduction}x")
         eff_table.add_row(
             "Estimated cost savings", f"${cost_saved:,.2f}"

@@ -158,7 +158,7 @@ class TestHotReload:
             MockPath.return_value.stat.return_value = mock_stat
             MockPath.return_value.exists.return_value = True
             # After mtime check sets self._graph = None, the loading code runs
-            # We mock the import chain to avoid full Graqle initialization
+            # We mock the import chain to avoid full GraQle initialization
             server._graph = MagicMock()
             server._graph.nodes = {"a": MockNode("a", "A", "S", "desc")}
 
@@ -166,7 +166,7 @@ class TestHotReload:
             # by setting _graph_mtime older than file
             assert server._graph is not None  # Currently cached
             # The actual reload happens inside _load_graph which we'd
-            # need the full Graqle import chain to test properly
+            # need the full GraQle import chain to test properly
 
 
 # ---------------------------------------------------------------------------

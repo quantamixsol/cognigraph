@@ -1,4 +1,4 @@
-"""SDK Self-Audit — Graqle auditing itself using ALL engineering skills.
+"""SDK Self-Audit — GraQle auditing itself using ALL engineering skills.
 
 Uses the full engineering domain (45 skills across 8 categories) to find
 gaps, security issues, performance problems, and architectural concerns

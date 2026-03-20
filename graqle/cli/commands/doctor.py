@@ -1,4 +1,4 @@
-"""graq doctor — comprehensive health check for Graqle installation.
+"""graq doctor — comprehensive health check for GraQle installation.
 
 Validates everything a user needs for good reasoning results:
 1. Python version & core dependencies
@@ -723,7 +723,7 @@ def _check_governance_gate() -> list[CheckResult]:
     claude_md = Path("CLAUDE.md")
     if claude_md.exists():
         content = claude_md.read_text(encoding="utf-8")
-        if "Graqle Quality Gate" in content or "graqle:intelligence" in content.lower() or "Module Risk Map" in content:
+        if "GraQle Quality Gate" in content or "graqle:intelligence" in content.lower() or "Module Risk Map" in content:
             results.append((PASS, "Gate: CLAUDE.md", "intelligence section injected"))
         else:
             results.append((WARN, "Gate: CLAUDE.md",
@@ -757,7 +757,7 @@ def _check_governance_gate() -> list[CheckResult]:
 
 
 def _check_cloud_connection() -> list[CheckResult]:
-    """Check Graqle Cloud connectivity and credentials."""
+    """Check GraQle Cloud connectivity and credentials."""
     results: list[CheckResult] = []
 
     # Check credentials file
@@ -799,7 +799,7 @@ def doctor_command(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show all checks including passed"),
     fix: bool = typer.Option(False, "--fix", help="Show fix commands for failures"),
 ) -> None:
-    """Health check for your Graqle installation.
+    """Health check for your GraQle installation.
 
     Validates dependencies, API keys, config, graph, embeddings,
     skills, and MCP server registration. Run this after install.
@@ -813,7 +813,7 @@ def doctor_command(
     from graqle.__version__ import __version__
 
     console.print(Panel.fit(
-        f"[bold cyan]Graqle Doctor[/bold cyan] v{__version__}\n"
+        f"[bold cyan]GraQle Doctor[/bold cyan] v{__version__}\n"
         f"Checking your installation...",
         border_style="cyan",
     ))
@@ -961,7 +961,7 @@ def doctor_command(
         console.print()
         console.print(Panel.fit(
             "[bold]No working LLM backend detected.[/bold]\n\n"
-            "Graqle needs an AI model to reason over your knowledge graph.\n"
+            "GraQle needs an AI model to reason over your knowledge graph.\n"
             "You have several options (including FREE local models):\n\n"
             "  [bold cyan]graq setup-guide[/bold cyan]            — see all options with setup steps\n"
             "  [bold cyan]graq setup-guide ollama[/bold cyan]     — free, local, no API key\n"

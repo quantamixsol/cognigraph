@@ -175,7 +175,7 @@ class GraphLearner:
 
     def update_from_reasoning(
         self,
-        graph: Any,  # Graqle
+        graph: Any,  # GraQle
         result: Any,  # ReasoningResult
         embedder: Any = None,
     ) -> list[EdgeUpdate]:

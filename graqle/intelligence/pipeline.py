@@ -12,7 +12,7 @@
 # Contact: support@quantamixsolutions.com
 # ──────────────────────────────────────────────────────────────────
 
-"""Streaming Intelligence Pipeline — the heart of Graqle's Quality Gate.
+"""Streaming Intelligence Pipeline — the heart of GraQle's Quality Gate.
 
 Processes files one at a time, streaming validated intelligence as it goes.
 Each file produces a FileIntelligenceUnit with guaranteed coverage, and

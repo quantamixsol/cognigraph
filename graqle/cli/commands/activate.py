@@ -1,4 +1,4 @@
-"""graq activate — activate a Graqle license key.
+"""graq activate — activate a GraQle license key.
 
 Validates and stores the license key in ~/.graqle/license.key.
 License keys are generated after Stripe payment and delivered via email.
@@ -31,7 +31,7 @@ def activate_command(
         False, "--project", "-p", help="Store key at project level (graqle.license) instead of user level"
     ),
 ) -> None:
-    """Activate a Graqle Team or Enterprise license.
+    """Activate a GraQle Team or Enterprise license.
 
     License keys are delivered via email after purchase at
     https://graqle.dev/pricing. The key is verified offline

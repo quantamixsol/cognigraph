@@ -7,8 +7,8 @@ Checks staged/changed files against compiled intelligence:
 4. Recommendation: safe to commit or needs review?
 
 This is Layer C (Enforcement) of the Quality Gate.
-The architecture cures itself — using Graqle makes the codebase easier
-for Graqle (and any AI tool) to reason about.
+The architecture cures itself — using GraQle makes the codebase easier
+for GraQle (and any AI tool) to reason about.
 
 See ADR-105 §Layer C: Enforcement.
 """
@@ -125,7 +125,7 @@ def verify_changes(
         console.print("[green]No changes to verify.[/green]")
         return {"verdict": "PASS", "reason": "no changes"}
 
-    console.print(f"\n🔍 [bold]Graqle Quality Gate[/bold] — verifying {len(changed_files)} changed file(s)...\n")
+    console.print(f"\n🔍 [bold]GraQle Quality Gate[/bold] — verifying {len(changed_files)} changed file(s)...\n")
 
     # Analyze each changed file
     affected_modules: list[dict[str, Any]] = []

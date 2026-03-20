@@ -1,4 +1,4 @@
-"""Graqle MCP Development Server — governed development for Claude Code.
+"""GraQle MCP Development Server — governed development for Claude Code.
 
 Production MCP server exposing 7 tools over JSON-RPC stdio transport.
 Replaces flat-file CLAUDE.md reading with graph-powered context engineering.
@@ -529,7 +529,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "name": "graq_route",
         "description": (
             "Smart query router — classifies your question and recommends "
-            "whether to use Graqle tools or external tools (CloudWatch, grep, git). "
+            "whether to use GraQle tools or external tools (CloudWatch, grep, git). "
             "Call this BEFORE investigating to get the most efficient tool strategy. "
             "Returns: category, recommended tools, confidence, and reasoning."
         ),
@@ -2000,7 +2000,7 @@ class KogniDevServer:
     # ── 11. graq_route ──────────────────────────────────────────────
 
     async def _handle_route(self, args: dict[str, Any]) -> str:
-        """Smart query router — recommend Graqle vs external tools."""
+        """Smart query router — recommend GraQle vs external tools."""
         question = args.get("question", "")
 
         if not question:

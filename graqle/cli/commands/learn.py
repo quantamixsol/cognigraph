@@ -2,7 +2,7 @@
 
 Adds business-level nodes, relationships, and context that code scanning
 can't discover. The graph becomes self-discovering and self-evolving:
-users seed high-level concepts, Graqle finds connections autonomously.
+users seed high-level concepts, GraQle finds connections autonomously.
 
 Uses a 3-tier intelligence stack:
   1. Semantic similarity (Bedrock Titan V2 / sentence-transformers / keyword fallback)
@@ -198,7 +198,7 @@ def learn_node(
     """Add a new node to the knowledge graph.
 
     Business-level nodes like PRODUCT, BUSINESS_OUTCOME, CLIENT, TEAM
-    give Graqle cross-cutting reasoning that pure code scanning misses.
+    give GraQle cross-cutting reasoning that pure code scanning misses.
 
     Uses semantic auto-connect by default (Bedrock Titan V2 -> sentence-transformers -> keyword).
     """
@@ -608,7 +608,7 @@ def learn_discover(
 ) -> None:
     """Auto-discover new connections and concepts in the graph.
 
-    This is the self-evolving feature: Graqle analyzes existing nodes
+    This is the self-evolving feature: GraQle analyzes existing nodes
     and suggests new edges that users haven't thought of.
 
     \b

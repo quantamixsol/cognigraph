@@ -1,4 +1,4 @@
-"""Graqle Cloud — cloud-hosted services for Team tier.
+"""GraQle Cloud — cloud-hosted services for Team tier.
 
 Provides:
 - Sync: Delta-based graph synchronization (push/pull)

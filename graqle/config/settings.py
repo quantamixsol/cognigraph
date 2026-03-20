@@ -1,4 +1,4 @@
-"""Graqle configuration system — Pydantic settings + YAML loading."""
+"""GraQle configuration system — Pydantic settings + YAML loading."""
 
 # ── graqle:intelligence ──
 # module: graqle.config.settings
@@ -323,7 +323,7 @@ class ScanConfig(BaseModel):
 
 
 class GraqleConfig(BaseModel):
-    """Root configuration for a Graqle instance."""
+    """Root configuration for a GraQle instance."""
 
     model: ModelConfig = Field(default_factory=ModelConfig)
     graph: GraphConfig = Field(default_factory=GraphConfig)

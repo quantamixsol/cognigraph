@@ -1,4 +1,4 @@
-"""Stripe webhook handler for Graqle license key generation.
+"""Stripe webhook handler for GraQle license key generation.
 
 Handles Stripe checkout.session.completed events:
 1. Validates the webhook signature using STRIPE_WEBHOOK_SECRET
@@ -9,7 +9,7 @@ Handles Stripe checkout.session.completed events:
 
 Deployment options:
 - AWS Lambda (recommended): Deploy as a Lambda behind API Gateway or Function URL
-- FastAPI route: Mount in the Graqle server via `graq serve`
+- FastAPI route: Mount in the GraQle server via `graq serve`
 - Standalone: Run as any ASGI/WSGI handler
 
 Environment variables:
@@ -109,7 +109,7 @@ def verify_stripe_signature(payload: bytes, signature: str, secret: str) -> bool
 
 
 def generate_license_from_checkout(session: dict[str, Any]) -> dict[str, Any]:
-    """Generate a Graqle license key from a Stripe checkout session.
+    """Generate a GraQle license key from a Stripe checkout session.
 
     Parameters
     ----------

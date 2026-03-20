@@ -12,7 +12,7 @@ Usage:
 
 Requires:
     - ``GEMINI_API_KEY`` or ``GOOGLE_API_KEY`` environment variable
-    - ``httpx`` (already a Graqle dependency)
+    - ``httpx`` (already a GraQle dependency)
 """
 
 # ── graqle:intelligence ──

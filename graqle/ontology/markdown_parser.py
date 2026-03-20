@@ -1,4 +1,4 @@
-"""Graqle Markdown KG Parser — extract structured entities from markdown KG files.
+"""GraQle Markdown KG Parser — extract structured entities from markdown KG files.
 
 Parses real-world markdown knowledge graph files (tables, headers, bullet lists,
 key-value pairs, code blocks) and produces ExtractedEntity objects with inferred
