@@ -1024,7 +1024,7 @@ class Graqle:
                     return OpenAIBackend(model=model_name, api_key=api_key)
             elif backend_name == "bedrock":
                 from graqle.backends.api import BedrockBackend
-                region = os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "us-east-1"
+                region = getattr(cfg.model, "region", None) or os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "eu-central-1"
                 return BedrockBackend(model=model_name, region=region)
             elif backend_name == "ollama":
                 from graqle.backends.api import OllamaBackend
