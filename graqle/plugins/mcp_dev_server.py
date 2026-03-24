@@ -1716,7 +1716,9 @@ class KogniDevServer:
         # Detect backend status BEFORE attempting reasoning
         backend_status = self._check_backend_status(graph)
 
-        # Try full areason if a backend is configured
+        # ADR-112: NO SILENT FALLBACK. If reasoning fails, return a hard error.
+        # Keyword traversal is NOT reasoning. Pretending it is destroys user trust.
+        # graq_inspect exists for keyword lookup. graq_reason MUST use LLM.
         try:
             result = await graph.areason(
                 question, max_rounds=max_rounds, task_type="reason",
@@ -1749,64 +1751,33 @@ class KogniDevServer:
                     logger.debug("Governance logging failed: %s", exc)
 
             return json.dumps(result_dict)
-        except RuntimeError as exc:
-            # Backend failed — DO NOT silently fall back.
-            # Surface the error clearly AND provide fallback results.
-            backend_status["status"] = "unavailable"
-            backend_status["error"] = str(exc)[:200]
-        except Exception as exc:
-            backend_status["status"] = "error"
-            backend_status["error"] = str(exc)[:200]
 
-        # Fallback: keyword-based graph traversal (clearly labeled)
-        matches = self._find_nodes_matching(question, limit=8)
-        if not matches:
+        except (RuntimeError, Exception) as exc:
+            # ADR-112: Hard failure — NO keyword fallback.
+            # User must know reasoning is broken and fix it.
+            err = str(exc)[:300]
+            logger.error("graq_reason FAILED (no fallback per ADR-112): %s", err)
+            cfg_backend = getattr(getattr(self._config, "model", None), "backend", "unknown")
+            cfg_model = getattr(getattr(self._config, "model", None), "model", "unknown")
+            cfg_region = getattr(getattr(self._config, "model", None), "region", "unknown")
             return json.dumps({
-                "answer": "No relevant nodes found for this question.",
-                "confidence": 0.0,
-                "rounds": 0,
-                "nodes_used": 0,
-                "active_nodes": [],
-                "mode": "fallback_traversal",
-                "backend_status": backend_status["status"],
-                "backend_error": backend_status.get("error", ""),
-                "hint": (
-                    "LLM reasoning is unavailable. Results are keyword-match only. "
-                    "Fix: check credentials and run 'graq doctor'. "
-                    f"Backend: {backend_status.get('backend', 'unknown')}"
+                "error": "REASONING_BACKEND_UNAVAILABLE",
+                "message": (
+                    f"graq_reason requires a working LLM backend. "
+                    f"Backend '{cfg_backend}' ({cfg_model} in {cfg_region}) failed: {err}"
                 ),
+                "fix": (
+                    "1. Run 'graq doctor' to diagnose. "
+                    "2. Check graqle.yaml model.backend, model.model, model.region. "
+                    "3. For Bedrock: verify AWS credentials and that the cross-region "
+                    "   inference profile is enabled in your account. "
+                    "4. Reload Claude Code after fixing graqle.yaml."
+                ),
+                "mode": "error",
+                "confidence": 0.0,
+                "backend_error": err,
+                "hint": "graq_inspect is available for keyword-only node lookup if needed.",
             })
-
-        # Synthesize from node knowledge
-        synthesis_parts: list[str] = []
-        node_ids: list[str] = []
-        for node in matches:
-            desc = node.description[:300] if node.description else node.label
-            synthesis_parts.append(
-                f"[{node.label} ({node.entity_type})]: {desc}"
-            )
-            node_ids.append(node.id)
-
-        answer = (
-            f"Based on {len(matches)} relevant graph nodes:\n\n"
-            + "\n\n".join(synthesis_parts)
-        )
-
-        return json.dumps({
-            "answer": answer,
-            "confidence": 0.5,
-            "rounds": 0,
-            "nodes_used": len(matches),
-            "active_nodes": node_ids,
-            "mode": "fallback_traversal",
-            "backend_status": backend_status["status"],
-            "backend_error": backend_status.get("error", ""),
-            "hint": (
-                "WARNING: LLM reasoning is unavailable — this is keyword-match only, "
-                "NOT multi-hop graph reasoning. Results may be inaccurate. "
-                "Fix: run 'graq doctor' to diagnose backend issues."
-            ),
-        })
 
     # ── 3b. graq_reason_batch (PRO) ──────────────────────────────────
 
@@ -2349,17 +2320,29 @@ class KogniDevServer:
         })
 
     async def _handle_reload(self, args: dict[str, Any]) -> str:
-        """Force-reload the knowledge graph from disk."""
+        """Force-reload the knowledge graph, config, and backend from disk."""
         old_count = len(self._graph.nodes) if self._graph else 0
         self._graph = None  # Force reload
+        self._config = None  # Force config re-read
         self._graph_mtime = 0.0
         graph = self._load_graph()
         new_count = len(graph.nodes) if graph else 0
+
+        # Report backend status
+        backend_info = "none"
+        if graph:
+            b = getattr(graph, "_default_backend", None)
+            if b is not None:
+                backend_info = type(b).__name__
+            cfg_backend = getattr(getattr(self._config, "model", None), "backend", "unknown")
+            backend_info = f"{cfg_backend} -> {backend_info}"
+
         return json.dumps({
             "status": "reloaded",
             "previous_nodes": old_count,
             "current_nodes": new_count,
             "graph_file": self._graph_file,
+            "backend": backend_info,
         })
 
     # ── 9. graq_audit ─────────────────────────────────────────────
