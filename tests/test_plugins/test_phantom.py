@@ -125,7 +125,11 @@ class TestPhantomConfig:
         assert config.output_dir == "/tmp/phantom-test"
         assert config.max_sessions == 10
 
-    def test_config_bedrock_defaults(self):
+    def test_config_bedrock_defaults(self, tmp_path, monkeypatch):
+        # Run in a clean dir so graqle.yaml region doesn't override the default
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+        monkeypatch.delenv("AWS_REGION", raising=False)
         from graqle.plugins.phantom.config import PhantomConfig
         config = PhantomConfig()
         assert config.bedrock.region == "us-east-1"
@@ -736,9 +740,7 @@ class TestZeroRegression:
         server._graph_file = "graqle.json"
         server._graph_mtime = 9999999999.0
 
-        result = asyncio.get_event_loop().run_until_complete(
-            server.handle_tool("graq_nonexistent_tool", {})
-        )
+        result = asyncio.run(server.handle_tool("graq_nonexistent_tool", {}))
         data = json.loads(result)
         assert "error" in data
         assert "Unknown tool" in data["error"]

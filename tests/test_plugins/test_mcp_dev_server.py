@@ -428,20 +428,24 @@ class TestReasonHandler:
 
     @pytest.mark.asyncio
     async def test_fallback_traversal(self, server):
-        # Mock areason to raise RuntimeError (no backend)
+        # ADR-112: graq_reason has NO silent fallback. When backend fails,
+        # returns a hard error so the user knows to fix their config.
         server._graph.areason = AsyncMock(side_effect=RuntimeError("no backend"))
         result = await server._handle_reason({"question": "what does auth lambda do?"})
         data = json.loads(result)
-        assert "answer" in data
-        assert data["nodes_used"] >= 1
-        assert data.get("mode") in ("fallback_traversal", None)
+        assert data["error"] == "REASONING_BACKEND_UNAVAILABLE"
+        assert data["mode"] == "error"
+        assert data["confidence"] == 0.0
+        assert "backend_error" in data
 
     @pytest.mark.asyncio
     async def test_no_matches(self, server):
+        # ADR-112: no fallback — backend error returns error dict, not nodes_used
         server._graph.areason = AsyncMock(side_effect=RuntimeError("no backend"))
         result = await server._handle_reason({"question": "zzzzz_no_match_zzzzz"})
         data = json.loads(result)
-        assert data["nodes_used"] == 0
+        assert data["error"] == "REASONING_BACKEND_UNAVAILABLE"
+        assert data["confidence"] == 0.0
 
 
 # ---------------------------------------------------------------------------
