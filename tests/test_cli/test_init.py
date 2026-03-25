@@ -268,7 +268,8 @@ class TestBuildMcpJson:
         assert "graqle" in data["mcpServers"]
         srv = data["mcpServers"]["graqle"]
         assert srv["type"] == "stdio"
-        assert srv["command"] == "graq"
+        # command is the resolved graq path — ends with "graq" or "graq.exe"
+        assert srv["command"].endswith("graq") or srv["command"].endswith("graq.exe")
         assert "mcp" in srv["args"]
 
 
@@ -471,7 +472,9 @@ class TestResolveGraqCommand:
             assert result == "C:\\Users\\test\\Scripts\\graq.exe"
 
     def test_falls_back_to_bare_graq_when_not_found(self):
-        with patch("graqle.cli.commands.init.shutil.which", return_value=None):
+        # Patch shutil.which AND Path.exists so all filesystem fallbacks return False
+        with patch("graqle.cli.commands.init.shutil.which", return_value=None), \
+             patch("graqle.cli.commands.init.Path.exists", return_value=False):
             result = _resolve_graq_command()
             assert result == "graq"
 
