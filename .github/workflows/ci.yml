@@ -157,6 +157,8 @@ jobs:
 
       - name: Publish to PyPI via Trusted Publishing
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true   # Idempotent: don't fail if version already uploaded
         # No 'password' field — uses OIDC Trusted Publishing.
         # To enable: pypi.org → graqle project → Publishing → Add Trusted Publisher
         # (GitHub, org: quantamixsol, repo: graqle, workflow: ci.yml)
