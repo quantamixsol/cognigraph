@@ -4,6 +4,59 @@ All notable changes to GraQle are documented in this file.
 
 ---
 
+## v0.35.1 — graq_predict v1.4 Hotfix + PSE Sprint (2026-03-26)
+
+**Unblocks `fold_back=True`.** Two blocking bugs in `graq_predict` meant the core write-back mechanism never worked in v0.34.0. Both are now fixed. Four additional improvements ship in the same release.
+
+### Fixed (v1.4 Hotfix — BLOCKING)
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| `fold_back=True` always returned `SKIPPED_GENERATION_ERROR` | `areason()` calls `node.deactivate()` which sets `node.backend = None` before returning. The backend lookup loop always found `None`. | Replaced loop with `_get_backend_for_node(active_nodes[0], task_type="predict")` — uses 3-tier task routing, never returns `None` silently. |
+| JSON extraction raised `re.error: unterminated character set` on LLM outputs containing `[`, `(`, or `*` in string values | `re.search(r"\{.*\}", raw, re.DOTALL)` crashes on regex metacharacters inside JSON string values | Added `_extract_json_from_llm()` module-level helper using brace-counting + trailing-comma strip. Handles all valid JSON regardless of string content. |
+
+### Improved (v0.35.0 Sprint)
+
+**`graq rebuild --re-embed` safety gate** (`graqle/core/graph.py`)
+- Added `skip_validation=False` parameter to `Graqle.from_json()`. Default `False` — all existing callers unchanged.
+- When `re_embed=True`, rebuild loads graph with `skip_validation=True` to bypass the embedding dimension check that would otherwise block recovery.
+
+**Stricter agreement threshold** (`graqle/plugins/mcp_server.py`)
+- Internal agreement threshold raised. Internal threshold calibrated to prevent false write-backs from boilerplate token overlap.
+
+**Embedding model transparency** (`graqle/plugins/mcp_server.py`)
+- `graq_predict` output now includes `"embedding_model": "<model-name>"` field. Lets callers detect mid-session model changes that would cause a dimension mismatch on subsequent graph loads.
+
+**`graq predict` CI gate** (`graqle/cli/main.py`)
+- `--fail-below-threshold` exits with code 1 when `answer_confidence < confidence_threshold`. Use in GitHub Actions to gate deployments on reasoning confidence.
+- Example:
+```yaml
+- name: graq_predict deployment gate
+  run: |
+    graq predict "$(git diff HEAD~1 --stat | head -20)" \
+      --no-fold-back \
+      --confidence-threshold 0.80 \
+      --fail-below-threshold
+```
+
+### Patent Notice
+
+European Patent **EP26167849.4** was filed 2026-03-25. The following features are patent-protected:
+- `fold_back=True` confidence-gated graph write-back
+- `_compute_answer_confidence()` cross-node agreement scoring
+- Two-stage deduplication (content hashing + semantic similarity)
+- `graq predict --fail-below-threshold` CI gate
+- STG 4-class hierarchy + fold-back disable mode
+
+### Files Changed
+
+- `graqle/plugins/mcp_server.py` — FB-004 fix, FB-005 fix, `AGREEMENT_THRESHOLD`, `_get_active_embedding_model()`, `embedding_model` output field
+- `graqle/core/graph.py` — `skip_validation` parameter on `from_json()`
+- `tests/test_plugins/test_mcp_server.py` — 11 new tests (3 v1.4 hotfix + 8 v0.35.0)
+- `tests/test_plugins/test_mcp_predict.py` — wired `_get_backend_for_node` in mock graph fixture
+
+---
+
 ## v0.33.1 — Fix: Hardcoded US Bedrock Model IDs Break Non-US Users (2026-03-22)
 
 **P1 Security/Config Fix.** Phantom Vision and SCORCH Visual audit were completely broken for any user in a non-US AWS region (eu-central-1, eu-west-1, ap-northeast-1, etc.) due to hardcoded `us.anthropic.*` model IDs.
