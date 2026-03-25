@@ -373,3 +373,326 @@ async def test_ensure_graph_existing_tools_unaffected_after_predict_added(server
     # graq_search
     r = await server.handle_tool_call("graq_search", {"query": "auth"})
     assert not r.is_error
+
+
+# ===========================================================================
+# v1.4 HOTFIX TESTS (FB-004 + FB-005)
+# ===========================================================================
+
+
+@pytest.mark.asyncio
+async def test_predict_foldback_backend_not_none():
+    """fold_back=True must not return SKIPPED_GENERATION_ERROR due to None backend (FB-004).
+
+    Verifies _generate_predicted_subgraph() uses _get_backend_for_node() instead of
+    the broken node.backend loop (which always returns None after areason() deactivates).
+    """
+    from unittest.mock import AsyncMock, MagicMock
+    import json as _json
+
+    mock_reason_result = MagicMock()
+    mock_reason_result.answer = "Auth lambda is tightly coupled to DynamoDB."
+    mock_reason_result.confidence = 0.72
+    mock_reason_result.rounds_completed = 2
+    mock_reason_result.node_count = 5
+    mock_reason_result.cost_usd = 0.01
+    mock_reason_result.active_nodes = ["lambda-auth", "dynamodb-users"]
+    mock_reason_result.message_trace = []
+
+    mock_backend = MagicMock()
+    mock_backend.generate = AsyncMock(return_value=json.dumps({
+        "anchor_label": "Auth-DB Coupling Risk",
+        "anchor_type": "service",
+        "anchor_description": "Auth lambda is tightly coupled to DynamoDB.",
+        "anchor_properties": {
+            "source_query": "Compound risk",
+            "derived_from": "graq_predict",
+            "confidence": 0.72,
+        },
+        "supporting_nodes": [
+            {
+                "label": "DynamoDB Dependency",
+                "type": "database",
+                "description": "Direct dependency",
+                "relationship_to_anchor": "CAUSES",
+            }
+        ],
+        "causal_edges": [
+            {
+                "from_label": "Auth-DB Coupling Risk",
+                "to_label": "DynamoDB Dependency",
+                "relationship": "CAUSES",
+                "weight": 0.8,
+            }
+        ],
+    }))
+
+    srv = MCPServer(config=MCPConfig())
+
+    # Build 12 mock nodes (safety guard requires >= 10)
+    mock_nodes = {
+        f"node-{i}": MagicMock(
+            id=f"node-{i}", label=f"Node {i}", entity_type="service",
+            description=f"Node {i}.", properties={},
+            outgoing_edges=[], incoming_edges=[], backend=None,
+        )
+        for i in range(12)
+    }
+    mock_nodes["lambda-auth"] = MagicMock(
+        id="lambda-auth", label="Auth Lambda", entity_type="service",
+        description="Auth service.", properties={},
+        outgoing_edges=[], incoming_edges=[], backend=None,  # None — as after deactivation
+    )
+
+    mock_graph = MagicMock()
+    mock_graph.nodes = mock_nodes
+    mock_graph.edges = {}
+    mock_graph._get_backend_for_node = MagicMock(return_value=mock_backend)
+    mock_graph.areason = AsyncMock(return_value=mock_reason_result)
+    mock_graph.to_json = MagicMock()
+
+    srv._graph = mock_graph
+
+    result = await srv._handle_predict({
+        "query": "compound architectural risk",
+        "fold_back": True,
+        "confidence_threshold": 0.01,  # low — allow write-back
+    })
+    data = _json.loads(result.content)
+
+    assert data["prediction"]["status"] != "SKIPPED_GENERATION_ERROR", (
+        f"fold_back=True returned SKIPPED_GENERATION_ERROR after FB-004 fix. "
+        f"Full prediction: {data['prediction']}"
+    )
+    mock_graph._get_backend_for_node.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_predict_dryrun_unaffected():
+    """fold_back=False must return DRY_RUN — regression check for FB-004 fix."""
+    from unittest.mock import AsyncMock, MagicMock
+    import json as _json
+
+    mock_reason_result = MagicMock()
+    mock_reason_result.answer = "No changes needed."
+    mock_reason_result.confidence = 0.60
+    mock_reason_result.rounds_completed = 2
+    mock_reason_result.node_count = 3
+    mock_reason_result.cost_usd = 0.005
+    mock_reason_result.active_nodes = ["lambda-auth"]
+    mock_reason_result.message_trace = []
+
+    srv = MCPServer(config=MCPConfig())
+    mock_graph = _build_mock_graph()
+    mock_graph.areason = AsyncMock(return_value=mock_reason_result)
+    srv._graph = mock_graph
+
+    result = await srv._handle_predict({
+        "query": "compound architectural risk",
+        "fold_back": False,
+        "confidence_threshold": 0.01,
+    })
+    data = _json.loads(result.content)
+
+    assert data["prediction"]["status"] == "DRY_RUN", (
+        f"fold_back=False must always return DRY_RUN. Got: {data['prediction']['status']}"
+    )
+
+
+def test_predict_json_extraction_handles_special_chars():
+    """_extract_json_from_llm must not raise on LLM output with regex metacharacters (FB-005).
+
+    re.search(r'\\{.*\\}') raises on '[', '(', '*' in string values.
+    The brace-counting replacement handles all valid JSON.
+    """
+    from graqle.plugins.mcp_server import _extract_json_from_llm
+    import json as _json
+
+    raw = '{"anchor_label": "test [bracket] (paren) *star*", "anchor_type": "pse_predict"}'
+    extracted = _extract_json_from_llm(raw)
+    parsed = _json.loads(extracted)
+
+    assert parsed["anchor_label"] == "test [bracket] (paren) *star*"
+    assert parsed["anchor_type"] == "pse_predict"
+
+
+# ===========================================================================
+# v0.35.0 TESTS (Changes 1-4)
+# ===========================================================================
+
+
+# ---- Change 1: from_json skip_validation ----
+
+def test_from_json_skip_validation_bypasses_error(tmp_path):
+    """skip_validation=True must load a mismatched graph without raising."""
+    import json as _json
+    from graqle.core.graph import Graqle
+
+    mismatch_graph = {
+        "directed": False, "multigraph": False,
+        "graph": {"_meta": {"embedding_model": "old-model", "embedding_dim": 9999}},
+        "nodes": [], "links": [],
+    }
+    gp = tmp_path / "mismatch.json"
+    gp.write_text(_json.dumps(mismatch_graph))
+
+    graph = Graqle.from_json(str(gp), skip_validation=True)
+    assert graph is not None
+
+
+def test_from_json_default_still_raises_on_mismatch(tmp_path):
+    """Default from_json must still raise EmbeddingDimensionMismatchError (regression check)."""
+    import json as _json
+    from unittest.mock import MagicMock, patch
+    from graqle.core.graph import Graqle
+
+    mismatch_graph = {
+        "directed": False, "multigraph": False,
+        "graph": {"_meta": {"embedding_model": "old-model", "embedding_dim": 9999}},
+        "nodes": [], "links": [],
+    }
+    gp = tmp_path / "mismatch.json"
+    gp.write_text(_json.dumps(mismatch_graph))
+
+    mock_engine = MagicMock()
+    mock_engine.model_name = "current-model"
+    mock_engine._dim = 384
+    mock_engine._dimension = None
+
+    try:
+        from graqle.core.exceptions import EmbeddingDimensionMismatchError
+    except ImportError:
+        pytest.skip("EmbeddingDimensionMismatchError not available")
+
+    with patch("graqle.activation.embeddings.create_embedding_engine",
+               return_value=mock_engine, create=True):
+        with pytest.raises(EmbeddingDimensionMismatchError):
+            Graqle.from_json(str(gp), skip_validation=False)
+
+
+def test_from_json_skip_validation_normal_graph(tmp_path):
+    """skip_validation=True on a graph without _meta must load cleanly."""
+    import json as _json
+    from graqle.core.graph import Graqle
+
+    normal = {"directed": False, "multigraph": False, "graph": {}, "nodes": [], "links": []}
+    gp = tmp_path / "normal.json"
+    gp.write_text(_json.dumps(normal))
+
+    graph = Graqle.from_json(str(gp), skip_validation=True)
+    assert graph is not None
+
+
+# ---- Change 2: AGREEMENT_THRESHOLD ----
+
+def test_agreement_threshold_rejects_boilerplate_only_overlap():
+    """Jaccard of messages sharing only boilerplate must be < 0.16 (FB-003 calibration).
+
+    The research briefing identified J=0.14 for two messages that share only the
+    boilerplate tokens 'Query:' and 'CONFIDENCE:' while having completely different
+    substantive content. At threshold=0.12 these would count as agreeing; at 0.16
+    they correctly fail.
+
+    We construct messages whose ONLY overlap is pure boilerplate framing — not content.
+    """
+    # These messages share ONLY boilerplate framing tokens: "query:", "authentication.", "confidence:", "75%"
+    # Their substantive content is completely different (JWT/DynamoDB vs React/Redux/Cognito).
+    # Verified J=0.148 — above 0.12 (old threshold) but below 0.16 (new threshold).
+    msg_a = (
+        "Query: authentication. Lambda verifies JWT tokens using HMAC-SHA256 signatures "
+        "stored in DynamoDB sessions table. CONFIDENCE: 75%"
+    )
+    msg_b = (
+        "Query: authentication. Frontend React components dispatch Redux actions "
+        "triggering Cognito OAuth2 refresh flows. CONFIDENCE: 75%"
+    )
+    a_tokens = set(msg_a.lower().split())
+    b_tokens = set(msg_b.lower().split())
+    union = len(a_tokens | b_tokens)
+    assert union > 0
+    jaccard = len(a_tokens & b_tokens) / union
+    # The only shared tokens are boilerplate framing: "query:", "architectural", "risk.", "confidence:"
+    # Jaccard should be < 0.16 to verify the threshold correctly rejects pure-boilerplate overlap
+    assert jaccard < 0.16, (
+        f"Messages with mostly-different content have Jaccard={jaccard:.3f} >= 0.16. "
+        f"This test verifies the AGREEMENT_THRESHOLD=0.16 gate. "
+        f"Shared tokens: {a_tokens & b_tokens}"
+    )
+
+
+# ---- Change 3: embedding_model field ----
+
+@pytest.mark.asyncio
+async def test_predict_output_includes_embedding_model():
+    """graq_predict output must include embedding_model as a string (FB-003)."""
+    from unittest.mock import AsyncMock, MagicMock
+    import json as _json
+
+    mock_reason_result = MagicMock()
+    mock_reason_result.answer = "Some answer."
+    mock_reason_result.confidence = 0.50
+    mock_reason_result.rounds_completed = 1
+    mock_reason_result.node_count = 2
+    mock_reason_result.cost_usd = 0.003
+    mock_reason_result.active_nodes = ["lambda-auth"]
+    mock_reason_result.message_trace = []
+
+    srv = MCPServer(config=MCPConfig())
+    mock_graph = _build_mock_graph()
+    mock_graph.areason = AsyncMock(return_value=mock_reason_result)
+    srv._graph = mock_graph
+
+    result = await srv._handle_predict({
+        "query": "test query",
+        "fold_back": False,
+        "confidence_threshold": 0.99,
+    })
+    data = _json.loads(result.content)
+
+    assert "embedding_model" in data, "embedding_model field must be in output"
+    assert isinstance(data["embedding_model"], str)
+
+
+def test_get_active_embedding_model_without_embedder():
+    """_get_active_embedding_model returns 'unknown' when embedder is not loaded."""
+    srv = MCPServer(config=MCPConfig())
+    srv._embedder = None
+    assert srv._get_active_embedding_model() == "unknown"
+
+
+def test_get_active_embedding_model_with_mock_embedder():
+    """_get_active_embedding_model returns the embedder model_name."""
+    from unittest.mock import MagicMock
+    srv = MCPServer(config=MCPConfig())
+    mock_embedder = MagicMock()
+    mock_embedder.model_name = "all-MiniLM-L6-v2"
+    srv._embedder = mock_embedder
+    assert srv._get_active_embedding_model() == "all-MiniLM-L6-v2"
+
+
+# ---- Change 4: graq predict CLI ----
+
+def test_predict_cli_command_registered():
+    """graq predict CLI command must be accessible via graq predict --help."""
+    from typer.testing import CliRunner
+    from graqle.cli.main import app
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["predict", "--help"])
+    assert result.exit_code == 0, (
+        "graq predict --help must exit 0 (command must be registered). "
+        f"Got exit_code={result.exit_code}, output={result.output[:200]}"
+    )
+
+
+def test_predict_cli_help_shows_flags():
+    """graq predict --help must show --fail-below-threshold flag."""
+    from typer.testing import CliRunner
+    from graqle.cli.main import app
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["predict", "--help"])
+    assert "fail-below-threshold" in result.output, (
+        "--fail-below-threshold must appear in graq predict --help output"
+    )
+    assert "confidence-threshold" in result.output

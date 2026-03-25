@@ -326,7 +326,8 @@ class Graqle:
 
     @classmethod
     def from_json(
-        cls, path: str, config: GraqleConfig | str | None = None
+        cls, path: str, config: GraqleConfig | str | None = None,
+        skip_validation: bool = False,
     ) -> Graqle:
         """Create a GraQle from a JSON file.
 
@@ -337,6 +338,11 @@ class Graqle:
         config:
             A ``GraqleConfig`` instance, a path to a YAML config file
             (string), or ``None`` for defaults.
+        skip_validation:
+            If True, bypass the embedding-dimension mismatch check (P2).
+            Use ONLY from ``graq rebuild --re-embed`` after verifying the
+            dimension difference intentionally — e.g. embedding model upgrade.
+            Default False: all normal callers retain the safety check.
         """
         import json
         from pathlib import Path as _Path
@@ -357,8 +363,9 @@ class Graqle:
             data["links"] = data.pop("edges")
 
         # P2: validate embedding provenance if stored (graphs built with v0.34.0+)
+        # skip_validation=True bypasses this check — ONLY for graq rebuild --re-embed.
         _meta = (data.get("graph") or {}).get("_meta")
-        if _meta:
+        if _meta and not skip_validation:
             _stored_model = _meta.get("embedding_model", "unknown")
             _stored_dim = _meta.get("embedding_dim", 0)
             if _stored_dim > 0:

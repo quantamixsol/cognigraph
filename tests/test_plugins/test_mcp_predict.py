@@ -122,6 +122,9 @@ def _build_mock_graph(size: int = 3) -> MagicMock:
     graph.edges = edges
     graph.areason = AsyncMock()
     graph.to_json = MagicMock()
+    # FB-004 fix: _generate_predicted_subgraph now uses _get_backend_for_node() instead
+    # of node.backend (which is None after areason deactivation). Wire it to mock_backend.
+    graph._get_backend_for_node = MagicMock(return_value=mock_backend)
     return graph
 
 

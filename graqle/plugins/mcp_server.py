@@ -38,6 +38,33 @@ from typing import Any
 logger = logging.getLogger("graqle.plugins.mcp")
 
 
+def _extract_json_from_llm(raw: str) -> str:
+    """Extract JSON object from LLM output using brace counting (regex-safe).
+
+    Replaces re.search(r"\\{.*\\}", raw, re.DOTALL) which raises on LLM output
+    containing regex metacharacters (e.g. '[', '(', '*') inside string values.
+
+    Also strips trailing commas before } or ] — a common LLM output artifact
+    that breaks json.loads().
+    """
+    start = raw.find('{')
+    if start == -1:
+        raise ValueError(f"No JSON object in LLM response: {raw[:200]}")
+    depth, end = 0, start
+    for i, ch in enumerate(raw[start:], start):
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    candidate = raw[start:end + 1]
+    # Strip trailing commas before } or ] (common LLM output artifact)
+    candidate = re.sub(r',\s*([}\]])', r'\1', candidate)
+    return candidate
+
+
 def _compute_content_hash(predicted_subgraph: dict) -> str:
     """Compute a stable SHA-256 hash of a predicted subgraph.
 
@@ -258,6 +285,17 @@ class MCPServer:
             return
         from graqle.activation.embeddings import EmbeddingEngine
         self._embedder = EmbeddingEngine()
+
+    def _get_active_embedding_model(self) -> str:
+        """Return the name of the currently active embedding model.
+
+        Used in graq_predict output so callers can detect if the model changed
+        between calls — e.g. a mid-session model upgrade that would cause a
+        dimension mismatch against the stored graph embeddings.
+        """
+        if self._embedder is None:
+            return "unknown"
+        return getattr(self._embedder, "model_name", "unknown")
 
     def _redact(self, props: dict) -> dict:
         """Remove sensitive properties."""
@@ -530,6 +568,7 @@ class MCPServer:
             "answer": reason_result.answer,
             "activation_confidence": reason_result.confidence,   # raw, preserved unchanged
             "answer_confidence": answer_confidence,               # calibrated, gates fold-back
+            "embedding_model": self._get_active_embedding_model(),  # FB-003: detect model changes
             "rounds": reason_result.rounds_completed,
             "nodes_used": reason_result.node_count,
             "cost_usd": round(reason_result.cost_usd, 4),
@@ -638,7 +677,7 @@ class MCPServer:
 
         pairs_total = 0
         pairs_agreed = 0
-        AGREEMENT_THRESHOLD = 0.15  # 15% token overlap = rough agreement (raised from 0.12 in v0.35.0 — 0.12 over-counted boilerplate text as agreement)
+        AGREEMENT_THRESHOLD = REDACTED  # internal agreement threshold — )
 
         for i in range(len(node_ids)):
             for j in range(i + 1, len(node_ids)):
@@ -772,24 +811,20 @@ Rules:
 - weight: 0.5-1.0 based on confidence in the causal link
 - NO invented facts — every claim must appear in the answer above"""
 
-        # Use the first available backend from activated nodes
-        backend = None
-        for nid in reason_result.active_nodes:
-            node = self._graph.nodes.get(nid)
-            if node and node.backend:
-                backend = node.backend
-                break
-
-        if backend is None:
-            raise RuntimeError("No backend available for subgraph generation")
+        # Fix FB-004: use task-based routing — node.backend is None after areason() deactivates nodes.
+        # _get_backend_for_node() uses 3-tier routing (node-specific → default → auto-create).
+        # It never returns None silently; raises RuntimeError on complete failure.
+        if not reason_result.active_nodes:
+            raise RuntimeError("graq_predict: no active nodes to derive backend from")
+        backend = self._graph._get_backend_for_node(
+            reason_result.active_nodes[0], task_type="predict"
+        )
 
         raw = await backend.generate(prediction_prompt, max_tokens=1024, temperature=0.1)
 
-        json_match = re.search(r"\{.*\}", raw, re.DOTALL)
-        if not json_match:
-            raise ValueError(f"No JSON found in prediction response: {raw[:200]}")
-
-        return json.loads(json_match.group())
+        # Fix FB-005: use brace-counting extraction — re.search(r"\{.*\}") raises on LLM
+        # output that contains regex metacharacters (e.g. '[', '(', '*' in string values).
+        return json.loads(_extract_json_from_llm(raw))
 
     def _subgraph_is_duplicate(
         self,

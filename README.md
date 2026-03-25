@@ -17,7 +17,7 @@ Every module becomes an agent. Ask questions — get architecture-aware answers 
 [![PyPI](https://img.shields.io/pypi/v/graqle?color=%2306b6d4&label=PyPI)](https://pypi.org/project/graqle/)
 [![Downloads](https://img.shields.io/pypi/dw/graqle?color=%2306b6d4&label=downloads%2Fweek)](https://pypi.org/project/graqle/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-06b6d4.svg)](https://python.org)
-[![Tests: 1,900+](https://img.shields.io/badge/tests-1%2C900%2B%20passing-06b6d4.svg)]()
+[![Tests: 554+](https://img.shields.io/badge/tests-554%2B%20passing-06b6d4.svg)]()
 [![LLM Backends: 14](https://img.shields.io/badge/LLM%20backends-14-06b6d4.svg)]()
 [![MCP Tools: 27](https://img.shields.io/badge/MCP%20tools-27-06b6d4.svg)]()
 
@@ -286,6 +286,7 @@ Your Code                    Knowledge Graph               AI Reasoning
 | `graq impact module-name` | Downstream impact analysis |
 | `graq preflight "change"` | Pre-change safety check |
 | `graq lessons topic` | Surface relevant lessons |
+| `graq predict "query"` | Confidence-gated prediction + CI gate |
 
 </details>
 
