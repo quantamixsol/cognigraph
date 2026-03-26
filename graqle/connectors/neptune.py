@@ -239,6 +239,10 @@ def upsert_nodes(project_id: str, nodes: list[dict]) -> int:
     """MERGE nodes into Neptune. Returns count of upserted nodes."""
     if not nodes:
         return 0
+    # Fast-exit: if Neptune already known unavailable, skip the whole batch silently
+    if _NEPTUNE_UNAVAILABLE:
+        logger.debug("Neptune unavailable — skipping upsert of %d nodes", len(nodes))
+        return 0
     count = 0
     for node in nodes:
         nid = node.get("id", "")
@@ -261,14 +265,22 @@ def upsert_nodes(project_id: str, nodes: list[dict]) -> int:
                 "color": node.get("color", "#64748b"),
             })
             count += 1
+        except RuntimeError:
+            # Neptune unavailable (VPC-only in local dev) — abort batch silently
+            logger.debug("Neptune unavailable — aborting node upsert batch after %d", count)
+            break
         except Exception as e:
-            logger.warning("Failed to upsert node %s: %s", nid, str(e)[:100])
+            logger.debug("Failed to upsert node %s: %s", nid, str(e)[:100])
     return count
 
 
 def upsert_edges(project_id: str, edges: list[dict]) -> int:
     """MERGE edges into Neptune. Returns count of upserted edges."""
     if not edges:
+        return 0
+    # Fast-exit: if Neptune already known unavailable, skip the whole batch silently
+    if _NEPTUNE_UNAVAILABLE:
+        logger.debug("Neptune unavailable — skipping upsert of %d edges", len(edges))
         return 0
     count = 0
     for edge in edges:
@@ -291,8 +303,12 @@ def upsert_edges(project_id: str, edges: list[dict]) -> int:
                 "weight": weight,
             })
             count += 1
+        except RuntimeError:
+            # Neptune unavailable (VPC-only in local dev) — abort batch silently
+            logger.debug("Neptune unavailable — aborting edge upsert batch after %d", count)
+            break
         except Exception as e:
-            logger.warning("Failed to upsert edge %s->%s: %s", src[:8], tgt[:8], str(e)[:100])
+            logger.debug("Failed to upsert edge %s->%s: %s", src[:8], tgt[:8], str(e)[:100])
     return count
 
 

@@ -130,6 +130,67 @@ async def _load_project_graph(request: Request, project: str):
         return None
 
 
+# ---------- Cross-project federation ----------
+
+
+@router.get("/projects")
+async def list_projects(request: Request):
+    """List all projects belonging to the authenticated user.
+
+    Scans S3 prefix graphs/{email_hash}/ to discover available projects.
+    Returns project names with node/edge counts from last push metadata.
+    Team plan only — free users get an empty list.
+    """
+    import hashlib
+    import os
+
+    auth_header = request.headers.get("authorization", "")
+    user_email_header = request.headers.get("x-user-email", "")
+
+    email = user_email_header
+    if not email and auth_header:
+        try:
+            import base64
+            token = auth_header.replace("Bearer ", "")
+            payload = token.split(".")[1]
+            payload += "=" * (4 - len(payload) % 4)
+            decoded = json.loads(base64.b64decode(payload))
+            email = decoded.get("email", "")
+        except Exception:
+            pass
+
+    if not email:
+        return JSONResponse({"projects": [], "error": "Not authenticated"}, status_code=401)
+
+    try:
+        import boto3
+        email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+        bucket = os.environ.get("GRAQLE_GRAPHS_BUCKET", "graqle-graphs-eu")
+        s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "eu-central-1"))
+
+        prefix = f"graphs/{email_hash}/"
+        paginator = s3.get_paginator("list_objects_v2")
+        project_names: set[str] = set()
+
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter="/"):
+            for cp in page.get("CommonPrefixes", []):
+                key = cp.get("Prefix", "")
+                # key = "graphs/{hash}/project_name/"
+                parts = key.rstrip("/").split("/")
+                if len(parts) >= 3:
+                    project_names.add(parts[2])
+
+        projects = sorted(project_names)
+        return JSONResponse({
+            "projects": [{"name": p} for p in projects],
+            "count": len(projects),
+        })
+
+    except Exception as e:
+        logger.warning("list_projects failed: %s", e)
+        return JSONResponse({"projects": [], "error": str(e)[:200]}, status_code=200)
+
+
 # ---------- Metrics ----------
 
 
@@ -810,6 +871,56 @@ def _format_number(n: int | float) -> str:
 # ---------- Neptune ----------
 
 
+@router.get("/lessons")
+async def lessons(
+    request: Request,
+    operation: str = Query("", description="Filter lessons by operation/topic"),
+    severity: str = Query("all", description="Minimum severity: all, high, critical"),
+):
+    """Return LESSON / MISTAKE / SAFETY / ADR nodes from the knowledge graph.
+
+    Team plan: lessons are shared across all synced projects via Neptune.
+    Free plan: lessons from local graph only.
+    """
+    state = request.app.state.studio_state
+    graph = state.get("graph")
+    if not graph:
+        return JSONResponse({"lessons": [], "count": 0, "source": "no_graph"})
+
+    _LESSON_TYPES = frozenset({"LESSON", "MISTAKE", "SAFETY", "ADR", "DECISION"})
+    severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    filter_threshold = {"critical": 0, "high": 1, "all": 99}.get(severity.lower(), 99)
+    tokens = operation.lower().split() if operation else []
+
+    results = []
+    for node in graph.nodes.values():
+        if node.entity_type.upper() not in _LESSON_TYPES:
+            continue
+        sev = node.properties.get("severity", "MEDIUM").upper()
+        if severity_order.get(sev, 2) > filter_threshold:
+            continue
+        haystack = f"{node.id} {node.label} {node.description[:300]}".lower()
+        score = sum(1.0 for t in tokens if t in haystack) if tokens else 1.0
+        if score > 0:
+            results.append({
+                "id": node.id,
+                "label": node.label,
+                "entity_type": node.entity_type,
+                "severity": sev,
+                "description": node.description[:300],
+                "hit_count": node.properties.get("hit_count", 0),
+                "score": score,
+            })
+
+    results.sort(key=lambda x: (severity_order.get(x["severity"], 2), -x["score"]))
+    return JSONResponse({
+        "lessons": results[:50],
+        "count": len(results),
+        "source": "local_graph",
+        "filter": {"operation": operation, "severity": severity},
+    })
+
+
 @router.get("/neptune/health")
 async def neptune_health_check():
     """Check Neptune connectivity from Lambda."""
@@ -918,3 +1029,180 @@ async def neptune_upload(request: Request):
     except Exception as e:
         logger.exception("Neptune upload failed")
         return JSONResponse({"error": str(e)[:500]}, status_code=500)
+
+
+# ── CLI/MCP Tool Bridge ───────────────────────────────────────────────────────
+
+_ALLOWED_TOOLS = frozenset({
+    "graq_context", "kogni_context",
+    "graq_reason", "kogni_reason",
+    "graq_inspect", "kogni_inspect",
+    "graq_lessons", "kogni_lessons",
+    "graq_impact", "kogni_impact",
+    "graq_preflight", "kogni_preflight",
+    "graq_learn", "kogni_learn",
+    "graq_predict", "kogni_predict",
+    "graq_safety_check", "kogni_safety_check",
+})
+
+
+@router.post("/cli/exec")
+async def cli_exec(request: Request):
+    """Execute a graq MCP tool from Studio chat and stream the result as SSE.
+
+    Request body:
+        {"tool": "graq_reason", "arguments": {"query": "..."}}
+
+    SSE stream:
+        data: {"type": "chunk", "text": "..."}
+        data: {"type": "done", "text": "<full result>"}
+        data: {"type": "error", "message": "..."}
+    """
+    import json as _json
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+    tool_name = body.get("tool", "")
+    arguments = body.get("arguments", {})
+
+    if not tool_name:
+        return JSONResponse({"error": "Missing 'tool' field"}, status_code=400)
+
+    if tool_name not in _ALLOWED_TOOLS:
+        return JSONResponse(
+            {"error": f"Tool '{tool_name}' not allowed. Allowed: {sorted(_ALLOWED_TOOLS)}"},
+            status_code=400,
+        )
+
+    async def event_generator():
+        try:
+            from graqle.plugins.mcp_dev_server import KogniDevServer
+            server = KogniDevServer()
+            result = await server.handle_tool(tool_name, arguments)
+            # Emit full result as a single done event (tools return a complete string)
+            yield f"data: {_json.dumps({'type': 'done', 'text': result})}\n\n"
+        except Exception as e:
+            logger.warning("cli/exec tool '%s' failed: %s", tool_name, e)
+            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)[:500]})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# ── Studio Chat with Slash Commands + Plain Language Routing ─────────────────
+
+# Slash command → (tool_name, argument_key) mapping
+_SLASH_COMMANDS: dict[str, tuple[str, str]] = {
+    "reason":     ("graq_reason",     "question"),
+    "r":          ("graq_reason",     "question"),
+    "context":    ("graq_context",    "name"),
+    "ctx":        ("graq_context",    "name"),
+    "inspect":    ("graq_inspect",    "query"),
+    "lessons":    ("graq_lessons",    "topic"),
+    "learn":      ("graq_lessons",    "topic"),
+    "impact":     ("graq_impact",     "node_name"),
+    "preflight":  ("graq_preflight",  "change_description"),
+    "pre":        ("graq_preflight",  "change_description"),
+    "predict":    ("graq_predict",    "question"),
+    "safety":     ("graq_safety_check", "change_description"),
+}
+
+# Keywords that indicate intent — map to the best tool
+_INTENT_KEYWORDS: list[tuple[set[str], str]] = [
+    ({"impact", "affects", "downstream", "depends", "blast"}, "graq_impact"),
+    ({"lesson", "mistake", "pitfall", "warn", "issue"}, "graq_lessons"),
+    ({"preflight", "safe", "risk", "before", "should i"}, "graq_preflight"),
+    ({"predict", "forecast", "will", "next", "future"}, "graq_predict"),
+    ({"inspect", "show", "list", "stats", "count", "how many"}, "graq_inspect"),
+    ({"context", "about", "what is", "explain", "describe"}, "graq_context"),
+]
+
+
+def _route_chat_message(message: str) -> tuple[str, dict]:
+    """Route a plain-language or slash-command message to the best graq tool.
+
+    Returns (tool_name, arguments_dict).
+    """
+    msg = message.strip()
+
+    # Slash command: /reason <text>, /context <name>, etc.
+    if msg.startswith("/"):
+        parts = msg[1:].split(None, 1)
+        cmd = parts[0].lower()
+        rest = parts[1] if len(parts) > 1 else ""
+        if cmd in _SLASH_COMMANDS:
+            tool, arg_key = _SLASH_COMMANDS[cmd]
+            return tool, {arg_key: rest}
+
+    # Plain-language routing: keyword matching
+    lower = msg.lower()
+    for keywords, tool in _INTENT_KEYWORDS:
+        if any(kw in lower for kw in keywords):
+            _TOOL_ARG_MAP = {
+                "graq_impact": "node_name",
+                "graq_lessons": "topic",
+                "graq_preflight": "change_description",
+                "graq_safety_check": "change_description",
+                "graq_predict": "question",
+                "graq_inspect": "query",
+                "graq_context": "name",
+            }
+            return tool, {_TOOL_ARG_MAP.get(tool, "question"): msg}
+
+    # Default: graq_reason handles everything else
+    return "graq_reason", {"question": msg}
+
+
+@router.post("/chat")
+async def studio_chat(request: Request):
+    """Studio chat with slash-command support and plain-language routing.
+
+    Accepts natural language or slash commands. Routes to the appropriate
+    graq tool and streams the result as SSE.
+
+    Request body:
+        {"message": "/reason how does AuthService work?"}
+        {"message": "what lessons are there about CORS?"}
+        {"message": "/context JwtModule"}
+
+    Slash commands available:
+        /reason <question>     → graq_reason
+        /context <name>        → graq_context
+        /lessons <topic>       → graq_lessons
+        /impact <node>         → graq_impact
+        /preflight <change>    → graq_preflight
+        /predict <question>    → graq_predict
+        /inspect <query>       → graq_inspect
+        /safety <change>       → graq_safety_check
+    """
+    import json as _json
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+    message = body.get("message", "").strip()
+    if not message:
+        return JSONResponse({"error": "Missing 'message' field"}, status_code=400)
+
+    tool_name, arguments = _route_chat_message(message)
+
+    async def event_generator():
+        # Emit routing decision so the UI can show which tool was invoked
+        yield f"data: {_json.dumps({'type': 'routing', 'tool': tool_name, 'arguments': arguments})}\n\n"
+
+        try:
+            from graqle.plugins.mcp_dev_server import KogniDevServer
+            server = KogniDevServer()
+            result = await server.handle_tool(tool_name, arguments)
+            yield f"data: {_json.dumps({'type': 'done', 'tool': tool_name, 'text': result})}\n\n"
+        except Exception as e:
+            logger.warning("studio_chat tool '%s' failed: %s", tool_name, e)
+            yield f"data: {_json.dumps({'type': 'error', 'tool': tool_name, 'message': str(e)[:500]})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

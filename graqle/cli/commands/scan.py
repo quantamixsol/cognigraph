@@ -1912,6 +1912,69 @@ def _is_test_file(path: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Cloud Onboarding Nudge
+# ---------------------------------------------------------------------------
+
+def _show_cloud_onboarding_nudge(graph_data: dict, graqle_dir: Path) -> None:
+    """Show a one-time cloud onboarding nudge after scan if user isn't connected.
+
+    Fires at most once (persisted in .graqle/.cloud_nudge_shown).
+    Suppressed in non-TTY environments (CI, pipes).
+    Shows two messages:
+      1. If not logged in: signup URL + graq login instructions
+      2. If logged in on free plan and near/at node limit: upgrade CTA
+    """
+    import sys
+    if not sys.stdout.isatty():
+        return  # Never show nudges in CI/pipes
+
+    nudge_file = graqle_dir / ".cloud_nudge_shown"
+    if nudge_file.exists():
+        return  # Already shown once
+
+    try:
+        from graqle.cloud.credentials import load_credentials
+        creds = load_credentials()
+    except Exception:
+        return
+
+    node_count = len(graph_data.get("nodes", []))
+
+    if not creds.is_authenticated:
+        # User has never connected to cloud — show signup CTA
+        console.print(Panel(
+            "[bold cyan]Back up your graph to the cloud[/bold cyan]\n\n"
+            f"  You just scanned [bold]{node_count:,}[/bold] nodes into your knowledge graph.\n"
+            "  Sign up (free) to back it up, access it from Studio,\n"
+            "  and sync across projects.\n\n"
+            "  1. Create a free account:\n"
+            "     [bold cyan]https://graqle.com/signup[/bold cyan]\n\n"
+            "  2. Get your API key at:\n"
+            "     [bold cyan]https://graqle.com/dashboard/account[/bold cyan]\n\n"
+            "  3. Connect:\n"
+            "     [bold cyan]graq login --api-key grq_your_key_here[/bold cyan]\n\n"
+            "  [dim]Or set env var: GRAQLE_API_KEY=grq_your_key[/dim]",
+            title="[dim]One-time tip[/dim]",
+            border_style="dim",
+        ))
+    elif creds.plan == "free" and node_count > 400:
+        # Free user near the 500-node limit — show upgrade CTA
+        pct = int(node_count / 500 * 100)
+        console.print(
+            f"\n[dim]You're at [yellow]{pct}%[/yellow] of the Free plan node limit "
+            f"({node_count:,}/500). Team plan: unlimited nodes + Neptune cloud sync. "
+            "[cyan]graqle.com/pricing[/cyan][/dim]"
+        )
+
+    try:
+        graqle_dir.mkdir(parents=True, exist_ok=True)
+        nudge_file.touch()
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
 # Summary Formatting
 # ---------------------------------------------------------------------------
 
@@ -2085,6 +2148,20 @@ def _scan_repo_impl(
     from graqle.core.graph import _write_with_lock
     out_path = Path(output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Auto-backup previous graph before overwriting — 3-rotation, no machine pressure
+    if out_path.exists() and out_path.stat().st_size > 1024:  # only backup non-empty graphs
+        import shutil
+        try:
+            # Rotate: .bak.2 → .bak.3, .bak.1 → .bak.2, current → .bak.1
+            for i in (3, 2, 1):
+                src = out_path.with_suffix(f".json.bak.{i - 1}") if i > 1 else out_path
+                dst = out_path.with_suffix(f".json.bak.{i}")
+                if src.exists():
+                    shutil.copy2(str(src), str(dst))
+        except Exception:
+            pass  # Non-blocking — never fail a scan for backup
+
     _write_with_lock(str(out_path), json.dumps(data, indent=2, default=str))
 
     # Print summary
@@ -2179,6 +2256,9 @@ def _scan_repo_impl(
             nudge_file.touch()
         except Exception:
             pass
+
+    # Cloud onboarding nudge — show once if user isn't connected to cloud yet
+    _show_cloud_onboarding_nudge(data, Path(".graqle"))
 
 
 @scan_app.command("repo")
