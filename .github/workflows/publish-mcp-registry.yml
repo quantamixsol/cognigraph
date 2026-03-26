@@ -28,14 +28,17 @@ jobs:
         run: |
           TAG="${{ github.event.workflow_run.head_branch }}"
           VERSION="${TAG#v}"
-          python3 -c "
-          import json, pathlib
+          echo "Updating server.json to version ${VERSION}"
+          # Use Python with env var to avoid shell/Python quoting conflicts
+          VERSION="${VERSION}" python3 - <<'PYEOF'
+          import json, os, pathlib
+          version = os.environ["VERSION"]
           s = json.loads(pathlib.Path('server.json').read_text())
-          s['version'] = '${VERSION}'
-          s['packages'][0]['version'] = '${VERSION}'
+          s['version'] = version
+          s['packages'][0]['version'] = version
           pathlib.Path('server.json').write_text(json.dumps(s, indent=2) + '\n')
-          print(f'Updated server.json to version {VERSION}')
-          "
+          print(f'Updated server.json to version {version}')
+          PYEOF
 
       - name: Wait for PyPI to index the new version
         run: sleep 60
