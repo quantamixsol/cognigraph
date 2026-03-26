@@ -46,8 +46,11 @@ def login_command(
       - Usage analytics and insights
 
     \b
-    Get an API key at https://graqle.com/account
+    Get an API key at https://graqle.com/dashboard/account
     All local features (Studio, CLI, MCP) work without an account.
+
+    \b
+    Alternative (CI/Docker): set GRAQLE_API_KEY=grq_your_key in your environment.
     """
     from graqle.cloud.credentials import (
         CloudCredentials,

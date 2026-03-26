@@ -1814,6 +1814,20 @@ class KogniDevServer:
                 except Exception as exc:
                     logger.debug("Governance logging failed: %s", exc)
 
+            # Fire-and-forget metrics push (team plan only, non-blocking)
+            try:
+                from graqle.cloud.metrics_push import push_reasoning_metrics
+                push_reasoning_metrics(
+                    tool_name="graq_reason",
+                    latency_ms=result.latency_ms,
+                    confidence=result.confidence,
+                    rounds=result.rounds_completed,
+                    node_count=result.node_count,
+                    cost_usd=result.cost_usd,
+                )
+            except Exception:
+                pass
+
             return json.dumps(result_dict)
 
         except (RuntimeError, Exception) as exc:

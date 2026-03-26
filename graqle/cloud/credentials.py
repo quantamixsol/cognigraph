@@ -61,18 +61,35 @@ class CloudCredentials:
 
 
 def load_credentials() -> CloudCredentials:
-    """Load credentials from ~/.graqle/credentials.json.
+    """Load credentials from ~/.graqle/credentials.json or GRAQLE_API_KEY env var.
 
-    Returns default (unauthenticated) credentials if file doesn't exist.
+    Priority:
+    1. ~/.graqle/credentials.json (set by graq login)
+    2. GRAQLE_API_KEY environment variable (for CI/Docker/env-based setups)
+
+    Returns default (unauthenticated) credentials if neither is available.
     """
-    if not CREDENTIALS_FILE.exists():
-        return CloudCredentials()
-    try:
-        data = json.loads(CREDENTIALS_FILE.read_text(encoding="utf-8"))
-        return CloudCredentials.from_dict(data)
-    except Exception as e:
-        logger.warning("Failed to load credentials: %s", e)
-        return CloudCredentials()
+    import os
+
+    # 1. Credentials file (preferred — has email + plan info)
+    if CREDENTIALS_FILE.exists():
+        try:
+            data = json.loads(CREDENTIALS_FILE.read_text(encoding="utf-8"))
+            return CloudCredentials.from_dict(data)
+        except Exception as e:
+            logger.warning("Failed to load credentials: %s", e)
+
+    # 2. GRAQLE_API_KEY env var (frictionless for CI/Docker users)
+    env_key = os.environ.get("GRAQLE_API_KEY", "")
+    if env_key and env_key.startswith("grq_"):
+        return CloudCredentials(
+            api_key=env_key,
+            email=os.environ.get("GRAQLE_EMAIL", ""),
+            plan=os.environ.get("GRAQLE_PLAN", "free"),
+            connected=True,
+        )
+
+    return CloudCredentials()
 
 
 def save_credentials(creds: CloudCredentials) -> None:
