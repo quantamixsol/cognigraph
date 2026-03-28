@@ -1,8 +1,8 @@
 {
   "init_timestamp": "2026-03-12T00:27:27.998606+00:00",
-  "context_loads": 10458,
-  "queries": 2209,
-  "tokens_saved": 61230619,
+  "context_loads": 10639,
+  "queries": 2235,
+  "tokens_saved": 61579476,
   "mistakes_prevented": 0,
   "lessons_applied": 1,
   "safety_checks": 0,
@@ -270,40 +270,40 @@
       "last_accessed": "2026-03-28T00:05:39.984853+00:00"
     },
     "graqle/core/graph.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.602320+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.376064+00:00"
     },
     "graqle/cli/main.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.604909+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.376064+00:00"
     },
     "graqle/studio/static/vendor/d3.min.js": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.619237+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.405193+00:00"
     },
     "graqle/config/settings.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.611668+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.385887+00:00"
     },
     "graqle/core/types.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.616917+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.400879+00:00"
     },
     "pyproject.toml": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.627635+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.406686+00:00"
     },
     "graqle/intelligence/models.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.623145+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.411825+00:00"
     },
     "graqle": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.637774+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "graqle/ontology/domain_registry.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.626547+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.414346+00:00"
     },
     "graqle/studio/static/vendor/alpine.min.js": {
       "count": 15,
@@ -314,28 +314,28 @@
       "last_accessed": "2026-03-18T21:01:44.648187+00:00"
     },
     "graqle/backends/api.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.637774+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "graqle/cli/commands/scan.py": {
-      "count": 13,
-      "last_accessed": "2026-03-18T21:01:44.646001+00:00"
+      "count": 14,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "graqle/runtime/fetcher.py": {
       "count": 1,
       "last_accessed": "2026-03-16T11:40:28.972804+00:00"
     },
     "graqle/server/app.py": {
-      "count": 13,
-      "last_accessed": "2026-03-18T21:01:44.632594+00:00"
+      "count": 14,
+      "last_accessed": "2026-03-28T00:50:07.416320+00:00"
     },
     "graqle/plugins/mcp_dev_server.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.631478+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
     },
     "graqle/core/message.py": {
-      "count": 15,
-      "last_accessed": "2026-03-18T21:01:44.630175+00:00"
+      "count": 16,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "graqle/licensing/manager.py": {
       "count": 1,
@@ -470,108 +470,108 @@
       "last_accessed": "2026-03-16T11:40:29.002195+00:00"
     },
     "tests/test_cli/test_init.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.603865+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.380248+00:00"
     },
     "tests/test_licensing/test_manager.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.605915+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.384884+00:00"
     },
     "tests/test_activation/test_reformulator.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.606977+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.385887+00:00"
     },
     "tests/test_cli/test_scan.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.607980+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.380248+00:00"
     },
     "tests/test_plugins/test_mcp_dev_server.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.608984+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.385887+00:00"
     },
     "tests/test_scanner/test_privacy.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.610640+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.385887+00:00"
     },
     "tests/test_intelligence/test_drace.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.612671+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
     },
     "tests/test_scanner/test_docs.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.614174+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
     },
     "tests/test_activation/test_content_aware_pcst.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.614747+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
     },
     "tests/test_scanner/test_privacy.py::engine.redact": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.615913+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
     },
     "tests/test_activation/test_reformulator.py::QueryReformulator": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.617923+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.399867+00:00"
     },
     "tests/test_ontology/test_semantic_shacl_gate.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.617923+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.402938+00:00"
     },
     "tests/test_learning/test_gds_intelligence.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.620263+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.406686+00:00"
     },
     "tests/test_scanner/test_linker.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.621268+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.410271+00:00"
     },
     "tests/test_scanner/test_parsers/test_markdown.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.622273+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.410818+00:00"
     },
     "tests/test_scanner/test_json_parser.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.623490+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.413329+00:00"
     },
     "tests/test_scanner/test_manifest.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.624523+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.418418+00:00"
     },
     "tests/test_routing.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.625544+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.398340+00:00"
     },
     "graqle/connectors/__init__.py": {
       "count": 2,
       "last_accessed": "2026-03-17T09:49:39.435704+00:00"
     },
     "tests/test_scanner/test_parsers/test_text.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.627635+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_backends/test_error_scenarios.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.629164+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_cloud/test_sync.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.629164+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_cli/test_bench_failfast.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.633597+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_cloud/test_plans.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.634598+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_connectors/test_neo4j_traversal.py": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.634598+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_scanner/test_parsers/test_markdown.py::parser.parse": {
-      "count": 14,
-      "last_accessed": "2026-03-18T21:01:44.635661+00:00"
+      "count": 15,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
     },
     "tests/test_cli/test_learn_entity_knowledge.py": {
       "count": 14,
@@ -628,6 +628,90 @@
     "graqle/connectors/neptune.py": {
       "count": 9,
       "last_accessed": "2026-03-18T21:01:44.647005+00:00"
+    },
+    "graqle/cloud/sync.py::cls": {
+      "count": 2,
+      "last_accessed": "2026-03-28T00:46:10.764567+00:00"
+    },
+    "graqle/cloud/sync.py::from_dict": {
+      "count": 2,
+      "last_accessed": "2026-03-28T00:46:10.765592+00:00"
+    },
+    "graqle.yaml": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:46:10.767096+00:00"
+    },
+    "tests/test_plugins/test_phantom.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.380248+00:00"
+    },
+    "tests/test_generation/test_phase4_tools.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.380248+00:00"
+    },
+    "tests/test_generation/test_profiler.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
+    },
+    "tests/test_generation/test_governance.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
+    },
+    "tests/test_generation/test_phase_plan.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.390218+00:00"
+    },
+    "tests/test_generation/test_phase35_tools.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.401883+00:00"
+    },
+    "tests/test_plugins/test_mcp_predict.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.403984+00:00"
+    },
+    "tests/test_plugins/test_mcp_server.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.406686+00:00"
+    },
+    "graqle/studio/routes/api.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.415089+00:00"
+    },
+    "tests/test_generation/test_phase9_orchestrator.py": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.417320+00:00"
+    },
+    "tests/test_plugins/test_mcp_predict.py::_make_server": {
+      "count": 1,
+      "last_accessed": "2026-03-28T00:50:07.419922+00:00"
+    },
+    "app_py": {
+      "count": 22,
+      "last_accessed": "2026-03-28T01:22:37.632486+00:00"
+    },
+    "auth_py": {
+      "count": 21,
+      "last_accessed": "2026-03-28T01:22:37.633002+00:00"
+    },
+    "models_py": {
+      "count": 21,
+      "last_accessed": "2026-03-28T01:22:37.633002+00:00"
+    },
+    "services_py": {
+      "count": 21,
+      "last_accessed": "2026-03-28T01:22:37.636248+00:00"
+    },
+    "notifications_py": {
+      "count": 20,
+      "last_accessed": "2026-03-28T01:22:37.636248+00:00"
+    },
+    "utils_py": {
+      "count": 20,
+      "last_accessed": "2026-03-28T01:22:37.636248+00:00"
+    },
+    "test": {
+      "count": 1,
+      "last_accessed": "2026-03-28T01:10:10.354552+00:00"
     }
   },
   "graph_stats": {
@@ -662,18 +746,19 @@
     "captured_at": "2026-03-12T00:27:28.036295+00:00"
   },
   "graph_stats_current": {
-    "nodes": 5,
-    "edges": 7,
+    "nodes": 6,
+    "edges": 12,
     "node_types": {
-      "Concept": 5
+      "MODULE": 6
     },
     "edge_types": {
-      "RELATED_TO": 2,
-      "CONTAINS": 3,
-      "CONFLICTS_WITH": 1,
-      "REFERENCES": 1
+      "IMPORTS": 8,
+      "DELEGATES_TO": 1,
+      "TRUSTS_VALIDATION_FROM": 1,
+      "PROVIDES_SESSION_TO": 1,
+      "PROVIDES_VALIDATION_TO": 1
     },
-    "captured_at": "2026-03-28T00:05:48.750559+00:00"
+    "captured_at": "2026-03-28T01:22:37.636248+00:00"
   },
   "caller_stats": {
     "dogfood-visual-planning": {
