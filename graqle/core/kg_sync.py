@@ -264,11 +264,16 @@ def pull_if_newer(
 def schedule_push(
     local_path: str | Path,
     project: str | None = None,
+    *,
+    retry_on_error: bool = True,
 ) -> None:
     """Schedule a background S3 push. Debounced: max 1 push per PUSH_DEBOUNCE_SECS.
 
-    Called after every _save_graph() in mcp_dev_server.py.
-    Fire-and-forget — never blocks the caller.
+    Args:
+        local_path:     Path to local graqle.json
+        project:        Project name (auto-detected if None)
+        retry_on_error: If True (default), retry once after 1s on failure.
+                        Set False in CI/test paths for fast-fail behavior.
     """
     if is_offline():
         return
@@ -285,14 +290,14 @@ def schedule_push(
 
     t = threading.Thread(
         target=_push_worker,
-        args=(local_path, project),
+        args=(local_path, project, retry_on_error),
         daemon=True,
         name=f"graqle-kg-push-{local_path.name}",
     )
     t.start()
 
 
-def _push_worker(local_path: Path, project: str | None) -> None:
+def _push_worker(local_path: Path, project: str | None, retry_on_error: bool = True) -> None:
     """Background worker: push local graqle.json to S3."""
     creds = _load_creds()
     if creds is None:
@@ -309,7 +314,7 @@ def _push_worker(local_path: Path, project: str | None) -> None:
     email_h = _email_hash(creds.email)
     s3_key = _s3_key(email_h, project)
 
-    for attempt in (1, 2):
+    for attempt in (1, 2) if retry_on_error else (1,):
         try:
             import boto3
             data = local_path.read_bytes()
@@ -328,11 +333,12 @@ def _push_worker(local_path: Path, project: str | None) -> None:
         except ImportError:
             return  # boto3 not available — skip silently
         except Exception as exc:
-            if attempt == 1:
+            if attempt == 1 and retry_on_error:
                 logger.warning("KG push attempt 1 failed: %s — retrying", exc)
                 time.sleep(1.0)
             else:
-                logger.warning("KG push failed after 2 attempts: %s", exc)
+                logger.warning("KG push failed%s: %s",
+                               " after 2 attempts" if retry_on_error else "", exc)
 
 
 # ---------------------------------------------------------------------------
