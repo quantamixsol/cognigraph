@@ -59,8 +59,8 @@ _TS_BLOCK_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"production.rule|stg.*rule|grammar.*rule.*node.type", re.IGNORECASE),
     # TS-4: theta_fold derivation
     re.compile(r"\btheta_fold\b|\bθ_fold\b", re.IGNORECASE),
-    # AGREEMENT_THRESHOLD specific value
-    re.compile(r"AGREEMENT_THRESHOLD\s*=\s*0\.16", re.IGNORECASE),
+    # AGREEMENT_THRESHOLD — blocks both the real value and redaction markers
+    re.compile(r"AGREEMENT_THRESHOLD\s*=\s*(0\.16|REDACTED)\b", re.IGNORECASE),
     # 70/30 blend internal constants
     re.compile(r"70.*30.*blend|_compute_answer_confidence.*formula", re.IGNORECASE),
 ]
