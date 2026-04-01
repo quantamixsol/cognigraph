@@ -1,6 +1,9 @@
 """Tests for P3 DebateOrchestrator — propose/challenge/synthesize rounds."""
 from __future__ import annotations
 
+# Non-revealing test decay factor (TS-3: must not match production value)
+_TEST_DECAY = 0.5
+
 import pytest
 
 from graqle.config.settings import DebateConfig
@@ -37,7 +40,7 @@ def _make_orchestrator(
         max_rounds=max_rounds,
     )
     pool = BackendPool(panelists)
-    cost_gate = DebateCostGate(DebateCostBudget(initial_budget=budget, decay_factor=0.75))
+    cost_gate = DebateCostGate(DebateCostBudget(initial_budget=budget, decay_factor=_TEST_DECAY))
     return DebateOrchestrator(config, pool, cost_gate)
 
 
