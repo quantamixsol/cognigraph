@@ -251,6 +251,7 @@ class GovernancePolicyConfig(BaseModel):
     """
 
     ts_hard_block: bool = True
+    ts_patterns_file: str | None = None     # Path to ip_patterns.yml (ADR-140)
     review_threshold: float = 0.70          # T2 gate threshold
     block_threshold: float = 0.90           # T3 block threshold
     auto_pass_max_radius: int = 2           # T1 max impact_radius for auto-pass
@@ -261,6 +262,37 @@ class GovernancePolicyConfig(BaseModel):
     workflow_enforce_gate: bool = True      # Enforce governance gate in WorkflowOrchestrator
     workflow_require_preflight: bool = True # Require preflight in governed workflows
     workflow_require_learn: bool = True     # Require graq_learn at end of governed workflows
+
+
+class DebateConfig(BaseModel):
+    """Multi-model debate / ensemble configuration."""
+
+    mode: str = "off"  # "off" | "debate" | "ensemble"
+    panelists: list[str] = Field(default_factory=list)  # backend names from models dict
+    judge_profile: str | None = None  # named model for synthesis judge
+    max_rounds: int = 3
+    convergence_threshold: float = Field(default=0.85)
+    cost_ceiling_usd: float = Field(default=5.0)
+    require_citation: bool = True
+    ab_mode: bool = False  # A/B comparison mode
+    decay_factor: float = Field(default=0.75)
+    clearance_levels: dict[str, str] = Field(default_factory=dict)  # panelist -> clearance level
+
+
+class CalibrationConfig(BaseModel):
+    """Confidence calibration configuration (R11, TS-2 compliant)."""
+
+    enabled: bool = False
+    method: str = "temperature"  # temperature | platt | isotonic
+    temperature: float = 1.0
+    ece_target: float = 0.05
+    mce_target: float = 0.15
+    brier_target: float = 0.25
+    bins: int = 10
+    min_benchmark_samples: int = 50
+    recalibrate_interval: int = 100
+    benchmark_path: str | None = None
+    persist_path: str = ".graqle/calibration/"
 
 
 class RedactionConfig(BaseModel):
@@ -398,6 +430,33 @@ class GraqleConfig(BaseModel):
     models: dict[str, NamedModelConfig] = Field(default_factory=dict)
     node_models: dict[str, str] = Field(default_factory=dict)
     governance: GovernancePolicyConfig = Field(default_factory=GovernancePolicyConfig)
+    debate: DebateConfig = Field(default_factory=DebateConfig)
+    calibration: CalibrationConfig = Field(default_factory=CalibrationConfig)
+
+    @model_validator(mode="after")
+    def _validate_debate_panelists(self) -> "GraqleConfig":
+        """Ensure debate panelists reference defined model profiles."""
+        if self.debate.mode == "off":
+            return self
+        models_dict = self.models or {}
+        missing = [p for p in self.debate.panelists if p not in models_dict]
+        if missing:
+            raise ValueError(
+                f"debate.panelists references undefined model profiles: {missing}. "
+                f"Available: {sorted(models_dict.keys())}"
+            )
+        if len(self.debate.panelists) < 2:
+            raise ValueError(
+                f"debate.mode={self.debate.mode!r} requires at least 2 panelists, "
+                f"got {len(self.debate.panelists)}."
+            )
+        if len(self.debate.panelists) > 7:
+            logger.warning(
+                "debate.panelists has %d entries (>7); "
+                "large panels increase cost and latency with diminishing returns.",
+                len(self.debate.panelists),
+            )
+        return self
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> GraqleConfig:
