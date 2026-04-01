@@ -189,6 +189,8 @@ class TestToolDefinitions:
             "graq_profile",
             # Phase 10: governance gate MCP tool
             "graq_gov_gate",
+            # R6: correction tool
+            "graq_correct",
         }
         expected_kogni = {
             "kogni_context",
@@ -253,6 +255,8 @@ class TestToolDefinitions:
             "kogni_profile",
             # Phase 10: governance gate MCP tool
             "kogni_gov_gate",
+            # R6: correction tool
+            "kogni_correct",
         }
         # 57 graq_* + 57 kogni_* = 114 total (v0.38.0 Phase 10)
         assert expected_graq | expected_kogni == names

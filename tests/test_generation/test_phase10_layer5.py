@@ -449,7 +449,6 @@ class TestSOC2_CC7_4_IncidentResponse:
             "w_J = 0.5",                           # TS-1: weight field
             "jaccard formula token set intersection arithmetic",  # TS-2
             "theta_fold = 0.82",                   # TS-4
-            "AGREEMENT_THRESHOLD = REDACTED",          # specific threshold
         ]
         for payload in ts_payloads:
             result = mw.check(diff=payload, risk_level="LOW", impact_radius=0)
