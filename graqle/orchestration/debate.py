@@ -21,6 +21,7 @@ import re
 import time
 
 from graqle.config.settings import DebateConfig
+from graqle.orchestration.debate_config import get as _debate_cfg
 from graqle.core.types import DebateTrace, DebateTurn
 from graqle.intelligence.governance.debate_citation import (
     CitationError,
@@ -56,19 +57,14 @@ from graqle.orchestration.backend_pool import BackendPool, PanelistResponse
 
 logger = logging.getLogger(__name__)
 
-_CONSENSUS_RE = re.compile(
-    r"\b(agree|concur|no objection|fully aligned)\b",
-    re.IGNORECASE,
-)
-
 _CONFIDENCE_RE = re.compile(
     r"[Cc]onfidence[:\s]+(\d+(?:\.\d+)?)(%)?",
 )
 
 _DEFAULT_CONFIDENCE = 0.5
-_COST_PER_PANELIST_USD = 0.01  # estimated cost per panelist per phase
-_PHASES_PER_ROUND = 3          # propose + challenge + synthesize
-_DEBATE_TEMPERATURE = 0.7      # LLM generation temperature for debate
+_COST_PER_PANELIST_USD = _debate_cfg("cost_per_panelist_usd")
+_PHASES_PER_ROUND = _debate_cfg("phases_per_round")
+_DEBATE_TEMPERATURE = _debate_cfg("debate_temperature")
 
 
 def _parse_confidence(text: str) -> float:
@@ -83,11 +79,15 @@ def _parse_confidence(text: str) -> float:
 
 
 def _check_consensus(challenges: list[PanelistResponse]) -> bool:
-    """Heuristic: consensus if every challenge contains agreement language."""
-    ok_challenges = [c for c in challenges if c.ok]
-    if not ok_challenges:
+    """Check whether panelist challenges indicate consensus.
+
+    Returns False when the private implementation module is absent.
+    """
+    try:
+        from graqle.orchestration._consensus import check_consensus_impl
+        return check_consensus_impl(challenges)
+    except ImportError:
         return False
-    return all(_CONSENSUS_RE.search(c.response) for c in ok_challenges)
 
 
 class DebateOrchestrator:

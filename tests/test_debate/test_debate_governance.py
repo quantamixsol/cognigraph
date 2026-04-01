@@ -31,13 +31,13 @@ from graqle.intelligence.governance.audit import AuditEntry, DebateAuditEvent
 class TestClearanceLevel:
 
     def test_public_value(self):
-        assert ClearanceLevel.PUBLIC == "public"
+        assert ClearanceLevel.PUBLIC == 0
 
     def test_internal_value(self):
-        assert ClearanceLevel.INTERNAL == "internal"
+        assert ClearanceLevel.INTERNAL == 1
 
     def test_confidential_value(self):
-        assert ClearanceLevel.CONFIDENTIAL == "confidential"
+        assert ClearanceLevel.CONFIDENTIAL == 2
 
     def test_str_membership(self):
         assert "PUBLIC" in ClearanceLevel.__members__
@@ -48,8 +48,12 @@ class TestClearanceLevel:
         levels = {ClearanceLevel.PUBLIC, ClearanceLevel.INTERNAL, ClearanceLevel.CONFIDENTIAL}
         assert len(levels) == 3
 
-    def test_is_str_subclass(self):
-        assert isinstance(ClearanceLevel.PUBLIC, str)
+    def test_is_int_subclass(self):
+        assert isinstance(ClearanceLevel.PUBLIC, int)
+
+    def test_ordering(self):
+        assert ClearanceLevel.PUBLIC < ClearanceLevel.INTERNAL
+        assert ClearanceLevel.INTERNAL < ClearanceLevel.CONFIDENTIAL
 
 
 # ---------------------------------------------------------------------------

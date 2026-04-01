@@ -266,18 +266,32 @@ class GovernancePolicyConfig(BaseModel):
 
 
 class DebateConfig(BaseModel):
-    """Multi-model debate / ensemble configuration."""
+    """Multi-model debate / ensemble configuration.
+
+    Tuning parameters are loaded from ``.graqle/debate_config.json``
+    at runtime.  Defaults here are safe non-revealing placeholders.
+    """
 
     mode: str = "off"  # "off" | "debate" | "ensemble"
     panelists: list[str] = Field(default_factory=list)  # backend names from models dict
     judge_profile: str | None = None  # named model for synthesis judge
     max_rounds: int = 3
-    convergence_threshold: float = Field(default=0.85)
+    convergence_threshold: float | None = None  # loaded from private config at runtime
     cost_ceiling_usd: float = Field(default=5.0)
     require_citation: bool = True
     ab_mode: bool = False  # A/B comparison mode
-    decay_factor: float = Field(default=0.75)
+    decay_factor: float | None = None  # loaded from private config at runtime
     clearance_levels: dict[str, str] = Field(default_factory=dict)  # panelist -> clearance level
+
+    @model_validator(mode="after")
+    def _load_private_defaults(self) -> "DebateConfig":
+        """Fill None fields from private config at runtime."""
+        from graqle.orchestration.debate_config import get as _cfg
+        if self.convergence_threshold is None:
+            self.convergence_threshold = float(_cfg("convergence_threshold"))
+        if self.decay_factor is None:
+            self.decay_factor = float(_cfg("decay_factor"))
+        return self
 
 
 class CalibrationConfig(BaseModel):

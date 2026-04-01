@@ -71,21 +71,21 @@ class TestParseConfidence:
 
 
 class TestCheckConsensus:
+    """Consensus detection requires private _consensus.py module.
 
-    def test_consensus_when_all_agree(self):
+    Without it, _check_consensus always returns False (safe default).
+    These tests verify the stub behavior; full consensus tests live
+    in the private test suite alongside the implementation.
+    """
+
+    def test_returns_false_without_private_impl(self):
+        """Without _consensus.py, consensus is never claimed."""
         from graqle.orchestration.backend_pool import PanelistResponse
         challenges = [
             PanelistResponse(panelist="p1", response="I concur with this."),
             PanelistResponse(panelist="p2", response="I agree completely."),
         ]
-        assert _check_consensus(challenges) is True
-
-    def test_no_consensus_when_objection(self):
-        from graqle.orchestration.backend_pool import PanelistResponse
-        challenges = [
-            PanelistResponse(panelist="p1", response="I concur."),
-            PanelistResponse(panelist="p2", response="I disagree strongly."),
-        ]
+        # Private impl absent → always False (safe default)
         assert _check_consensus(challenges) is False
 
     def test_empty_challenges(self):
@@ -126,14 +126,16 @@ class TestDebateOrchestrator:
         assert "synthesize" in positions
 
     @pytest.mark.asyncio
-    async def test_consensus_stops_early(self):
+    async def test_consensus_without_private_impl_runs_all_rounds(self):
+        """Without private _consensus.py, consensus is never reached — all rounds run."""
         orch = _make_orchestrator(
             max_rounds=5,
             response="I concur. Confidence: 0.9",
         )
         trace = await orch.run("test")
-        assert trace.consensus_reached is True
-        assert trace.rounds_completed <= 5
+        # Private impl absent → consensus never reached → runs all rounds
+        assert trace.consensus_reached is False
+        assert trace.rounds_completed == 5
 
     @pytest.mark.asyncio
     async def test_budget_exhaustion_stops(self):

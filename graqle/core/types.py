@@ -231,12 +231,16 @@ class DebateTrace:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-class ClearanceLevel(str, Enum):
-    """Controls what KG context is sent to each debate panelist backend."""
+class ClearanceLevel(int, Enum):
+    """Controls what KG context is sent to each debate panelist backend.
 
-    PUBLIC = "public"
-    INTERNAL = "internal"
-    CONFIDENTIAL = "confidential"
+    Ordering is implicit via integer values — comparison operators
+    work directly without an external hierarchy dict.
+    """
+
+    PUBLIC = 0
+    INTERNAL = 1
+    CONFIDENTIAL = 2
 
 
 @dataclass
@@ -244,12 +248,15 @@ class DebateCostBudget:
     """Tracks and enforces a decaying cost budget across debate rounds."""
 
     initial_budget: float
-    decay_factor: float = 0.0  # Loaded from .graqle/debate_config.json at runtime
+    decay_factor: float | None = None  # Loaded from .graqle/debate_config.json at runtime
     _remaining: float = field(init=False)
     _round: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         self._remaining = self.initial_budget
+        if self.decay_factor is None:
+            from graqle.orchestration.debate_config import get as _debate_cfg
+            self.decay_factor = float(_debate_cfg("decay_factor"))
 
     @property
     def exhausted(self) -> bool:

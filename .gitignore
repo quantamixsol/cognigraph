@@ -117,3 +117,4 @@ graqle.yaml
 # R15 Multi-Backend Debate — private config and prompt templates
 .graqle/debate_config.json
 graqle/orchestration/_debate_prompts.py
+graqle/orchestration/_consensus.py
