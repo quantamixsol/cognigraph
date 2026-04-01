@@ -12,6 +12,18 @@ from graqle.calibration.methods import (
     create_calibrator,
 )
 
+try:
+    import scipy  # noqa: F401
+    _HAS_SCIPY = True
+except ImportError:
+    _HAS_SCIPY = False
+
+try:
+    import sklearn  # noqa: F401
+    _HAS_SKLEARN = True
+except ImportError:
+    _HAS_SKLEARN = False
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -110,6 +122,7 @@ class TestTemperatureScaling:
 class TestPlattScaling:
     """Tests for PlattScaling calibrator."""
 
+    @pytest.mark.skipif(not _HAS_SCIPY, reason="scipy not installed")
     def test_fit_and_calibrate(self):
         """Fit on data, verify calibrate returns float in [0, 1]."""
         confidences, labels = _synthetic_data()
@@ -140,6 +153,7 @@ class TestPlattScaling:
 class TestIsotonicCalibration:
     """Tests for IsotonicCalibration calibrator."""
 
+    @pytest.mark.skipif(not _HAS_SKLEARN, reason="scikit-learn not installed")
     def test_fit_and_calibrate(self):
         """Fit, verify output is float in [0, 1]."""
         confidences, labels = _synthetic_data()
@@ -161,6 +175,7 @@ class TestIsotonicCalibration:
         with pytest.raises(RuntimeError):
             cal.calibrate(0.5)
 
+    @pytest.mark.skipif(not _HAS_SKLEARN, reason="scikit-learn not installed")
     def test_monotonicity(self):
         """Calibrated values preserve ordering of inputs."""
         confidences, labels = _synthetic_data(n=500, seed=7)
@@ -196,6 +211,7 @@ class TestCreateCalibrator:
         cal = create_calibrator("bogus")
         assert isinstance(cal, TemperatureScaling)
 
+    @pytest.mark.skipif(not _HAS_SCIPY, reason="scipy not installed")
     def test_platt_with_scipy(self):
         """Returns PlattScaling if scipy available."""
         cal = create_calibrator("platt")

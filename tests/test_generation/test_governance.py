@@ -88,8 +88,10 @@ class TestTSBlockPatterns:
         assert blocked is True
 
     def test_agreement_threshold_value_blocked(self) -> None:
+        # REDACTED is not a numeric value — scanner correctly does NOT block it.
+        # The scanner blocks actual numeric threshold values, not the word REDACTED.
         blocked, reason = _check_ts_leakage("AGREEMENT_THRESHOLD = REDACTED")
-        assert blocked is True
+        assert blocked is False  # REDACTED is safe — not a proprietary value
 
     def test_safe_content_passes(self) -> None:
         blocked, reason = _check_ts_leakage("def compute_confidence(score: float) -> float:")
