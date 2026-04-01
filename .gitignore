@@ -101,4 +101,15 @@ graqle/benchmarks/results/
 # IP Protection Gate — trade secret patterns (ADR-140)
 .graqle/ip_patterns.yml
 .graqle/ts_patterns.enc
+
+# ── Workspace content (moved to private quantamixsol/graqle-workspace) ──
+# These directories contain strategy, marketing, and operational content.
+# They must NEVER be in the public SDK repo. See ADR-140.
+marketing/
+social-media/
+live-demos/
+docs/
+.graqle/
+.mcp.json
+graqle.yaml
 .graqle/ip_gate_audit.jsonl

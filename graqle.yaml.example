@@ -1,0 +1,175 @@
+# ==========================================================================
+# GraQle SDK — Example Configuration (graqle.yaml.example)
+# ==========================================================================
+# Copy to graqle.yaml and customize for your environment.
+# Run `graq init` to generate a project-specific config automatically.
+#
+# ZERO hardcoded secrets — use ${ENV_VAR} syntax for all API keys.
+# Default backend: ollama (fully local, no external API calls).
+#
+# Reference: graqle/config/settings.py → GraqleConfig
+# Docs: https://graqle.dev/docs/configuration
+# ==========================================================================
+
+model:
+  backend: ollama
+  model: llama3.1:8b
+  quantization: none
+  device: auto
+  max_concurrent_adapters: 16
+  api_key: ${GRAQLE_API_KEY}
+  region: ${AWS_REGION}
+  host: http://localhost:11434
+graph:
+  connector: networkx
+  uri: ${NEO4J_URI}
+  username: ${NEO4J_USERNAME}
+  password: ${NEO4J_PASSWORD}
+  vector_index_name: cogni_chunk_embedding_index
+  embedding_dimension: 1024
+  embedding_model: amazon.titan-embed-text-v2:0
+activation:
+  strategy: chunk
+  max_nodes: 50
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_engine: ''
+  pcst_pruning: strong
+  prize_scaling: 1.0
+  cost_scaling: 1.0
+  skill_aware: true
+skills:
+  mode: auto
+  max_per_node: 5
+  domains: []
+  use_titan: true
+orchestration:
+  max_rounds: 5
+  min_rounds: 2
+  convergence_threshold: 0.95
+  aggregation: weighted_synthesis
+  async_mode: false
+  confidence_threshold: 0.8
+observer:
+  enabled: true
+  report_per_round: false
+  detect_conflicts: true
+  detect_patterns: true
+  detect_anomalies: true
+  use_llm_analysis: false
+cost:
+  budget_per_query: 0.15
+  prefer_local: true
+  fallback_to_api: true
+  dynamic_ceiling: true
+  continuation_base_prob: 0.85
+  continuation_decay: 0.6
+  hard_ceiling_multiplier: 3.0
+reformulator:
+  enabled: true
+  mode: auto
+  graph_summary: ''
+routing:
+  rules: []
+logging:
+  level: INFO
+  trace_messages: true
+  trace_dir: ./traces
+embeddings:
+  backend: local
+  model: sentence-transformers/all-MiniLM-L6-v2
+  region: ${AWS_REGION}
+  dimension: 0
+scan:
+  exclude_patterns: []
+  docs:
+    enabled: true
+    background: true
+    extensions:
+    - .pdf
+    - .docx
+    - .pptx
+    - .xlsx
+    - .md
+    - .txt
+    exclude_extensions: []
+    exclude_patterns: []
+    scan_dirs:
+    - .
+    max_file_size_mb: 50.0
+    chunk_max_chars: 1500
+    chunk_overlap_chars: 100
+    chunk_min_chars: 100
+    linking:
+      exact: true
+      fuzzy: true
+      semantic: false
+      llm_assisted: false
+      semantic_threshold: 0.7
+      fuzzy_threshold: 0.6
+      llm_max_docs: 20
+      max_edges_per_doc: 50
+    redaction:
+      enabled: true
+      patterns: []
+      redact_api_keys: true
+      redact_passwords: true
+      redact_tokens: true
+    incremental: true
+    max_nodes: 0
+    max_files: 0
+  json_files:
+    enabled: true
+    auto_detect: true
+    max_file_size_mb: 10.0
+    exclude_patterns:
+    - package-lock.json
+    - yarn.lock
+    - '*.min.json'
+    - node_modules/
+    - .git/
+    - __pycache__/
+    - dist/
+    - .next/
+    categories:
+      DEPENDENCY_MANIFEST: true
+      API_SPEC: true
+      TOOL_CONFIG: true
+      APP_CONFIG: true
+      INFRA_CONFIG: true
+      SCHEMA_FILE: true
+      DATA_FILE: false
+runtime:
+  enabled: false
+  provider: auto
+  sources: []
+  auto_ingest: false
+  max_events: 100
+  default_hours: 6
+domain: my-project
+project_name: ''
+source_mode: auto
+models: {}
+node_models: {}
+governance:
+  ts_hard_block: true
+  review_threshold: 0.7
+  block_threshold: 0.9
+  auto_pass_max_radius: 2
+  auto_pass_max_risk: LOW
+  cumulative_radius_cap: 10
+  cumulative_window_hours: 24
+  audit_tool_calls: true
+  workflow_enforce_gate: true
+  workflow_require_preflight: true
+  workflow_require_learn: true
+calibration:
+  enabled: false
+  method: temperature
+  temperature: 1.0
+  ece_target: 0.08
+  mce_target: 0.15
+  brier_target: 0.25
+  bins: 10
+  min_benchmark_samples: 50
+  recalibrate_interval: 100
+  persist_path: .graqle/calibration/
