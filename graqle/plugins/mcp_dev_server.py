@@ -4392,17 +4392,43 @@ class KogniDevServer:
         except ImportError:
             pass  # governance module optional in stripped builds
 
-        # Step 2: Build generation prompt and call the LLM via graph.areason()
+        # Step 2: Read actual file content (OT-023 fix — LLM must see real code, not KG summaries)
+        file_content = ""
+        if file_path:
+            try:
+                from pathlib import Path as _GenPath
+                _gen_fp = _GenPath(file_path)
+                if _gen_fp.exists():
+                    file_content = _gen_fp.read_text(encoding="utf-8", errors="replace")
+                    # Truncate very large files to avoid exceeding LLM context
+                    _max_file_chars = 50_000  # ~12K tokens — leaves room for reasoning
+                    if len(file_content) > _max_file_chars:
+                        file_content = file_content[:_max_file_chars] + "\n\n[... truncated at 50K chars ...]\n"
+            except Exception:
+                pass  # If file can't be read, proceed with KG context only
+
+        # Build generation prompt with actual file content
         file_context = f" for file '{file_path}'" if file_path else ""
+        file_content_block = ""
+        if file_content:
+            file_content_block = (
+                f"\n\nCURRENT FILE CONTENT ({file_path}):\n"
+                f"```\n{file_content}\n```\n\n"
+                f"IMPORTANT: Generate your diff against the EXACT content above. "
+                f"Line numbers and context lines MUST match the actual file.\n"
+            )
+
         generation_prompt = (
             f"CODE GENERATION TASK{file_context}:\n"
-            f"{description}\n\n"
+            f"{description}\n"
+            f"{file_content_block}"
             f"Instructions:\n"
             f"1. Produce ONLY a valid unified diff in standard format (--- a/... +++ b/... @@ hunks)\n"
             f"2. Keep changes minimal and focused on the described task\n"
             f"3. Preserve existing code style and conventions\n"
-            f"4. Never include secrets, credentials, or internal threshold values\n"
-            f"5. After the diff, add one line: SUMMARY: <one sentence>\n"
+            f"4. Context lines in the diff MUST match the actual file content exactly\n"
+            f"5. Never include secrets, credentials, or internal threshold values\n"
+            f"6. After the diff, add one line: SUMMARY: <one sentence>\n"
         )
 
         stream_chunks: list[str] = []

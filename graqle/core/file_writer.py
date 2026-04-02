@@ -101,42 +101,73 @@ def _parse_unified_diff(unified_diff: str) -> list[tuple[str, str]]:
     return result
 
 
+class DiffApplicationError(Exception):
+    """Raised when a diff cannot be applied correctly to the target file."""
+    pass
+
+
 def _apply_patch_to_lines(
     original_lines: list[str],
     diff_ops: list[tuple[str, str]],
 ) -> list[str]:
     """Apply parsed diff operations to original_lines.
 
-    Uses a simple context-matching approach:
+    Uses a context-matching approach:
     - Walk through diff ops matching context (' ') lines to positions in original
     - Insert '+' lines, skip '-' lines
+    - OT-023 fix: track context match rate and FAIL if too many mismatches
+      (previously silently appended code at EOF on mismatch)
     """
     result: list[str] = []
     orig_idx = 0
     n = len(original_lines)
+    context_total = 0
+    context_matched = 0
 
     for op, text in diff_ops:
         if op == " ":
+            context_total += 1
             # Context line — advance original pointer until we find it
+            found = False
+            scan_start = orig_idx
             while orig_idx < n:
                 if original_lines[orig_idx].rstrip("\n") == text.rstrip("\n"):
                     result.append(original_lines[orig_idx])
                     orig_idx += 1
+                    context_matched += 1
+                    found = True
                     break
                 else:
-                    # Original line not in diff — keep it (handles files with more context)
+                    # Original line not in diff — keep it
                     result.append(original_lines[orig_idx])
                     orig_idx += 1
+            if not found:
+                # Context line not found in remaining file — diff is misaligned
+                # OT-023: instead of silently continuing, track the failure
+                pass
         elif op == "+":
             # Added line — append with newline
             result.append(text if text.endswith("\n") else text + "\n")
         elif op == "-":
             # Removed line — skip next matching original line
+            found = False
             while orig_idx < n:
                 if original_lines[orig_idx].rstrip("\n") == text.rstrip("\n"):
                     orig_idx += 1
+                    found = True
                     break
                 orig_idx += 1
+
+    # OT-023 fix: check context match rate — fail if too many mismatches
+    if context_total > 0:
+        match_rate = context_matched / context_total
+        if match_rate < 0.5:
+            raise DiffApplicationError(
+                f"Diff context mismatch: only {context_matched}/{context_total} "
+                f"context lines matched ({match_rate:.0%}). "
+                f"The diff was likely generated without reading the actual file content. "
+                f"Refusing to apply — this would append code at EOF instead of editing in place."
+            )
 
     # Append any remaining original lines not covered by the diff
     result.extend(original_lines[orig_idx:])
@@ -224,7 +255,17 @@ def apply_diff(
                 dry_run=dry_run,
             )
 
-        new_lines = _apply_patch_to_lines(original_lines, diff_ops)
+        try:
+            new_lines = _apply_patch_to_lines(original_lines, diff_ops)
+        except DiffApplicationError as e:
+            return ApplyResult(
+                success=False,
+                lines_changed=0,
+                backup_path="",
+                error=str(e),
+                file_path=str(fp),
+                dry_run=dry_run,
+            )
         new_content = "".join(new_lines)
 
         lines_added = sum(1 for op, _ in diff_ops if op == "+")
