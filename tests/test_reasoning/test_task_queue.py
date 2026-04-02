@@ -247,3 +247,112 @@ class TestProgress:
         progress = q.progress
         assert progress["total"] == 4
         assert progress["COMPLETED"] >= 2
+
+
+# ===================================================================
+# S3-21 — TestGEMGateShortCircuit
+# ===================================================================
+
+_MEM_CONFIG: dict = {
+    "MEMORY_SUMMARY_MAX_CHARS": 100,
+    "MEMORY_MIN_CONFIDENCE": 0.1,
+    "EPISTEMIC_DECAY_LAMBDA": 0.9,
+    "CONTRADICTION_PENALTY": 0.9,
+    "REVERIFICATION_THRESHOLD": 0.5,
+}
+
+
+class TestGEMGateShortCircuit:
+
+    def test_short_circuit_on_recent_pass(self):
+        from graqle.reasoning.memory import ReasoningMemory
+        memory = ReasoningMemory(config=_MEM_CONFIG)
+        q = ReasoningTaskQueue(memory=memory)
+
+        passed = ToolResult.success(data="gate passed", clearance=ClearanceLevel.PUBLIC)
+        memory.store(
+            round_num=1, node_id="governance:git", result=passed,
+            confidence=0.95, source_agent_id="gate:governance_gate",
+        )
+
+        task = _make_gate("g1")
+        task.node_id = "governance:git"
+        result = q.check_gem_for_gate(task, current_round=2)
+        assert result is not None
+        assert isinstance(result, ToolResult)
+        assert "short-circuit" in result.data.lower()
+
+    def test_no_memory_returns_none(self):
+        q = ReasoningTaskQueue(memory=None)
+        task = _make_gate("g1")
+        assert q.check_gem_for_gate(task, current_round=1) is None
+
+    def test_no_matching_gate_returns_none(self):
+        from graqle.reasoning.memory import ReasoningMemory
+        memory = ReasoningMemory(config=_MEM_CONFIG)
+        q = ReasoningTaskQueue(memory=memory)
+
+        passed = ToolResult.success(data="other gate", clearance=ClearanceLevel.PUBLIC)
+        memory.store(
+            round_num=1, node_id="governance:OTHER", result=passed,
+            confidence=0.9, source_agent_id="gate:governance_gate",
+        )
+
+        task = _make_gate("g1")
+        task.node_id = "governance:git"
+        assert q.check_gem_for_gate(task, current_round=2) is None
+
+    def test_failed_gate_not_short_circuited(self):
+        from graqle.reasoning.memory import ReasoningMemory
+        memory = ReasoningMemory(config=_MEM_CONFIG)
+        q = ReasoningTaskQueue(memory=memory)
+
+        failed = ToolResult.failure(data="gate failed", clearance=ClearanceLevel.PUBLIC)
+        memory.store(
+            round_num=1, node_id="governance:git", result=failed,
+            confidence=0.0, source_agent_id="gate:governance_gate",
+        )
+
+        task = _make_gate("g1")
+        task.node_id = "governance:git"
+        assert q.check_gem_for_gate(task, current_round=2) is None
+
+
+# ===================================================================
+# S3-22 — TestFailureTypeDecay
+# ===================================================================
+
+
+class TestFailureTypeDecay:
+
+    def test_schema_incomplete_decays_fast(self):
+        from graqle.reasoning.memory import ReasoningMemory
+        memory = ReasoningMemory(config=_MEM_CONFIG)
+
+        result = ToolResult.failure(data="schema incomplete", clearance=ClearanceLevel.PUBLIC)
+        memory.store(
+            round_num=0, node_id="node-z", result=result,
+            confidence=0.8, source_agent_id="gate:governance_gate",
+        )
+
+        memory.decay_all(current_round=20)
+        entries = memory.get_weighted()
+        node_z = [e for e in entries if e.node_id == "node-z"]
+        assert len(node_z) > 0
+        assert node_z[0].confidence < 0.4
+
+    def test_decay_increases_dlt(self):
+        from graqle.reasoning.memory import ReasoningMemory
+        memory = ReasoningMemory(config=_MEM_CONFIG)
+
+        result = ToolResult.success(data="gate ok", clearance=ClearanceLevel.PUBLIC)
+        memory.store(
+            round_num=0, node_id="node-w", result=result,
+            confidence=0.9, source_agent_id="gate:governance_gate",
+        )
+
+        memory.decay_all(current_round=10)
+        entries = memory.get_weighted()
+        node_w = [e for e in entries if e.node_id == "node-w"]
+        assert len(node_w) > 0
+        assert node_w[0].trace_scores.dlt > 0.0

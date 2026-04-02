@@ -235,6 +235,41 @@ class ReasoningTaskQueue:
 
         return unblocked
 
+    # -- SIG read path (S3-14) ---------------------------------------------
+
+    def check_gem_for_gate(
+        self, task: ReasoningTask, current_round: int,
+    ) -> ToolResult | None:
+        """S3-14: Check GEM for recent gate result — SIG read path.
+
+        Returns cached ToolResult if a recent PASS exists for this gate's
+        node_id, or None if the gate should be re-evaluated.
+
+        This completes the SIG feedback loop:
+        write (complete/fail) + read (this method).
+        """
+        if self._memory is None:
+            return None
+
+        entries = self._memory.get_weighted()
+        for entry in entries:
+            if entry.node_id != task.node_id:
+                continue
+            if not entry.source_agent_id.startswith("gate:"):
+                continue
+            if entry.confidence <= 0.0:
+                continue
+            rounds_since = current_round - entry.round_stored
+            if rounds_since < 0:
+                continue
+            return ToolResult.success(
+                data=f"GEM short-circuit: gate {task.node_id} passed in round {entry.round_stored}",
+                clearance=task.clearance,
+                source_node_id=task.node_id,
+            )
+
+        return None
+
     def fail(
         self,
         task_id: str,
