@@ -294,9 +294,17 @@ def _write_sarif(report: "GuardianReport", path: str) -> None:
                 },
                 "results": [
                     {
-                        "ruleId": f"guardian/{gr.tier.lower().replace('-', '_')}",
+                        "ruleId": f"guardian/rule-{i:03d}",
                         "level": "error" if gr.blocked else "warning" if gr.tier != "T1" else "note",
-                        "message": {"text": gr.reason},
+                        "message": {
+                            "text": (
+                                "Governance check: blocked. Manual review required."
+                                if gr.blocked
+                                else "Governance check: advisory. Review recommended."
+                                if gr.tier != "T1"
+                                else "Governance check: passed."
+                            )
+                        },
                         "locations": [
                             {
                                 "physicalLocation": {
@@ -307,7 +315,7 @@ def _write_sarif(report: "GuardianReport", path: str) -> None:
                         if gr.file_path
                         else [],
                     }
-                    for gr in report.gate_results
+                    for i, gr in enumerate(report.gate_results, 1)
                 ],
             }
         ],

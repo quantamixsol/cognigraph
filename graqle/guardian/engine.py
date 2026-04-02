@@ -74,8 +74,16 @@ class GuardianReport:
     timestamp: str = ""
     version: str = "0.1.0"
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, *, public: bool = True) -> dict[str, Any]:
+        """Serialize report to dict.
+
+        Args:
+            public: If True (default), redacts internal calibration values
+                    (gate_score, tier names, thresholds) to prevent IP leakage.
+                    Set False only for internal debugging — never for PR comments,
+                    JSON output, or SARIF.
+        """
+        result: dict[str, Any] = {
             "verdict": self.verdict.value,
             "verdict_reasons": self.verdict_reasons,
             "blast_radius": self.total_impact_radius,
@@ -84,10 +92,14 @@ class GuardianReport:
             "required_rbac_level": self.required_rbac_level,
             "approval_satisfied": self.approval_satisfied,
             "shacl_violation_count": len(self.shacl_violations),
-            "gate_results": [g.to_dict() for g in self.gate_results],
             "timestamp": self.timestamp,
             "version": self.version,
         }
+        if not public:
+            # Internal only — never expose in PR comments, JSON output, or SARIF
+            logger.warning("to_dict(public=False) called — verify not reaching external output")
+            result["gate_results"] = [g.to_dict() for g in self.gate_results]
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +152,10 @@ class PRGuardianEngine:
             self._determine_approval_requirements(report, approved_by)
             self._compute_verdict(report)
         except Exception:
-            logger.exception("PR Guardian engine error — failing open")
-            report.verdict = Verdict.WARN
+            logger.error("PR Guardian engine error — failing closed")
+            report.verdict = Verdict.FAIL
             report.verdict_reasons.append(
-                "Internal engine error — failing open. Manual review required."
+                "Governance engine error — manual review required. Do not merge."
             )
 
         return report
@@ -325,10 +337,14 @@ class PRGuardianEngine:
                 "T2: Advisory warnings detected. Review recommended."
             )
         elif report.total_impact_radius > self._config.auto_pass_max_radius:
+            logger.debug(
+                "blast_radius=%d threshold=%d",
+                report.total_impact_radius,
+                self._config.auto_pass_max_radius,
+            )
             report.verdict = Verdict.WARN
             report.verdict_reasons.append(
-                f"Blast radius ({report.total_impact_radius}) exceeds "
-                f"auto-pass threshold ({self._config.auto_pass_max_radius})."
+                "Blast radius exceeds auto-pass threshold. Review recommended."
             )
         else:
             report.verdict = Verdict.PASS

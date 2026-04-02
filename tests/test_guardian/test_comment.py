@@ -73,7 +73,11 @@ class TestRenderComment:
             ],
         )
         result = render_comment(report)
-        assert "`AuthShape`" in result
+        # B4: shape and focus_node must NOT appear in public output
+        assert "`AuthShape`" not in result
+        assert "`auth.py`" not in result
+        # But severity and message must appear
+        assert "Violation" in result
         assert "Missing auth middleware" in result
 
     def test_no_shacl_violations(self):
@@ -125,3 +129,68 @@ class TestRenderComment:
         assert "Blast Radius" in result
         assert "Files Analyzed" in result
         assert "Blocked" in result
+
+
+# ---------------------------------------------------------------------------
+# IP Blocker Tests (B4, B5 from Senior Researcher review)
+# ---------------------------------------------------------------------------
+
+
+class TestIPBlockerCommentFixes:
+    def test_b4_no_shape_name_in_comment(self):
+        """B4: SHACL shape names must NOT appear in PR comments."""
+        report = GuardianReport(
+            shacl_violations=[
+                SHACLViolation(
+                    shape="InternalAuthShape_v2",
+                    focus_node="graqle.core.auth.middleware",
+                    severity="Violation",
+                    message="Missing required auth check.",
+                ),
+            ],
+        )
+        result = render_comment(report)
+        assert "InternalAuthShape_v2" not in result
+        assert "graqle.core.auth.middleware" not in result
+        assert "Missing required auth check" in result
+
+    def test_b4_no_focus_node_in_comment(self):
+        """B4: SHACL focus_node must NOT appear in PR comments."""
+        report = GuardianReport(
+            shacl_violations=[
+                SHACLViolation(
+                    shape="SecretShape",
+                    focus_node="secret_internal_node_id",
+                    severity="Warning",
+                    message="Advisory warning.",
+                ),
+            ],
+        )
+        result = render_comment(report)
+        assert "SecretShape" not in result
+        assert "secret_internal_node_id" not in result
+
+    def test_b5_no_auto_pass_threshold_in_comment(self):
+        """B5/+1: No numeric threshold values in PR comments."""
+        report = GuardianReport(total_impact_radius=5)
+        result = render_comment(report)
+        # Must not contain auto_pass_max_radius value
+        assert "auto_pass" not in result.lower()
+        # Blast radius number IS shown (that's the module count, not a threshold)
+        assert "5" in result
+
+    def test_b4_shacl_message_pipe_escaped(self):
+        """SHACL messages with pipe chars must be escaped in markdown."""
+        report = GuardianReport(
+            shacl_violations=[
+                SHACLViolation(
+                    shape="s",
+                    focus_node="n",
+                    severity="Violation",
+                    message="Value has | pipe and `backtick`",
+                ),
+            ],
+        )
+        result = render_comment(report)
+        assert "\\|" in result
+        assert "\\`" in result

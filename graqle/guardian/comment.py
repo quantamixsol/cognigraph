@@ -36,9 +36,7 @@ def render_comment(report: GuardianReport, *, badge_url: str = "") -> str:
             f"| {risk_icon} **{entry.risk_level}** | {entry.impact_radius} |"
         )
 
-    auto_pass = getattr(report, "_auto_pass_max_radius", 2)
-    status = "⚠️" if report.total_impact_radius > auto_pass else "✅"
-    lines.append(f"\n**Total blast radius: {report.total_impact_radius}** {status}\n")
+    lines.append(f"\n**Total blast radius: {report.total_impact_radius}**\n")
 
     # -- Governance Verdict --
     lines.append("---\n")
@@ -59,13 +57,13 @@ def render_comment(report: GuardianReport, *, badge_url: str = "") -> str:
     lines.append("---\n")
     lines.append("### 🔍 SHACL Violations\n")
     if report.shacl_violations:
-        lines.append("| # | Shape | Focus Node | Severity | Message |")
-        lines.append("|---|-------|-----------|----------|---------|")
+        lines.append("| # | Severity | Message |")
+        lines.append("|---|----------|---------|")
         for i, v in enumerate(report.shacl_violations, 1):
             sev_icon = {"Violation": "🔴", "Warning": "🟡"}.get(v.severity, "ℹ️")
+            safe_msg = v.message.replace("|", "\\|").replace("`", "\\`")
             lines.append(
-                f"| {i} | `{v.shape}` | `{v.focus_node}` "
-                f"| {sev_icon} {v.severity} | {v.message} |"
+                f"| {i} | {sev_icon} {v.severity} | {safe_msg} |"
             )
     else:
         lines.append("_No SHACL violations detected._ ✅")
