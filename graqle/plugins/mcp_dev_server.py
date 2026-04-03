@@ -60,7 +60,8 @@ except Exception:
 # ---------------------------------------------------------------------------
 
 
-_SENSITIVE_KEYS = frozenset({"api_key", "secret", "password", "token", "credential"})
+# C1: Use shared sensitive keys from redaction module (single source of truth)
+from graqle.core.redaction import DEFAULT_SENSITIVE_KEYS as _SENSITIVE_KEYS
 
 _LESSON_ENTITY_TYPES = frozenset({
     "LESSON", "MISTAKE", "SAFETY", "ADR", "DECISION",
