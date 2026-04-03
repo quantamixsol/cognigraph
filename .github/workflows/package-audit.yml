@@ -1,0 +1,92 @@
+name: Package Security Audit
+
+# Runs on every PR and push to master.
+# Builds the Python wheel and checks for leaked files that should
+# never ship to PyPI: KG files, backups, internal docs, secrets.
+#
+# INCIDENT CONTEXT: graqle-vscode v0.3.2 shipped graqle.json (2.34MB KG)
+# to the public Marketplace (2026-04-03). This gate prevents the same
+# class of leak in the SDK PyPI package.
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+    tags: ['v*']
+
+jobs:
+  package-audit:
+    name: PyPI Package Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheel
+        run: |
+          pip install build
+          python -m build --wheel
+
+      - name: Audit wheel contents for leaked files
+        run: |
+          echo "=== PYPI PACKAGE SECURITY AUDIT ==="
+
+          WHEEL=$(ls dist/*.whl | head -1)
+          echo "Auditing: $WHEEL"
+
+          # List all files in the wheel
+          python -m zipfile -l "$WHEEL" > /tmp/wheel-files.txt
+
+          # Check for KG files (CRITICAL)
+          KG_FILES=$(grep -iE "graqle\.json|\.json\.bak|graqle_rescanned|cognigraph\.json" /tmp/wheel-files.txt || true)
+
+          # Check for internal docs
+          INTERNAL_DOCS=$(grep -iE "RESEARCH-HANDOFF|ORCHESTRATOR-|COLLABORATION-STORIES|LAUNCH-TRACKER" /tmp/wheel-files.txt || true)
+
+          # Check for secrets/env files
+          SECRET_FILES=$(grep -iE "\.env|\.pypirc|credentials|ip_patterns\.yml" /tmp/wheel-files.txt || true)
+
+          # Check for KG backup files
+          BACKUPS=$(grep -iE "\.bak|\.backup" /tmp/wheel-files.txt || true)
+
+          FAILED=false
+
+          if [ -n "$KG_FILES" ]; then
+            echo "::error::CRITICAL: Knowledge graph files in wheel:"
+            echo "$KG_FILES"
+            FAILED=true
+          fi
+
+          if [ -n "$INTERNAL_DOCS" ]; then
+            echo "::error::HIGH: Internal docs in wheel:"
+            echo "$INTERNAL_DOCS"
+            FAILED=true
+          fi
+
+          if [ -n "$SECRET_FILES" ]; then
+            echo "::error::CRITICAL: Secret files in wheel:"
+            echo "$SECRET_FILES"
+            FAILED=true
+          fi
+
+          if [ -n "$BACKUPS" ]; then
+            echo "::error::HIGH: Backup files in wheel:"
+            echo "$BACKUPS"
+            FAILED=true
+          fi
+
+          FILE_COUNT=$(wc -l < /tmp/wheel-files.txt)
+          echo "Wheel file count: $FILE_COUNT"
+
+          if [ "$FAILED" = true ]; then
+            echo ""
+            echo "Fix MANIFEST.in or pyproject.toml [tool.hatch.build] to exclude leaked files."
+            exit 1
+          fi
+
+          echo "AUDIT PASSED: Zero leaked files detected in wheel"
