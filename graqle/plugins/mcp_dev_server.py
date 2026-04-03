@@ -4529,6 +4529,25 @@ class KogniDevServer:
         except Exception:
             pass  # safety_check is advisory — never block generation
 
+        # Step 4b: Layer 3 format-aware validation (OT-028/030/035)
+        # Read-only — safe for dry_run, never mutates output
+        format_validation_data: dict = {}
+        try:
+            from graqle.validation.output_format import validate_generate_output
+            fmt_validation = validate_generate_output(
+                raw_answer,
+                output_format="diff" if diff_text.startswith(("@@", "---", "diff ")) else "auto",
+                expect_summary=True,
+            )
+            format_validation_data = fmt_validation.to_dict()
+            if not fmt_validation.valid:
+                logger.warning(
+                    "graq_generate format issues: %s",
+                    [d.message for d in fmt_validation.diagnostics],
+                )
+        except Exception as e:
+            logger.debug("format_validation skipped: %s", e)  # advisory — never block
+
         # Step 5: Assemble CodeGenerationResult
         generation_result = CodeGenerationResult(
             query=description,
@@ -4549,6 +4568,7 @@ class KogniDevServer:
                 "preflight_warnings": preflight_raw.get("warnings", [])[:3],
                 "stream": stream,
                 "chunks": stream_chunks,  # empty list when stream=False
+                **({"format_validation": format_validation_data} if format_validation_data else {}),
             },
         )
 
