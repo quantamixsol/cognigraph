@@ -321,6 +321,55 @@ Architecture-aware quality control that scales across teams without requiring ev
 
 ---
 
+## PR Guardian — governance checks on every pull request
+
+Automated blast radius analysis for PRs. PR Guardian analyses your diff
+against the project knowledge graph and reports **blast radius**,
+a **governance verdict**, and a **status badge** — directly on the PR.
+
+### GitHub Action
+
+```yaml
+# .github/workflows/graq-guardian.yml
+name: PR Guardian
+on: [pull_request]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  guardian:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: graqle/pr-guardian@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### CLI
+
+```bash
+# Analyse a diff locally
+graq pr-guardian --diff <(git diff main...HEAD)
+
+# JSON output for CI integration
+graq pr-guardian --diff <(git diff main...HEAD) --output-format json
+```
+
+### What it shows
+
+- **Blast radius** — how many downstream modules are affected by the change
+- **Governance verdict** — pass or block, with actionable reasoning
+- **PR badge** — shields.io-compatible SVG posted as a PR comment
+- **SARIF output** — optional integration with GitHub Code Scanning
+
+PR Guardian runs the same analysis locally and in CI, so developers
+catch governance issues before review.
+
+---
+
 ## 74 MCP tools — your AI uses them automatically
 
 ```bash

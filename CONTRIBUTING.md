@@ -67,6 +67,21 @@ All PRs must pass `ruff check` and `ruff format --check` with zero errors.
 - **Documentation improvements** (README, docstrings, examples)
 - **New language support** (extractors for additional languages)
 
+## PR Guardian & Governance Checks
+
+All PRs to this repository are automatically analysed by PR Guardian.
+The governance engine checks for blast radius, secret exposure, and
+protected code patterns. Some outcomes to be aware of:
+
+- **Blocked PRs**: If your PR modifies trade-secret-protected patterns
+  (weight constants, scoring formulas, threshold derivations), it will
+  be unconditionally blocked. This is by design and cannot be overridden.
+  Contact the maintainers if you believe the block is in error.
+- **Advisory warnings**: PRs touching security, auth, or governance
+  modules may receive advisory warnings requiring senior review.
+- **Secret detection**: The governance engine scans diffs for
+  accidentally committed API keys, tokens, and credentials.
+
 ## What We Won't Accept
 
 - Changes that break existing tests
