@@ -2028,12 +2028,16 @@ class KogniDevServer:
                     logger.warning("Neo4j load failed (%s), falling back to JSON", neo4j_exc)
 
             # Auto-discover graph file (JSON/NetworkX fallback)
+            # OT-057: Resolve against GRAQLE_SERVE_CWD (set by mcp_serve/serve)
+            # to ensure discovery uses project root, not IDE spawn directory.
+            _serve_cwd = os.environ.get("GRAQLE_SERVE_CWD", "")
+            _discovery_root = Path(_serve_cwd) if _serve_cwd else Path.cwd()
             for candidate in [
                 "graqle.json",
                 "knowledge_graph.json",
                 "graph.json",
             ]:
-                p = Path(candidate)
+                p = _discovery_root / candidate
                 if p.exists():
                     self._graph = Graqle.from_json(str(p), config=self._config)
                     self._graph_file = str(p.resolve())

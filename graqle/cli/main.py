@@ -182,7 +182,8 @@ def mcp_serve(
 
     # Anchor CWD so _graph_file resolves against project root, not IDE spawn dir.
     # serve() already does this via GRAQLE_SERVE_CWD — mcp_serve must match.
-    os.environ["GRAQLE_SERVE_CWD"] = str(pathlib.Path.cwd())
+    # Use setdefault to preserve user/container overrides.
+    os.environ.setdefault("GRAQLE_SERVE_CWD", str(pathlib.Path.cwd()))
 
     # Write PID + version so self-update and other tools can detect running server
     graqle_dir = Path(".graqle")

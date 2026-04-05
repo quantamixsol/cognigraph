@@ -530,7 +530,7 @@ class OllamaBackend(BaseBackend):
 
     # Reasoning models spend tokens on internal chain-of-thought (<think> tags)
     # before producing visible output. They need a larger num_predict budget.
-    _REASONING_MODEL_PREFIXES = ("deepseek-r1", "gemma4", "qwq", "qwen3")
+    _REASONING_MODEL_PREFIXES = ("deepseek-r1", "qwq", "qwen3")
 
     def __init__(
         self,
@@ -554,9 +554,10 @@ class OllamaBackend(BaseBackend):
         Non-reasoning models use caller's max_tokens unchanged.
         """
         model_lower = (self._model or "").lower()
+        effective = max_tokens or 512  # null-coalesce for defensive safety
         if any(model_lower.startswith(p) for p in self._REASONING_MODEL_PREFIXES):
-            return max(max_tokens, 4096)
-        return max_tokens
+            return max(effective, 4096)
+        return effective
 
     async def generate(
         self,
