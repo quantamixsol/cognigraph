@@ -723,6 +723,9 @@ class MCPServer:
         # === STEP 6: Confidence gate — uses answer_confidence, NOT activation_confidence ===
         if answer_confidence < confidence_threshold:
             output["prediction"]["status"] = "SKIPPED_LOW_CONFIDENCE"
+            self._gnie_record_fold_back(
+                "SKIPPED_LOW_CONFIDENCE", reason_result, answer_confidence,
+            )
             return MCPToolResult(json.dumps(output, indent=2))
 
         # === STEP 7: Dry-run gate — skip LLM generation if not writing back ===
@@ -761,6 +764,9 @@ class MCPServer:
             output["prediction"]["anchor_node_id"] = anchor_id
             output["prediction"]["nodes_added"] = nodes_added
             output["prediction"]["edges_added"] = edges_added
+            self._gnie_record_fold_back(
+                "WRITTEN", reason_result, answer_confidence,
+            )
         except Exception as e:
             logger.error(f"graq_predict: write-back failed: {e}")
             output["prediction"]["status"] = "WRITE_FAILED"
@@ -1051,6 +1057,42 @@ class MCPServer:
             "supporting_nodes": supporting,
             "causal_edges": edges,
         }
+
+    def _gnie_record_fold_back(
+        self, status: str, reason_result: Any, confidence: float
+    ) -> None:
+        """Record fold-back result for GNIE learning (local backends only).
+
+        Called after each predict decision (WRITTEN, SKIPPED_LOW_CONFIDENCE).
+        Silently no-ops if backend is not local or GNIE is unavailable.
+        """
+        try:
+            from graqle.plugins.gnie.detection import is_local_backend
+
+            # Get the backend that was used for this prediction
+            if not reason_result.active_nodes:
+                return
+            first_node = self._graph.nodes.get(reason_result.active_nodes[0])
+            if first_node is None or not hasattr(first_node, "backend"):
+                return
+            backend = first_node.backend
+            if backend is None or not is_local_backend(backend):
+                return
+
+            from graqle.plugins.gnie.state import GnieState
+
+            model_name = getattr(backend, "name", "") or "unknown"
+            state = GnieState.load()
+            state.record_query(reason_result.active_nodes, model_name)
+            state.record_fold_back(
+                status=status,
+                activated_node_ids=reason_result.active_nodes,
+                confidence=confidence,
+                model=model_name,
+            )
+            state.save()
+        except Exception:
+            pass  # GNIE learning is best-effort; never block predict
 
     def _compute_answer_confidence(self, reason_result: Any) -> float:
         """Compute answer-quality confidence from cross-node agreement.

@@ -109,6 +109,53 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "required": ["task"],
         },
     },
+    # ── v0.43: graq_github_pr ──────────────────────────────────────
+    {
+        "name": "graq_github_pr",
+        "description": (
+            "Fetch GitHub pull request metadata via gh CLI. "
+            "Returns title, state, author, body, branch names, "
+            "additions/deletions/changed files, and review decision."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pr_number": {
+                    "type": "string",
+                    "description": "PR number or URL",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository (owner/name). Defaults to current repo origin.",
+                    "default": "",
+                },
+            },
+            "required": ["pr_number"],
+        },
+    },
+    # ── v0.43: graq_github_diff ────────────────────────────────────
+    {
+        "name": "graq_github_diff",
+        "description": (
+            "Fetch the unified diff for a GitHub pull request via gh CLI. "
+            "Returns the full diff text for code review."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pr_number": {
+                    "type": "string",
+                    "description": "PR number or URL",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository (owner/name). Defaults to current repo origin.",
+                    "default": "",
+                },
+            },
+            "required": ["pr_number"],
+        },
+    },
     {
         "name": "graq_inspect",
         "description": (
@@ -2255,6 +2302,144 @@ class KogniDevServer:
         }
 
     # ------------------------------------------------------------------
+    # v0.43: Source snippet helpers for graq_context deep composition
+    # ------------------------------------------------------------------
+
+    def _read_file_snippet(
+        self,
+        path: str,
+        start_line: int | None = None,
+        end_line: int | None = None,
+        max_chars: int = 2000,
+    ) -> tuple[str, bool]:
+        """Read file content, optionally scoped to a line range.
+
+        Returns (content, was_truncated).
+        Raises FileNotFoundError if the file does not exist.
+        Uses _resolve_file_path for workspace containment (no escape).
+        Line numbers are 1-based; slice end is exclusive so end_line
+        (1-based) works correctly as the upper bound.
+        """
+        # Resolve via _resolve_file_path — enforces workspace containment
+        resolved: str = self._resolve_file_path(path)
+
+        fp = Path(resolved)
+        if not fp.is_file():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        raw = fp.read_text(encoding="utf-8", errors="replace")
+
+        if start_line is not None and end_line is not None:
+            # N1: validate positive integers for direct callers
+            if start_line < 1 or end_line < 1:
+                raise ValueError(f"Line numbers must be positive, got start={start_line}, end={end_line}")
+            lines = raw.splitlines(keepends=True)
+            # lines are 1-based; slice end is exclusive
+            raw = "".join(lines[max(0, start_line - 1):end_line])
+
+        was_truncated = False
+        if len(raw) > max_chars:
+            raw = raw[:max_chars] + "\n\u2026[truncated]"
+            was_truncated = True
+
+        return raw, was_truncated
+
+    _SNIPPET_CODE_TYPES = frozenset({
+        "PythonModule", "Function", "Class", "TestFile", "JavaScriptModule",
+    })
+
+    def _embed_source_snippets(
+        self,
+        activated_nodes: list,
+        token_budget: int = 2000,
+    ) -> tuple[list[dict], int]:
+        """Embed source file snippets for activated code nodes.
+
+        Filters to code-bearing entity types, distributes the char budget
+        equally, reads each file (with optional line range), and returns
+        a list of snippet dicts plus the approximate token count consumed.
+
+        Returns (snippets, tokens_used).
+        """
+        code_nodes = [
+            n for n in activated_nodes
+            if n.entity_type in self._SNIPPET_CODE_TYPES
+        ]
+        if not code_nodes:
+            return [], 0
+
+        char_budget = token_budget * 4
+        per_node_budget = min(char_budget, max(200, char_budget // len(code_nodes)))
+
+        snippets: list[dict] = []
+        total_chars = 0
+
+        for node in code_nodes:
+            if total_chars >= char_budget:
+                break
+
+            props = (
+                node.properties
+                if hasattr(node, "properties") and node.properties is not None
+                else {}
+            )
+
+            file_path = props.get("file_path")
+            if not file_path or not isinstance(file_path, str):
+                logger.debug("v0.43: skipping node %s — no file_path", node.id)
+                continue
+
+            # Type-validate line metadata
+            line_start: int | None = None
+            line_end: int | None = None
+            try:
+                raw_start = props.get("line_start")
+                raw_end = props.get("line_end")
+                if raw_start is not None and raw_end is not None:
+                    line_start = int(raw_start)
+                    line_end = int(raw_end)
+                    # Guard against inverted or non-positive ranges
+                    if line_start < 1 or line_end < line_start:
+                        line_start = None
+                        line_end = None
+            except (ValueError, TypeError):
+                line_start = None
+                line_end = None
+
+            # Line ranges only apply to Function/Class nodes
+            use_lines = (
+                node.entity_type in ("Function", "Class")
+                and line_start is not None
+                and line_end is not None
+            )
+
+            remaining = char_budget - total_chars
+            node_budget = min(per_node_budget, remaining)
+
+            try:
+                content, was_truncated = self._read_file_snippet(
+                    file_path,
+                    start_line=line_start if use_lines else None,
+                    end_line=line_end if use_lines else None,
+                    max_chars=node_budget,
+                )
+            except (OSError, ValueError) as exc:
+                logger.debug("v0.43: failed to read %s: %s", file_path, exc)
+                continue
+
+            snippet: dict = {
+                "node_id": node.id,
+                "file_path": file_path,
+                "lines": [line_start, line_end] if use_lines else None,
+                "content": content,
+                "truncated": was_truncated,
+            }
+            snippets.append(snippet)
+            total_chars += len(content)
+
+        return snippets, total_chars // 4
+
+    # ------------------------------------------------------------------
     # MCP protocol: tool listing
     # ------------------------------------------------------------------
 
@@ -2268,6 +2453,63 @@ class KogniDevServer:
         return TOOL_DEFINITIONS
 
     # ------------------------------------------------------------------
+    # v0.43: Tool hints routing protocol
+    # ------------------------------------------------------------------
+
+    _TOOL_HINTS: dict[str, list[dict[str, str]]] = {
+        # Mandatory protocol sequence: inspect→context→impact→preflight→reason→generate
+        "graq_inspect": [
+            {"tool": "graq_context", "reason": "Load relevant context before making changes"},
+        ],
+        "graq_context": [
+            {"tool": "graq_impact", "reason": "Assess blast radius across consumers"},
+        ],
+        "graq_impact": [
+            {"tool": "graq_preflight", "reason": "Validate proposed changes against constraints"},
+        ],
+        "graq_preflight": [
+            {"tool": "graq_reason", "reason": "Design the change with graph-of-agents reasoning"},
+        ],
+        "graq_reason": [
+            {"tool": "graq_generate", "reason": "Generate validated code from reasoning output"},
+        ],
+        "graq_generate": [
+            {"tool": "graq_review", "reason": "Review generated code before committing"},
+        ],
+        "graq_review": [],  # Terminal — review is the final gate
+        # Utility tools — contextual hints
+        "graq_read": [
+            {"tool": "graq_inspect", "reason": "Start protocol sequence if planning modifications"},
+        ],
+        "graq_write": [],  # Terminal side-effect
+        "graq_edit": [
+            {"tool": "graq_review", "reason": "Review edited code before committing"},
+        ],
+    }
+
+    def _inject_tool_hints(self, tool_name: str, raw_response: str) -> str:
+        """Inject tool_hints into handler response. Purely additive."""
+        try:
+            payload = json.loads(raw_response)
+            if not isinstance(payload, dict):
+                return raw_response
+
+            # Normalize kogni_* aliases to graq_* for hint lookup
+            lookup = tool_name.replace("kogni_", "graq_", 1) if tool_name.startswith("kogni_") else tool_name
+            # Copy to avoid mutating the class-level list
+            hints = [dict(h) for h in self._TOOL_HINTS.get(lookup, [])]
+
+            # Error responses: prepend retry hint using original tool_name
+            if payload.get("error"):
+                hints = [{"tool": tool_name, "reason": "Retry after fixing the reported error"}, *hints]
+
+            payload["tool_hints"] = hints
+            return json.dumps(payload)
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.debug("_inject_tool_hints: skipped for %s: %s", tool_name, exc)
+            return raw_response
+
+    # ------------------------------------------------------------------
     # MCP protocol: tool dispatch
     # ------------------------------------------------------------------
 
@@ -2275,10 +2517,11 @@ class KogniDevServer:
         """Route a tool call to the correct handler. Returns JSON string."""
         # Block write tools in read-only mode
         if self.read_only and name in _WRITE_TOOLS:
-            return json.dumps({
+            err = json.dumps({
                 "error": f"Tool '{name}' is blocked in read-only mode. "
                 "The MCP server was started with --read-only.",
             })
+            return self._inject_tool_hints(name, err)
 
         handlers: dict[str, Any] = {
             "graq_context": self._handle_context,
@@ -2376,6 +2619,11 @@ class KogniDevServer:
             "kogni_git_commit": self._handle_git_commit,
             "graq_git_branch": self._handle_git_branch,
             "kogni_git_branch": self._handle_git_branch,
+            # v0.43+002: GitHub PR tools
+            "graq_github_pr": self._handle_github_pr,
+            "kogni_github_pr": self._handle_github_pr,
+            "graq_github_diff": self._handle_github_diff,
+            "kogni_github_diff": self._handle_github_diff,
             # v0.38.0 Phase 4: compound workflow tools
             "graq_review": self._handle_review,
             "kogni_review": self._handle_review,
@@ -2398,7 +2646,8 @@ class KogniDevServer:
 
         handler = handlers.get(name)
         if handler is None:
-            return json.dumps({"error": f"Unknown tool: {name}"})
+            err = json.dumps({"error": f"Unknown tool: {name}"})
+            return self._inject_tool_hints(name, err)
 
         # Track caller in metrics if provided
         caller = arguments.get("caller", "")
@@ -2411,10 +2660,12 @@ class KogniDevServer:
                 pass  # Never fail on metrics tracking
 
         try:
-            return await handler(arguments)
+            result = await handler(arguments)
+            return self._inject_tool_hints(name, result)
         except Exception as exc:
             logger.exception("Tool %s failed", name)
-            return json.dumps({"error": str(exc)})
+            error_resp = json.dumps({"error": str(exc)})
+            return self._inject_tool_hints(name, error_resp)
 
 
     # ==================================================================
@@ -2472,12 +2723,24 @@ class KogniDevServer:
         if not parts:
             parts.append(f"No specific context found for task: '{task}'")
 
-        return json.dumps({
+        result: dict[str, Any] = {
             "context": "\n\n".join(parts),
             "level": level,
             "nodes_matched": len(matches) if graph and matches else 0,
             "graph_loaded": graph is not None,
-        })
+        }
+
+        # ---- v0.43: embed source snippets at deep level -----------
+        if level == "deep" and graph is not None and matches:
+            snippets, tokens_used = self._embed_source_snippets(
+                matches, token_budget=2000,
+            )
+            if snippets:
+                result["embedded_snippets"] = snippets
+                result["snippet_budget_used"] = tokens_used
+                result["snippet_budget_total"] = 2000
+
+        return json.dumps(result)
 
     # ── 2. graq_inspect (FREE) ───────────────────────────────────────
 
@@ -4584,8 +4847,8 @@ class KogniDevServer:
             except Exception:
                 pass  # If file can't be read, proceed with KG context only
 
-        # G5: Scan and redact source file content before sending to LLM
-        # Fail-CLOSED: security gate must load
+        # ADR-151 G5: Scan and redact source file content before sending to LLM
+        # B1 fix: fail-CLOSED — if security gate fails, content is NOT sent
         if file_content:
             from graqle.security.content_gate import ContentSecurityGate
             _g5_gate = ContentSecurityGate()
@@ -5334,13 +5597,15 @@ class KogniDevServer:
                 timeout=timeout,
                 cwd=cwd,
             )
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
             return json.dumps({
                 "command": command,
-                "stdout": result.stdout[:4000],
-                "stderr": result.stderr[:1000],
+                "stdout": stdout[:4000],
+                "stderr": stderr[:1000],
                 "exit_code": result.returncode,
                 "success": result.returncode == 0,
-                "truncated": len(result.stdout) > 4000,
+                "truncated": len(stdout) > 4000,
             })
         except subprocess.TimeoutExpired:
             return json.dumps({"error": f"Command timed out after {timeout}s", "command": command})
@@ -5355,23 +5620,42 @@ class KogniDevServer:
         return await self._handle_bash({"command": "git status --porcelain", "cwd": cwd, "dry_run": False, "timeout": 10})
 
     async def _handle_git_diff(self, args: dict[str, Any]) -> str:
-        """git diff — staged or unstaged."""
+        """git diff — staged or unstaged.
+
+        v0.43 fix: use two-dot syntax for merge commit reliability,
+        shell-escape base_ref, preserve existing range syntax.
+        """
+        import shlex
         staged = bool(args.get("staged", False))
         base_ref = args.get("base_ref", "")
         file_path = args.get("file_path", "")
         cwd = args.get("cwd", ".")
 
         if base_ref:
-            cmd = f"git diff {base_ref}...HEAD"
+            safe_ref = shlex.quote(base_ref)
+            # If base_ref already contains range syntax (..' or '...'), use as-is
+            if ".." in base_ref:
+                cmd = f"git diff {safe_ref}"
+            else:
+                # Two-dot syntax: reliable on merge commits (vs three-dot)
+                cmd = f"git diff {safe_ref}..HEAD"
         elif staged:
             cmd = "git diff --cached"
         else:
             cmd = "git diff"
 
         if file_path:
-            cmd += f" -- {file_path}"
+            cmd += f" -- {shlex.quote(file_path)}"
 
-        return await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
+        result = await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
+        if isinstance(result, str):
+            try:
+                parsed = json.loads(result)
+                if parsed.get("error"):
+                    logger.warning("graq_git_diff: %s", parsed["error"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return result
 
     async def _handle_git_log(self, args: dict[str, Any]) -> str:
         """git log — recent commits."""
@@ -5441,6 +5725,61 @@ class KogniDevServer:
         cmd = cmd_map.get(action, f"git checkout -b {name}")
         return await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
 
+    # ── v0.43+002: GitHub PR tools ────────────────────────────────
+
+    async def _handle_github_pr(self, args: dict[str, Any]) -> str:
+        """Fetch PR metadata via gh CLI."""
+        import shlex
+        import shutil
+
+        if shutil.which("gh") is None:
+            return json.dumps({
+                "error": "gh CLI not found. Install from https://cli.github.com/ and run 'gh auth login'.",
+                "hint": "graq_github_pr requires the GitHub CLI (gh) to be installed and authenticated.",
+            })
+
+        pr_number = args.get("pr_number")
+        if pr_number is None:
+            return json.dumps({"error": "Parameter 'pr_number' is required."})
+
+        repo = args.get("repo", "")
+        safe_pr = shlex.quote(str(pr_number))
+        cmd = (
+            f"gh pr view {safe_pr} "
+            "--json number,title,state,author,body,url,"
+            "headRefName,baseRefName,additions,deletions,"
+            "changedFiles,reviewDecision"
+        )
+        if repo:
+            safe_repo = shlex.quote(str(repo))
+            cmd += f" --repo {safe_repo}"
+
+        return await self._handle_bash({"command": cmd, "dry_run": False, "timeout": 30})
+
+    async def _handle_github_diff(self, args: dict[str, Any]) -> str:
+        """Fetch PR diff via gh CLI."""
+        import shlex
+        import shutil
+
+        if shutil.which("gh") is None:
+            return json.dumps({
+                "error": "gh CLI not found. Install from https://cli.github.com/ and run 'gh auth login'.",
+                "hint": "graq_github_diff requires the GitHub CLI (gh) to be installed and authenticated.",
+            })
+
+        pr_number = args.get("pr_number")
+        if pr_number is None:
+            return json.dumps({"error": "Parameter 'pr_number' is required."})
+
+        repo = args.get("repo", "")
+        safe_pr = shlex.quote(str(pr_number))
+        cmd = f"gh pr diff {safe_pr}"
+        if repo:
+            safe_repo = shlex.quote(str(repo))
+            cmd += f" --repo {safe_repo}"
+
+        return await self._handle_bash({"command": cmd, "dry_run": False, "timeout": 60})
+
     # ── v0.38.0 Phase 4: Compound workflow handlers ─────────────────────────
 
     async def _handle_review(self, args: dict[str, Any]) -> str:
@@ -5491,8 +5830,8 @@ class KogniDevServer:
             except Exception:
                 pass
 
-        # G6: Redact code content before sending to LLM for review
-        # Fail-CLOSED: security gate must load
+        # ADR-151 G6: Redact code content before sending to LLM for review
+        # B1 fix: fail-CLOSED
         from graqle.security.content_gate import ContentSecurityGate
         _g6_gate = ContentSecurityGate()
         content, _ = _g6_gate.prepare_content_for_send(
@@ -5574,8 +5913,8 @@ class KogniDevServer:
             if include_fix else ""
         )
 
-        # G6: Redact file context and error traces before sending to LLM
-        # Fail-CLOSED: security gate must load
+        # ADR-151 G6: Redact file context and error traces before sending to LLM
+        # B1 fix: fail-CLOSED
         from graqle.security.content_gate import ContentSecurityGate
         _g6_debug_gate = ContentSecurityGate()
         if file_context:

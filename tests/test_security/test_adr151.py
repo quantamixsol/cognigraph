@@ -1,4 +1,4 @@
-"""Comprehensive test suite for Content Security Architecture.
+"""Comprehensive test suite for ADR-151: Content Security Architecture.
 
 Tests all 3 pillars: TAG (sensitivity classification), GATE (content redaction),
 AUDIT (evidence trail). Covers the 5-layer detection pipeline (L0-L4),
@@ -55,7 +55,7 @@ class TestEntropyDetector:
         d = EntropyDetector()
         # API key-like string with high entropy
         matches = d.detect_high_entropy_strings(
-            "key=xk_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4"
+            "key=sk-live-abc123def456ghi789jkl012mno345"
         )
         assert len(matches) >= 1
         assert all(isinstance(m, EntropyMatch) for m in matches)
@@ -262,7 +262,7 @@ class TestContentSecurityGate:
         assert record.content_hash_pre != record.content_hash_post
 
     def test_prepare_content_dry_run(self):
-        """Dry-run still redacts content but flags in audit record."""
+        """N5 fix: dry-run still redacts content but flags in audit record."""
         content, record = self.gate.prepare_content_for_send(
             "AKIAIOSFODNN7EXAMPLE", "bedrock", gate_id="G5", dry_run=True,
         )
@@ -392,11 +392,11 @@ class TestEndToEnd:
         """Node with sensitive properties -> redacted before LLM."""
         gate = ContentSecurityGate()
         props, desc, chunks = gate.prepare_node_for_llm(
-            {"api_key": "xk-test-abc123", "name": "payment_service"},
+            {"api_key": "sk-live-abc123", "name": "payment_service"},
             "Payment API with connection_string=postgresql://user:pass@host/db",
             ["password = 'my-secret-value-here'"],
         )
-        assert "xk-test-abc123" not in str(props)
+        assert "sk-live-abc123" not in str(props)
         assert "user:pass" not in desc
         assert "my-secret-value-here" not in str(chunks)
         assert props["name"] == "payment_service"

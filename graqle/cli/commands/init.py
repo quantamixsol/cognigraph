@@ -79,10 +79,15 @@ BACKENDS: dict[str, dict[str, Any]] = {
         "api_key_env": "GEMINI_API_KEY",
     },
     "ollama": {
-        "name": "Ollama (Local / Free)",
+        "name": "Ollama (Local / Free — GNIE-enhanced)",
         "models": [
             ("qwen2.5:7b", "Qwen 2.5 7B — Good general purpose (free, local)", True),
-            ("llama3.2:3b", "Llama 3.2 3B — Fast + lightweight (free, local)", False),
+            ("deepseek-r1:7b", "DeepSeek-R1 7B — Best reasoning (free, local)", False),
+            ("qwen2.5:3b", "Qwen 2.5 3B — Fast + lightweight (free, local)", False),
+            ("gemma4:e4b", "Gemma 4 E4B — Excellent coder (free, local)", False),
+            ("llama3.3:8b", "Llama 3.3 8B — Balanced (free, local)", False),
+            ("phi4:14b", "Phi-4 14B — Best reasoning/GB (free, local, needs 10GB VRAM)", False),
+            ("llama3.2:3b", "Llama 3.2 3B — Ultra-fast (free, local)", False),
             ("codestral:22b", "Codestral 22B — Code-focused (free, local)", False),
             ("deepseek-r1:8b", "DeepSeek R1 8B — Reasoning (free, local)", False),
         ],
@@ -736,7 +741,9 @@ def _build_graqle_yaml(
         )
         model_cfg["region"] = region
     elif backend == "ollama":
-        # Ollama is local — no API key needed
+        # Ollama is local — no API key needed.
+        # GNIE (GraQle-Native Inference Enhancement) activates automatically
+        # to enrich prompts and calibrate confidence for local models.
         pass
     else:
         model_cfg["api_key"] = api_key_ref

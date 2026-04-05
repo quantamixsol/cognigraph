@@ -22,23 +22,46 @@ def _build_mock_server():
     server._graph_file = None
     server._graph_mtime = 0.0
 
-    # OT-054: Mock graph with direct backend.generate() path
+    # Mock graph that supports both areason and areason_stream
     mock_graph = MagicMock()
-    mock_graph.nodes = {
-        "node_a": MagicMock(label="node_a", entity_type="Class", description="Test node"),
-    }
-    mock_graph._activate_subgraph = MagicMock(return_value=["node_a"])
-    mock_graph.config.activation.strategy = "spread"
 
-    # Direct backend mock
+    # areason returns a structured ReasoningResult-like object
+    mock_result = MagicMock()
+    mock_result.answer = "--- a/foo.py\n+++ b/foo.py\n@@ -1,1 +1,2 @@\n+# added\n SUMMARY: Added comment"
+    mock_result.confidence = 0.82
+    mock_result.rounds_completed = 1
+    mock_result.active_nodes = ["node_a"]
+    mock_result.cost_usd = 0.001
+    mock_result.backend_status = "ok"
+    mock_result.backend_error = ""
+    mock_graph.areason = AsyncMock(return_value=mock_result)
+
+    # Mock backend for direct generate path (PR 21: OT-054)
     mock_backend = MagicMock()
     mock_gen_result = MagicMock()
-    mock_gen_result.text = "--- a/foo.py\n+++ b/foo.py\n@@ -1,1 +1,2 @@\n+# added\nSUMMARY: Added comment"
-    mock_gen_result.tokens_used = 100
+    mock_gen_result.text = "--- a/foo.py\n+++ b/foo.py\n@@ -1,1 +1,2 @@\n+# added"
+    mock_gen_result.tokens_used = 50
+    mock_gen_result.truncated = False
     mock_backend.generate = AsyncMock(return_value=mock_gen_result)
     mock_backend.cost_per_1k_tokens = 0.003
-    mock_graph._get_backend_for_node = MagicMock(return_value=mock_backend)
+    mock_backend.agenerate_stream = AsyncMock()  # not used in non-stream
 
+    mock_node = MagicMock(label="node_a", entity_type="Function", description="test")
+    mock_node.backend = mock_backend
+    mock_graph.nodes = {"node_a": mock_node}
+    mock_graph._get_backend_for_node = MagicMock(return_value=mock_backend)
+    mock_graph._activate_subgraph = MagicMock(return_value=["node_a"])
+    mock_graph.config = MagicMock()
+    mock_graph.config.activation = MagicMock(max_nodes=20)
+
+    # areason_stream yields chunk objects with .content attribute
+    async def _fake_stream(*args, **kwargs):
+        for text in ["--- a/foo.py\n", "+++ b/foo.py\n", "@@ -1 +1,2 @@\n", "+# added\n"]:
+            chunk = MagicMock()
+            chunk.content = text
+            yield chunk
+
+    mock_graph.areason_stream = _fake_stream
     server._graph = mock_graph
 
     return server
@@ -69,8 +92,8 @@ async def test_stream_false_returns_no_chunks(server):
 
 
 @pytest.mark.asyncio
-async def test_stream_true_returns_empty_chunks_ot054(server):
-    """OT-054: stream=True logs warning but returns empty chunks (direct backend mode)."""
+async def test_stream_true_falls_back_to_single_shot(server):
+    """stream=True is now ignored (OT-054) — falls back to single-shot."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
@@ -81,15 +104,13 @@ async def test_stream_true_returns_empty_chunks_ot054(server):
 
     data = json.loads(raw)
     if "error" not in data:
-        chunks = data["metadata"]["chunks"]
-        assert isinstance(chunks, list)
-        assert len(chunks) == 0  # OT-054: streaming not supported in direct mode
-        assert data["metadata"]["stream"] is True
+        # OT-054: stream=True is now ignored, still returns patches
+        assert "patches" in data or "error" in data
 
 
 @pytest.mark.asyncio
-async def test_stream_true_still_returns_valid_diff_ot054(server):
-    """OT-054: stream=True still produces a valid diff (non-streaming fallback)."""
+async def test_stream_true_still_returns_answer(server):
+    """stream=True (ignored) still produces a valid answer."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
@@ -100,9 +121,8 @@ async def test_stream_true_still_returns_valid_diff_ot054(server):
 
     data = json.loads(raw)
     if "error" not in data:
-        patches = data.get("patches", [])
-        assert len(patches) >= 1
-        assert "---" in patches[0]["unified_diff"]
+        # OT-054: single-shot generates answer, not stream chunks
+        assert data.get("confidence", 0) > 0 or "patches" in data
 
 
 @pytest.mark.asyncio

@@ -173,6 +173,15 @@ class BaseBackend(ABC):
         """Cost in USD per 1,000 tokens."""
         ...
 
+    @property
+    def is_local(self) -> bool:
+        """True if this backend runs locally (no external API calls).
+
+        Override in local backends (OllamaBackend, LlamaCppBackend, etc.)
+        to return True. Enables GNIE activation and other local-only features.
+        """
+        return False
+
     async def agenerate_stream(
         self,
         prompt: str,

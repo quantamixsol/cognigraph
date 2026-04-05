@@ -528,6 +528,10 @@ class BedrockBackend(BaseBackend):
 class OllamaBackend(BaseBackend):
     """Ollama local model backend with retry + validation."""
 
+    @property
+    def is_local(self) -> bool:
+        return True
+
     def __init__(
         self,
         model: str = "qwen2.5:0.5b",
@@ -608,6 +612,18 @@ class OllamaBackend(BaseBackend):
 
 class CustomBackend(BaseBackend):
     """Custom endpoint backend — any OpenAI-compatible API."""
+
+    _LOCAL_HOSTS = ("localhost", "127.0.0.1", "::1")
+
+    @property
+    def is_local(self) -> bool:
+        """Detect local endpoints by hostname."""
+        try:
+            from urllib.parse import urlparse
+            host = urlparse(self._endpoint).hostname or ""
+            return host in self._LOCAL_HOSTS
+        except Exception:
+            return False
 
     def __init__(
         self,

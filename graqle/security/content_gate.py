@@ -1,4 +1,4 @@
-"""Unified content security gate — Content security gate.
+"""Unified content security gate — ADR-151 Pillar 2 (GATE at Every Exit).
 
 Enforces sensitivity classification and redaction at all 7 exit points
 (G1-G7) before content leaves the GraQle trust boundary:
@@ -15,7 +15,7 @@ All methods are pure — inputs are never mutated. Detection delegates to
 ``SensitivityClassifier`` and ``RedactionEngine``; replacement uses
 ``TYPED_PLACEHOLDERS`` for semantic-preserving redaction.
 
-
+Reference: ADR-151 Pillar 2 — "GATE at Every Exit"
 """
 
 from __future__ import annotations
@@ -285,7 +285,7 @@ class ContentSecurityGate:
             gate_id, destination, level.name, len(markers), blocked,
         )
 
-        # Dry-run still redacts content but flags in audit record.
+        # N5 fix: dry-run still redacts content but flags in audit record.
         # This prevents accidental secret exposure if dry_run is enabled in prod.
         return redacted, record
 

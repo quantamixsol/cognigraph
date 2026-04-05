@@ -554,8 +554,8 @@ class QueryReformulator:
         """Build a prompt for LLM-based query reformulation."""
         graph_hint = ""
         if self._graph_summary:
-            # G7: Redact graph_summary before sending to LLM
-            # Fail-CLOSED: security gate must load
+            # ADR-151 G7: Redact graph_summary before sending to LLM
+            # B1 fix: fail-CLOSED
             from graqle.security.content_gate import ContentSecurityGate
             _summary = ContentSecurityGate().redact_text(self._graph_summary)
             graph_hint = f"\nKnowledge graph contents: {_summary}\n"
