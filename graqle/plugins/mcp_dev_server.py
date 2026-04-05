@@ -109,6 +109,53 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "required": ["task"],
         },
     },
+    # ── HFCI-001: graq_github_pr ──────────────────────────────────────
+    {
+        "name": "graq_github_pr",
+        "description": (
+            "Fetch GitHub pull request metadata via gh CLI. "
+            "Returns title, state, author, body, branch names, "
+            "additions/deletions/changed files, and review decision."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pr_number": {
+                    "type": "string",
+                    "description": "PR number or URL",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository (owner/name). Defaults to current repo origin.",
+                    "default": "",
+                },
+            },
+            "required": ["pr_number"],
+        },
+    },
+    # ── HFCI-002: graq_github_diff ────────────────────────────────────
+    {
+        "name": "graq_github_diff",
+        "description": (
+            "Fetch the unified diff for a GitHub pull request via gh CLI. "
+            "Returns the full diff text for code review."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pr_number": {
+                    "type": "string",
+                    "description": "PR number or URL",
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository (owner/name). Defaults to current repo origin.",
+                    "default": "",
+                },
+            },
+            "required": ["pr_number"],
+        },
+    },
     {
         "name": "graq_inspect",
         "description": (
@@ -2569,6 +2616,11 @@ class KogniDevServer:
             "kogni_git_commit": self._handle_git_commit,
             "graq_git_branch": self._handle_git_branch,
             "kogni_git_branch": self._handle_git_branch,
+            # HFCI-001+002: GitHub PR tools
+            "graq_github_pr": self._handle_github_pr,
+            "kogni_github_pr": self._handle_github_pr,
+            "graq_github_diff": self._handle_github_diff,
+            "kogni_github_diff": self._handle_github_diff,
             # v0.38.0 Phase 4: compound workflow tools
             "graq_review": self._handle_review,
             "kogni_review": self._handle_review,
@@ -5667,6 +5719,47 @@ class KogniDevServer:
         }
         cmd = cmd_map.get(action, f"git checkout -b {name}")
         return await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
+
+    # ── HFCI-001+002: GitHub PR tools ────────────────────────────────
+
+    async def _handle_github_pr(self, args: dict[str, Any]) -> str:
+        """Fetch PR metadata via gh CLI."""
+        import shlex
+
+        pr_number = args.get("pr_number")
+        if pr_number is None:
+            return json.dumps({"error": "Parameter 'pr_number' is required."})
+
+        repo = args.get("repo", "")
+        safe_pr = shlex.quote(str(pr_number))
+        cmd = (
+            f"gh pr view {safe_pr} "
+            "--json number,title,state,author,body,url,"
+            "headRefName,baseRefName,additions,deletions,"
+            "changedFiles,reviewDecision"
+        )
+        if repo:
+            safe_repo = shlex.quote(str(repo))
+            cmd += f" --repo {safe_repo}"
+
+        return await self._handle_bash({"command": cmd, "dry_run": False, "timeout": 30})
+
+    async def _handle_github_diff(self, args: dict[str, Any]) -> str:
+        """Fetch PR diff via gh CLI."""
+        import shlex
+
+        pr_number = args.get("pr_number")
+        if pr_number is None:
+            return json.dumps({"error": "Parameter 'pr_number' is required."})
+
+        repo = args.get("repo", "")
+        safe_pr = shlex.quote(str(pr_number))
+        cmd = f"gh pr diff {safe_pr}"
+        if repo:
+            safe_repo = shlex.quote(str(repo))
+            cmd += f" --repo {safe_repo}"
+
+        return await self._handle_bash({"command": cmd, "dry_run": False, "timeout": 60})
 
     # ── v0.38.0 Phase 4: Compound workflow handlers ─────────────────────────
 

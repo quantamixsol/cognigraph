@@ -457,3 +457,4 @@ class TestSnippetTypeValidation:
         """Directory paths raise FileNotFoundError (is_file check)."""
         with pytest.raises(FileNotFoundError):
             server._read_file_snippet(str(tmp_path))
+"# HFCI-011d verification" 

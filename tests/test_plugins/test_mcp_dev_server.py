@@ -120,7 +120,7 @@ def server(mock_graph):
 
 class TestToolDefinitions:
     def test_tools_defined(self):
-        assert len(TOOL_DEFINITIONS) == 116  # +2: graq_correct + kogni_correct (R6)
+        assert len(TOOL_DEFINITIONS) == 120  # +4: graq_github_pr/diff + kogni aliases (HFCI-001+002)
 
     def test_expected_tool_names(self):
         names = {t["name"] for t in TOOL_DEFINITIONS}
@@ -176,6 +176,9 @@ class TestToolDefinitions:
             "graq_git_log",
             "graq_git_commit",
             "graq_git_branch",
+            # HFCI-001+002: GitHub PR tools
+            "graq_github_pr",
+            "graq_github_diff",
             # Phase 4: compound workflow tools
             "graq_review",
             "graq_debug",
@@ -242,6 +245,9 @@ class TestToolDefinitions:
             "kogni_git_log",
             "kogni_git_commit",
             "kogni_git_branch",
+            # HFCI-001+002: GitHub PR tools
+            "kogni_github_pr",
+            "kogni_github_diff",
             # Phase 4: compound workflow tools
             "kogni_review",
             "kogni_debug",
@@ -288,7 +294,7 @@ class TestToolDefinitions:
 class TestListTools:
     def test_returns_all_definitions(self, server):
         tools = server.list_tools()
-        assert len(tools) == 116  # +2: graq_correct + kogni_correct (R6)
+        assert len(tools) == 120  # +4: graq_github_pr/diff + kogni aliases (HFCI-001+002)
 
 
 # ---------------------------------------------------------------------------
