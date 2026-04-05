@@ -2330,6 +2330,9 @@ class KogniDevServer:
         raw = fp.read_text(encoding="utf-8", errors="replace")
 
         if start_line is not None and end_line is not None:
+            # N1: validate positive integers for direct callers
+            if start_line < 1 or end_line < 1:
+                raise ValueError(f"Line numbers must be positive, got start={start_line}, end={end_line}")
             lines = raw.splitlines(keepends=True)
             # lines are 1-based; slice end is exclusive
             raw = "".join(lines[max(0, start_line - 1):end_line])
@@ -5594,13 +5597,15 @@ class KogniDevServer:
                 timeout=timeout,
                 cwd=cwd,
             )
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
             return json.dumps({
                 "command": command,
-                "stdout": result.stdout[:4000],
-                "stderr": result.stderr[:1000],
+                "stdout": stdout[:4000],
+                "stderr": stderr[:1000],
                 "exit_code": result.returncode,
                 "success": result.returncode == 0,
-                "truncated": len(result.stdout) > 4000,
+                "truncated": len(stdout) > 4000,
             })
         except subprocess.TimeoutExpired:
             return json.dumps({"error": f"Command timed out after {timeout}s", "command": command})
@@ -5725,6 +5730,13 @@ class KogniDevServer:
     async def _handle_github_pr(self, args: dict[str, Any]) -> str:
         """Fetch PR metadata via gh CLI."""
         import shlex
+        import shutil
+
+        if shutil.which("gh") is None:
+            return json.dumps({
+                "error": "gh CLI not found. Install from https://cli.github.com/ and run 'gh auth login'.",
+                "hint": "graq_github_pr requires the GitHub CLI (gh) to be installed and authenticated.",
+            })
 
         pr_number = args.get("pr_number")
         if pr_number is None:
@@ -5747,6 +5759,13 @@ class KogniDevServer:
     async def _handle_github_diff(self, args: dict[str, Any]) -> str:
         """Fetch PR diff via gh CLI."""
         import shlex
+        import shutil
+
+        if shutil.which("gh") is None:
+            return json.dumps({
+                "error": "gh CLI not found. Install from https://cli.github.com/ and run 'gh auth login'.",
+                "hint": "graq_github_diff requires the GitHub CLI (gh) to be installed and authenticated.",
+            })
 
         pr_number = args.get("pr_number")
         if pr_number is None:
