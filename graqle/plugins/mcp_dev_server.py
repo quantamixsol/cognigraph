@@ -5355,23 +5355,42 @@ class KogniDevServer:
         return await self._handle_bash({"command": "git status --porcelain", "cwd": cwd, "dry_run": False, "timeout": 10})
 
     async def _handle_git_diff(self, args: dict[str, Any]) -> str:
-        """git diff — staged or unstaged."""
+        """git diff — staged or unstaged.
+
+        HFCI-011c fix: use two-dot syntax for merge commit reliability,
+        shell-escape base_ref, preserve existing range syntax.
+        """
+        import shlex
         staged = bool(args.get("staged", False))
         base_ref = args.get("base_ref", "")
         file_path = args.get("file_path", "")
         cwd = args.get("cwd", ".")
 
         if base_ref:
-            cmd = f"git diff {base_ref}...HEAD"
+            safe_ref = shlex.quote(base_ref)
+            # If base_ref already contains range syntax (..' or '...'), use as-is
+            if ".." in base_ref:
+                cmd = f"git diff {safe_ref}"
+            else:
+                # Two-dot syntax: reliable on merge commits (vs three-dot)
+                cmd = f"git diff {safe_ref}..HEAD"
         elif staged:
             cmd = "git diff --cached"
         else:
             cmd = "git diff"
 
         if file_path:
-            cmd += f" -- {file_path}"
+            cmd += f" -- {shlex.quote(file_path)}"
 
-        return await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
+        result = await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
+        if isinstance(result, str):
+            try:
+                parsed = json.loads(result)
+                if parsed.get("error"):
+                    logger.warning("graq_git_diff: %s", parsed["error"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return result
 
     async def _handle_git_log(self, args: dict[str, Any]) -> str:
         """git log — recent commits."""
