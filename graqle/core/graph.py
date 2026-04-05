@@ -787,7 +787,7 @@ class Graqle:
                         parts.append(f"{key}: {val_str}")
 
                 # Then remaining properties (skip duplicates, internal, and sensitive keys)
-                # G3: prevent sensitive properties from entering descriptions
+                # ADR-151 G3: prevent sensitive properties from entering descriptions
                 from graqle.core.redaction import DEFAULT_SENSITIVE_KEYS
                 skip_keys = {"id", "label", "type", "description", "source_file",
                              "source_line", "confidence", "source",
@@ -904,7 +904,7 @@ class Graqle:
                 # Build a richer chunk by combining description with key properties
                 parts = [desc]
                 # Include select metadata fields that add context
-                # G2: skip sensitive property keys in chunk synthesis
+                # ADR-151 G2: skip sensitive property keys in chunk synthesis
                 from graqle.core.redaction import DEFAULT_SENSITIVE_KEYS
                 skip_keys = {"chunks", "chunk_count", "file_path", "source_file"
                              } | DEFAULT_SENSITIVE_KEYS
@@ -1330,9 +1330,9 @@ class Graqle:
         # Filter stale node IDs from embedding cache (Bug: dangling cache refs)
         node_ids = [nid for nid in node_ids if nid in self.nodes]
 
-        # 1.5 SECURITY GATE (G1): Redact via node snapshots.
-        # Fail-CLOSED: security gate must load
-        # Deep-copy nodes to prevent concurrent mutation
+        # 1.5 ADR-151 SECURITY GATE (G1): Redact via node snapshots.
+        # B1 fix: fail-CLOSED — security gate MUST load or operation blocks.
+        # B2 fix: deep-copy nodes — never mutate originals across await.
         # Snapshots replace originals in self.nodes during reasoning,
         # then originals are restored. No mutation of original node objects.
         _original_nodes: dict[str, Any] = {}  # nid -> original node reference
@@ -1346,7 +1346,7 @@ class Graqle:
                 node = self.nodes[nid]
                 _original_nodes[nid] = node  # save reference to original
 
-                # Full deepcopy isolates all mutable attributes
+                # B4 fix: full deepcopy isolates ALL mutable attributes
                 # (properties, tags, metadata, embeddings, relations)
                 snapshot = copy.deepcopy(node)
 
@@ -1415,7 +1415,7 @@ class Graqle:
             relevance_scores=relevance_scores,
         )
 
-        # 4. Deactivate nodes and restore originals (snapshots discarded)
+        # 4. Deactivate nodes and restore originals (B2: snapshots discarded)
         for nid in node_ids:
             if nid in self.nodes:
                 self.nodes[nid].deactivate()
@@ -1459,7 +1459,7 @@ class Graqle:
         # Filter stale node IDs from embedding cache (Bug: dangling cache refs)
         node_ids = [nid for nid in node_ids if nid in self.nodes]
 
-        # SECURITY GATE (G1): Redact before streaming 
+        # ADR-151 SECURITY GATE (G1): Redact before streaming (B1+B2 fix)
         _original_nodes_stream: dict[str, Any] = {}
         llm_redaction_cfg = getattr(self.config, "llm_redaction", None)
         if llm_redaction_cfg is None or llm_redaction_cfg.enabled:
@@ -1471,7 +1471,7 @@ class Graqle:
                 node = self.nodes[nid]
                 _original_nodes_stream[nid] = node
 
-                # Full deepcopy isolates all mutable attributes
+                # B4 fix: full deepcopy isolates ALL mutable attributes
                 snapshot = copy.deepcopy(node)
 
                 chunks_text = []
@@ -1499,7 +1499,7 @@ class Graqle:
         for nid in node_ids:
             self.nodes[nid].deactivate()
 
-        # G1: Restore original nodes after streaming 
+        # ADR-151 G1: Restore original nodes after streaming (B2)
         for nid, original in _original_nodes_stream.items():
             self.nodes[nid] = original
 

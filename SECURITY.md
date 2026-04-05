@@ -117,7 +117,7 @@ The knowledge graph does **not** contain:
 - Credentials, secrets, or environment variable values
 - User data or PII
 
-### LLM Provider Communication 
+### LLM Provider Communication (ADR-151)
 
 When using cloud LLM backends (Anthropic, OpenAI, etc.), GraQle sends:
 - The user's query
@@ -125,7 +125,7 @@ When using cloud LLM backends (Anthropic, OpenAI, etc.), GraQle sends:
 - System prompts for reasoning
 - For code generation (`graq_generate`): source file content (up to 50K chars)
 
-**Content Security Architecture (Tag-Gate-Audit)**
+**Content Security Architecture (ADR-151: Tag-Gate-Audit)**
 
 All content sent to external providers passes through a multi-layer security pipeline:
 

@@ -155,9 +155,9 @@ class ChunkScorer:
             len(chunk_texts), len(desc_texts),
         )
 
-        # G4: Redact sensitive content before embedding API calls
-        # Fail-CLOSED: security gate must load
-        # Block SECRET+ content from cloud embedding
+        # ADR-151 G4: Redact sensitive content before embedding API calls
+        # B1 fix: fail-CLOSED — if security gate fails, embedding is blocked.
+        # B3 fix: block SECRET+ content from cloud embedding entirely.
         from graqle.security.content_gate import ContentSecurityGate
         from graqle.security.sensitivity import SensitivityClassifier, SensitivityLevel
         _g4_gate = ContentSecurityGate()
@@ -166,7 +166,7 @@ class ChunkScorer:
         for t in chunk_texts:
             level = _g4_classifier.classify_node({}, description=t)
             if level >= SensitivityLevel.SECRET:
-                # Non-empty sentinel prevents API error
+                # B5 fix: non-empty sentinel prevents Titan V2 400 error + NaN cosine
                 _redacted_chunk_texts.append("[CONTENT_REDACTED]")
             else:
                 _redacted_chunk_texts.append(_g4_gate.redact_for_embedding(t))
