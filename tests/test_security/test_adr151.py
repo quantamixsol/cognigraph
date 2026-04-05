@@ -53,9 +53,9 @@ class TestEntropyDetector:
 
     def test_high_entropy_detected(self):
         d = EntropyDetector()
-        # API key-like string with high entropy
+        # High entropy string (NOT a real API key — test fixture only)
         matches = d.detect_high_entropy_strings(
-            "key=sk-live-abc123def456ghi789jkl012mno345"
+            "key=xk_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4"
         )
         assert len(matches) >= 1
         assert all(isinstance(m, EntropyMatch) for m in matches)

@@ -303,29 +303,6 @@ class CogniNode:
         if self.system_prompt:
             prompt = f"System: {self.system_prompt}\n\n{prompt}"
 
-        # ── GNIE: prompt enrichment for local backends ──
-        from graqle.plugins.gnie.detection import is_local_backend
-        if is_local_backend(self.backend):
-            from graqle.plugins.gnie.enricher import GnieEnricher, NodeContext
-
-            _model_name = getattr(self.backend, "_model", "") or ""
-            _round_idx = max(
-                (getattr(m, "round", 0) or 0 for m in incoming_messages),
-                default=0,
-            )
-            _ctx = NodeContext(
-                node_id=self.id,
-                node_type=self.entity_type,
-                label=self.label,
-                description=(self.description or "")[:300],
-                neighbor_count=len(self.incoming_edges) + len(self.outgoing_edges),
-                neighbor_types={},  # edges are ID strings; types unavailable at this layer
-            )
-            prompt = GnieEnricher.for_model(_model_name).enrich(
-                prompt, _ctx, query, round_idx=_round_idx,
-            )
-        # ── /GNIE ──
-
         # Generate response
         raw_result = await self.backend.generate(
             prompt,

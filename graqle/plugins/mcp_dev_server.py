@@ -109,7 +109,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "required": ["task"],
         },
     },
-    # ── v0.43: graq_github_pr ──────────────────────────────────────
+    # ── HFCI-001: graq_github_pr ──────────────────────────────────────
     {
         "name": "graq_github_pr",
         "description": (
@@ -133,7 +133,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "required": ["pr_number"],
         },
     },
-    # ── v0.43: graq_github_diff ────────────────────────────────────
+    # ── HFCI-002: graq_github_diff ────────────────────────────────────
     {
         "name": "graq_github_diff",
         "description": (
@@ -2302,7 +2302,7 @@ class KogniDevServer:
         }
 
     # ------------------------------------------------------------------
-    # v0.43: Source snippet helpers for graq_context deep composition
+    # HFCI-017: Source snippet helpers for graq_context deep composition
     # ------------------------------------------------------------------
 
     def _read_file_snippet(
@@ -2386,7 +2386,7 @@ class KogniDevServer:
 
             file_path = props.get("file_path")
             if not file_path or not isinstance(file_path, str):
-                logger.debug("v0.43: skipping node %s — no file_path", node.id)
+                logger.debug("HFCI-017: skipping node %s — no file_path", node.id)
                 continue
 
             # Type-validate line metadata
@@ -2424,7 +2424,7 @@ class KogniDevServer:
                     max_chars=node_budget,
                 )
             except (OSError, ValueError) as exc:
-                logger.debug("v0.43: failed to read %s: %s", file_path, exc)
+                logger.debug("HFCI-017: failed to read %s: %s", file_path, exc)
                 continue
 
             snippet: dict = {
@@ -2453,7 +2453,7 @@ class KogniDevServer:
         return TOOL_DEFINITIONS
 
     # ------------------------------------------------------------------
-    # v0.43: Tool hints routing protocol
+    # HFCI-018: Tool hints routing protocol
     # ------------------------------------------------------------------
 
     _TOOL_HINTS: dict[str, list[dict[str, str]]] = {
@@ -2619,7 +2619,7 @@ class KogniDevServer:
             "kogni_git_commit": self._handle_git_commit,
             "graq_git_branch": self._handle_git_branch,
             "kogni_git_branch": self._handle_git_branch,
-            # v0.43+002: GitHub PR tools
+            # HFCI-001+002: GitHub PR tools
             "graq_github_pr": self._handle_github_pr,
             "kogni_github_pr": self._handle_github_pr,
             "graq_github_diff": self._handle_github_diff,
@@ -2730,7 +2730,7 @@ class KogniDevServer:
             "graph_loaded": graph is not None,
         }
 
-        # ---- v0.43: embed source snippets at deep level -----------
+        # ---- HFCI-017: embed source snippets at deep level -----------
         if level == "deep" and graph is not None and matches:
             snippets, tokens_used = self._embed_source_snippets(
                 matches, token_budget=2000,
@@ -5622,7 +5622,7 @@ class KogniDevServer:
     async def _handle_git_diff(self, args: dict[str, Any]) -> str:
         """git diff — staged or unstaged.
 
-        v0.43 fix: use two-dot syntax for merge commit reliability,
+        HFCI-011c fix: use two-dot syntax for merge commit reliability,
         shell-escape base_ref, preserve existing range syntax.
         """
         import shlex
@@ -5725,7 +5725,7 @@ class KogniDevServer:
         cmd = cmd_map.get(action, f"git checkout -b {name}")
         return await self._handle_bash({"command": cmd, "cwd": cwd, "dry_run": False, "timeout": 15})
 
-    # ── v0.43+002: GitHub PR tools ────────────────────────────────
+    # ── HFCI-001+002: GitHub PR tools ────────────────────────────────
 
     async def _handle_github_pr(self, args: dict[str, Any]) -> str:
         """Fetch PR metadata via gh CLI."""

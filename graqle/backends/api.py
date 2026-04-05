@@ -528,10 +528,6 @@ class BedrockBackend(BaseBackend):
 class OllamaBackend(BaseBackend):
     """Ollama local model backend with retry + validation."""
 
-    @property
-    def is_local(self) -> bool:
-        return True
-
     def __init__(
         self,
         model: str = "qwen2.5:0.5b",
@@ -579,20 +575,12 @@ class OllamaBackend(BaseBackend):
                 response.raise_for_status()
                 data = response.json()
                 text = data.get("response", "")
-                # Strip <think>...</think> tags from reasoning models (DeepSeek-R1, Gemma4)
-                # Fallback: if stripping produces empty, use last think block content
+                # Strip <think>...</think> tags from reasoning models (DeepSeek-R1)
                 if "<think>" in text:
                     import re
-                    think_blocks = re.findall(
-                        r"<think>(.*?)</think>", text, flags=re.DOTALL
-                    )
-                    stripped = re.sub(
+                    text = re.sub(
                         r"<think>.*?</think>\s*", "", text, flags=re.DOTALL
-                    ).strip()
-                    if stripped:
-                        text = stripped
-                    elif think_blocks:
-                        text = think_blocks[-1].strip()
+                    )
                 # OT-028: Capture done_reason for truncation detection
                 done_reason = data.get("done_reason", "") or ""
                 truncated = done_reason == "length"
@@ -620,18 +608,6 @@ class OllamaBackend(BaseBackend):
 
 class CustomBackend(BaseBackend):
     """Custom endpoint backend — any OpenAI-compatible API."""
-
-    _LOCAL_HOSTS = ("localhost", "127.0.0.1", "::1")
-
-    @property
-    def is_local(self) -> bool:
-        """Detect local endpoints by hostname."""
-        try:
-            from urllib.parse import urlparse
-            host = urlparse(self._endpoint).hostname or ""
-            return host in self._LOCAL_HOSTS
-        except Exception:
-            return False
 
     def __init__(
         self,

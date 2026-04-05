@@ -36,24 +36,6 @@ def _build_mock_server():
     mock_result.backend_error = ""
     mock_graph.areason = AsyncMock(return_value=mock_result)
 
-    # Mock backend for direct generate path (PR 21: OT-054)
-    mock_backend = MagicMock()
-    mock_gen_result = MagicMock()
-    mock_gen_result.text = "--- a/foo.py\n+++ b/foo.py\n@@ -1,1 +1,2 @@\n+# added"
-    mock_gen_result.tokens_used = 50
-    mock_gen_result.truncated = False
-    mock_backend.generate = AsyncMock(return_value=mock_gen_result)
-    mock_backend.cost_per_1k_tokens = 0.003
-    mock_backend.agenerate_stream = AsyncMock()  # not used in non-stream
-
-    mock_node = MagicMock(label="node_a", entity_type="Function", description="test")
-    mock_node.backend = mock_backend
-    mock_graph.nodes = {"node_a": mock_node}
-    mock_graph._get_backend_for_node = MagicMock(return_value=mock_backend)
-    mock_graph._activate_subgraph = MagicMock(return_value=["node_a"])
-    mock_graph.config = MagicMock()
-    mock_graph.config.activation = MagicMock(max_nodes=20)
-
     # areason_stream yields chunk objects with .content attribute
     async def _fake_stream(*args, **kwargs):
         for text in ["--- a/foo.py\n", "+++ b/foo.py\n", "@@ -1 +1,2 @@\n", "+# added\n"]:
@@ -92,8 +74,8 @@ async def test_stream_false_returns_no_chunks(server):
 
 
 @pytest.mark.asyncio
-async def test_stream_true_falls_back_to_single_shot(server):
-    """stream=True is now ignored (OT-054) — falls back to single-shot."""
+async def test_stream_true_populates_chunks(server):
+    """stream=True → metadata.chunks contains the streamed text pieces."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
@@ -104,13 +86,15 @@ async def test_stream_true_falls_back_to_single_shot(server):
 
     data = json.loads(raw)
     if "error" not in data:
-        # OT-054: stream=True is now ignored, still returns patches
-        assert "patches" in data or "error" in data
+        chunks = data["metadata"]["chunks"]
+        assert isinstance(chunks, list)
+        assert len(chunks) >= 1
+        assert data["metadata"]["stream"] is True
 
 
 @pytest.mark.asyncio
-async def test_stream_true_still_returns_answer(server):
-    """stream=True (ignored) still produces a valid answer."""
+async def test_stream_true_chunks_join_to_non_empty(server):
+    """stream=True → joining chunks produces non-empty text."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
@@ -121,8 +105,8 @@ async def test_stream_true_still_returns_answer(server):
 
     data = json.loads(raw)
     if "error" not in data:
-        # OT-054: single-shot generates answer, not stream chunks
-        assert data.get("confidence", 0) > 0 or "patches" in data
+        chunks = data["metadata"]["chunks"]
+        assert "".join(chunks).strip() != ""
 
 
 @pytest.mark.asyncio

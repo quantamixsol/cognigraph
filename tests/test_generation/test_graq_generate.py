@@ -37,24 +37,11 @@ class _MockReasoningResult:
 
 def _build_mock_graph() -> MagicMock:
     graph = MagicMock()
-    # Mock backend with proper async generate()
-    mock_backend = MagicMock()
-    mock_gen_result = MagicMock()
-    mock_gen_result.text = "--- a/foo.py\n+++ b/foo.py\n@@ -1,1 +1,2 @@\n+# added docstring"
-    mock_gen_result.tokens_used = 50
-    mock_gen_result.truncated = False
-    mock_backend.generate = AsyncMock(return_value=mock_gen_result)
-    mock_backend.cost_per_1k_tokens = 0.003
-
-    node = MagicMock(label="SyncEngine", entity_type="Class", description="Cloud sync")
-    node.backend = mock_backend
-    graph.nodes = {"SyncEngine": node}
+    graph.nodes = {
+        "SyncEngine": MagicMock(label="SyncEngine", entity_type="Class", description="Cloud sync"),
+    }
     graph.edges = {}
     graph.areason = AsyncMock(return_value=_MockReasoningResult())
-    graph._get_backend_for_node = MagicMock(return_value=mock_backend)
-    graph._activate_subgraph = MagicMock(return_value=["SyncEngine"])
-    graph.config = MagicMock()
-    graph.config.activation = MagicMock(max_nodes=20)
     return graph
 
 
