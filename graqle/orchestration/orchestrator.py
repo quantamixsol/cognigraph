@@ -341,41 +341,6 @@ class Orchestrator:
         else:
             avg_confidence = 0.0
 
-        # ── GNIE: Confidence calibration for local backends ──
-        _raw_confidence_before_gnie = avg_confidence
-        _gnie_calibration_method = None
-        try:
-            from graqle.plugins.gnie.detection import is_local_backend
-            # Check first active node's backend
-            _first_nid = active_node_ids[0] if active_node_ids else None
-            _first_node = graph.nodes.get(_first_nid) if _first_nid else None
-            _backend = getattr(_first_node, "backend", None) if _first_node else None
-            if _backend and is_local_backend(_backend):
-                from graqle.plugins.gnie.calibrator import AgentOutput, ConfidenceCalibrator
-                from graqle.plugins.gnie.state import GnieState
-
-                _model_name = getattr(_backend, "name", "") or "unknown"
-                _state = GnieState.load()
-                _cal_data = _state.get_calibration_data(_model_name)
-                _calibrator = ConfidenceCalibrator(_cal_data)
-
-                # Build agent outputs from final round messages
-                _agent_outputs = []
-                if all_messages:
-                    _last_round = all_messages[-1]
-                    for _nid, _msg in _last_round.items():
-                        _agent_outputs.append(AgentOutput(
-                            node_id=_nid,
-                            confidence=getattr(_msg, "confidence", 0.5),
-                            text_length=len(getattr(_msg, "content", "")),
-                        ))
-
-                avg_confidence = _calibrator.calibrate(avg_confidence, _agent_outputs)
-                _gnie_calibration_method = "gnie_v1"
-        except Exception:
-            pass  # GNIE calibration is best-effort
-        # ── /GNIE ──
-
         elapsed_ms = (time.time() - start_time) * 1000
 
         # Generate observer report
@@ -422,11 +387,6 @@ class Orchestrator:
                 "synthesis_stop_reason", ""
             )
 
-        # Store GNIE calibration info if applied
-        if _gnie_calibration_method:
-            metadata["gnie_calibration"] = _gnie_calibration_method
-            metadata["gnie_raw_confidence"] = _raw_confidence_before_gnie
-
         result = ReasoningResult(
             query=query,
             answer=answer,
@@ -437,8 +397,6 @@ class Orchestrator:
             cost_usd=cost_usd,
             latency_ms=elapsed_ms,
             metadata=metadata,
-            raw_confidence=_raw_confidence_before_gnie if _gnie_calibration_method else None,
-            calibration_method=_gnie_calibration_method,
         )
 
         logger.info(

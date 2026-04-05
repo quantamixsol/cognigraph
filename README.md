@@ -15,11 +15,11 @@ Every change is impact-analysed, gate-checked, and taught back — automatically
 [![PyPI](https://img.shields.io/pypi/v/graqle?color=%2306b6d4&label=PyPI)](https://pypi.org/project/graqle/)
 [![Downloads](https://img.shields.io/pypi/dw/graqle?color=%2306b6d4&label=downloads%2Fweek)](https://pypi.org/project/graqle/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-06b6d4.svg)](https://python.org)
-[![Tests: 1,569+](https://img.shields.io/badge/tests-1%2C569%2B%20passing-06b6d4.svg)]()
+[![Tests: 1,800+](https://img.shields.io/badge/tests-1%2C800%2B%20passing-06b6d4.svg)]()
 [![LLM Backends: 14](https://img.shields.io/badge/LLM%20backends-14-06b6d4.svg)]()
-[![MCP Tools: 74](https://img.shields.io/badge/MCP%20tools-74-06b6d4.svg)]()
+[![MCP Tools: 75](https://img.shields.io/badge/MCP%20tools-75-06b6d4.svg)]()
 [![Model Agnostic](https://img.shields.io/badge/model-agnostic-06b6d4.svg)]()
-[![VS Code Extension](https://img.shields.io/badge/VS%20Code-v0.3.0-06b6d4.svg)](https://marketplace.visualstudio.com/items?itemName=graqle.graqle-vscode)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-v0.3.6-06b6d4.svg)](https://marketplace.visualstudio.com/items?itemName=graqle.graqle-vscode)
 
 ```bash
 pip install graqle && graq scan repo . && graq run "find every security bug in this codebase"
@@ -35,20 +35,22 @@ pip install graqle && graq scan repo . && graq run "find every security bug in t
 
 ## What's New
 
-### SDK v0.40.7
+### SDK v0.44.0 — Autonomous Loop
 
-- **R15 Multi-Backend Debate** — optional multi-LLM debate mode: propose/challenge/synthesize across providers. 4 patent claims. Governance-first design.
-- **graq_review dogfooding** — GraQle's own code review tool found 4 BLOCKERs + 3 MAJORs in the debate module that unit tests missed. All fixed.
-- **OT-018 file reader fix** — `graq_read` no longer truncates files on Windows. Environment variable fallback for Windows Store Python.
-- **3 live OpenAI debates** — full evidence report demonstrating cross-provider reasoning with GPT-5.4 vs Claude Sonnet 4.6.
-- **14,959 node KG** — largest production graph to date.
+- **`graq auto` — autonomous test-fix loop.** Give it a task, it plans, generates code, writes files, runs tests, diagnoses failures, fixes, and retries — all governed. `graq auto "write tests for the auth module"` runs the full PLAN→GENERATE→WRITE→TEST→FIX cycle until GREEN or max retries.
+- **LoopController FSM** — explicit 7-state state machine with `max_retries` governance, absolute iteration limit, callback contract validation. 8 review rounds at 93% Senior confidence, verified by research team.
+- **LoopObserver** — full transparency: real-time state callbacks, per-iteration cost/latency tracking, violation detection with auto-correction, governance scoring (0-100).
+- **Security hardening** — stash token regex validation (prevents git argument injection), fail-closed path traversal prevention, atomic writes via `tempfile.NamedTemporaryFile` (TOCTOU-safe), protected file governance gate.
+- **232 new tests** — 42 state machine, 32 edge cases, 24 security, 10 real execution (no mocks), 12 end-to-end demos.
+- **HFCI Sprint 1** — `graq_github_pr`, `graq_github_diff` MCP tools, tool_hints routing, deep source snippets in `graq_context`.
+- **Security sprint** — 7-gate security package (Tag-Gate-Audit), LLM content redaction filter, `graq_generate` activation quality fixes.
 
-### VS Code Extension v0.3.0
+### VS Code Extension v0.3.6
 
+- **Content Security Architecture** — CSP nonce on WebView, secret redaction in logs
 - **Credential Forwarding** — AWS, Anthropic, and OpenAI credentials forwarded securely via allowlist-only environment
 - **Project-Scoping** — each workspace loads its own knowledge graph; workspace changes restart MCP with correct config
-- **Error Surfacing** — backend errors surface as actionable messages instead of silent swallowing
-- **Security Hardening** — `shell:false` on all subprocess spawns, CSP nonce on WebView, secret redaction in logs
+- **Orchestrator** — DAG-based intent routing, incremental learning, registry-driven tool dispatch
 
 [Install VS Code Extension](https://marketplace.visualstudio.com/items?itemName=graqle.graqle-vscode) | See the full [Changelog](https://github.com/quantamixsol/graqle/blob/master/CHANGELOG.md)
 
@@ -370,10 +372,10 @@ catch governance issues before review.
 
 ---
 
-## 74 MCP tools — your AI uses them automatically
+## 75 MCP tools — your AI uses them automatically
 
 ```bash
-graq init          # Claude Code — auto-wires all 74 tools
+graq init          # Claude Code — auto-wires all 75 tools
 graq init --ide cursor
 graq init --ide vscode
 graq init --ide windsurf
@@ -392,6 +394,7 @@ graq init --ide windsurf
 | `graq_predict` | Confidence-gated prediction — writes back if threshold met |
 | `graq_gate` | Binary governance gate — PASS / FAIL with evidence |
 | `graq_inspect` | Graph stats, node details, health status |
+| `graq_auto` | Autonomous loop — plan, generate, write, test, fix, retry until GREEN |
 
 **SCORCH — UX audit engine (12 dimensions):**
 
@@ -419,7 +422,7 @@ graq init --ide windsurf
 | `graq_phantom_screenshot` | Capture + optional Claude Vision analysis |
 | `graq_phantom_session` | Session + auth profile management |
 
-`graq_*` tools have `kogni_*` aliases for backwards compatibility. All 74 tools, zero license checks.
+`graq_*` tools have `kogni_*` aliases for backwards compatibility. All 75 tools, zero license checks.
 
 ---
 
@@ -481,6 +484,7 @@ This is not a demo feature. This is proof the tool works at the scale and comple
 
 | Command | Description |
 |---------|-------------|
+| `graq auto "task"` | Autonomous loop — plan, generate, write, test, fix, retry |
 | `graq run "question"` | Natural language query — auto-routed to best tool |
 | `graq reason "question"` | Multi-agent graph reasoning — confidence + evidence |
 | `graq context module` | 500-token focused context for any module |
