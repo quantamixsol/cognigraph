@@ -2255,6 +2255,141 @@ class KogniDevServer:
         }
 
     # ------------------------------------------------------------------
+    # HFCI-017: Source snippet helpers for graq_context deep composition
+    # ------------------------------------------------------------------
+
+    def _read_file_snippet(
+        self,
+        path: str,
+        start_line: int | None = None,
+        end_line: int | None = None,
+        max_chars: int = 2000,
+    ) -> tuple[str, bool]:
+        """Read file content, optionally scoped to a line range.
+
+        Returns (content, was_truncated).
+        Raises FileNotFoundError if the file does not exist.
+        Uses _resolve_file_path for workspace containment (no escape).
+        Line numbers are 1-based; slice end is exclusive so end_line
+        (1-based) works correctly as the upper bound.
+        """
+        # Resolve via _resolve_file_path — enforces workspace containment
+        resolved: str = self._resolve_file_path(path)
+
+        fp = Path(resolved)
+        if not fp.is_file():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        raw = fp.read_text(encoding="utf-8", errors="replace")
+
+        if start_line is not None and end_line is not None:
+            lines = raw.splitlines(keepends=True)
+            # lines are 1-based; slice end is exclusive
+            raw = "".join(lines[max(0, start_line - 1):end_line])
+
+        was_truncated = False
+        if len(raw) > max_chars:
+            raw = raw[:max_chars] + "\n\u2026[truncated]"
+            was_truncated = True
+
+        return raw, was_truncated
+
+    _SNIPPET_CODE_TYPES = frozenset({
+        "PythonModule", "Function", "Class", "TestFile", "JavaScriptModule",
+    })
+
+    def _embed_source_snippets(
+        self,
+        activated_nodes: list,
+        token_budget: int = 2000,
+    ) -> tuple[list[dict], int]:
+        """Embed source file snippets for activated code nodes.
+
+        Filters to code-bearing entity types, distributes the char budget
+        equally, reads each file (with optional line range), and returns
+        a list of snippet dicts plus the approximate token count consumed.
+
+        Returns (snippets, tokens_used).
+        """
+        code_nodes = [
+            n for n in activated_nodes
+            if n.entity_type in self._SNIPPET_CODE_TYPES
+        ]
+        if not code_nodes:
+            return [], 0
+
+        char_budget = token_budget * 4
+        per_node_budget = min(char_budget, max(200, char_budget // len(code_nodes)))
+
+        snippets: list[dict] = []
+        total_chars = 0
+
+        for node in code_nodes:
+            if total_chars >= char_budget:
+                break
+
+            props = (
+                node.properties
+                if hasattr(node, "properties") and node.properties is not None
+                else {}
+            )
+
+            file_path = props.get("file_path")
+            if not file_path or not isinstance(file_path, str):
+                logger.debug("HFCI-017: skipping node %s — no file_path", node.id)
+                continue
+
+            # Type-validate line metadata
+            line_start: int | None = None
+            line_end: int | None = None
+            try:
+                raw_start = props.get("line_start")
+                raw_end = props.get("line_end")
+                if raw_start is not None and raw_end is not None:
+                    line_start = int(raw_start)
+                    line_end = int(raw_end)
+                    # Guard against inverted or non-positive ranges
+                    if line_start < 1 or line_end < line_start:
+                        line_start = None
+                        line_end = None
+            except (ValueError, TypeError):
+                line_start = None
+                line_end = None
+
+            # Line ranges only apply to Function/Class nodes
+            use_lines = (
+                node.entity_type in ("Function", "Class")
+                and line_start is not None
+                and line_end is not None
+            )
+
+            remaining = char_budget - total_chars
+            node_budget = min(per_node_budget, remaining)
+
+            try:
+                content, was_truncated = self._read_file_snippet(
+                    file_path,
+                    start_line=line_start if use_lines else None,
+                    end_line=line_end if use_lines else None,
+                    max_chars=node_budget,
+                )
+            except (OSError, ValueError) as exc:
+                logger.debug("HFCI-017: failed to read %s: %s", file_path, exc)
+                continue
+
+            snippet: dict = {
+                "node_id": node.id,
+                "file_path": file_path,
+                "lines": [line_start, line_end] if use_lines else None,
+                "content": content,
+                "truncated": was_truncated,
+            }
+            snippets.append(snippet)
+            total_chars += len(content)
+
+        return snippets, total_chars // 4
+
+    # ------------------------------------------------------------------
     # MCP protocol: tool listing
     # ------------------------------------------------------------------
 
@@ -2472,12 +2607,24 @@ class KogniDevServer:
         if not parts:
             parts.append(f"No specific context found for task: '{task}'")
 
-        return json.dumps({
+        result: dict[str, Any] = {
             "context": "\n\n".join(parts),
             "level": level,
             "nodes_matched": len(matches) if graph and matches else 0,
             "graph_loaded": graph is not None,
-        })
+        }
+
+        # ---- HFCI-017: embed source snippets at deep level -----------
+        if level == "deep" and graph is not None and matches:
+            snippets, tokens_used = self._embed_source_snippets(
+                matches, token_budget=2000,
+            )
+            if snippets:
+                result["embedded_snippets"] = snippets
+                result["snippet_budget_used"] = tokens_used
+                result["snippet_budget_total"] = 2000
+
+        return json.dumps(result)
 
     # ── 2. graq_inspect (FREE) ───────────────────────────────────────
 
