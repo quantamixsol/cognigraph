@@ -1113,13 +1113,16 @@ class Graqle:
             task_type=task_type,
         )
 
-        # Placeholder agent roster — S7 will populate from graph nodes
-        agent_roster: list[Any] = []
+        # S7: Populate agent roster from activated graph nodes
+        from graqle.core.agent_adapter import CogniNodeAgent
 
-        if not agent_roster:
-            raise NotImplementedError(
-                "ReasoningCoordinator agent_roster not populated until S7"
-            )
+        agent_roster: list[Any] = []
+        for nid in node_ids:
+            node = self.nodes.get(nid)
+            if node is not None:
+                nid_backend = self._get_backend_for_node(nid, task_type=task_type)
+                if nid_backend is not None:
+                    agent_roster.append(CogniNodeAgent(node=node, backend=nid_backend))
 
         async with ReasoningCoordinator(
             llm_backend=llm_backend,
