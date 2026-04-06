@@ -1133,6 +1133,25 @@ class Graqle:
             results = await coordinator.dispatch(decomposition)
             synthesis = await coordinator.synthesize(results)
 
+        # S7: Governance gate on coordinator synthesis output
+        # TS-BLOCK is unconditional — never overridable (CC7.4)
+        synthesis_text = getattr(synthesis, "merged_answer", "")
+        governance_cfg = getattr(self.config, "governance", None)
+        if governance_cfg is not None:
+            try:
+                from graqle.core.governance import GovernanceMiddleware
+                gw = GovernanceMiddleware(governance_cfg)
+                gate_result = gw.check(
+                    content=synthesis_text,
+                    action="reason",
+                    risk_level="LOW",
+                )
+                if gate_result.blocked:
+                    logger.warning("Coordinator synthesis blocked by governance: %s", gate_result.reason)
+                    raise RuntimeError(f"Governance blocked coordinator output: {gate_result.reason}")
+            except ImportError:
+                pass  # governance module not available
+
         return self._synthesis_to_reasoning_result(synthesis, query, node_ids)
 
     def _synthesis_to_reasoning_result(
