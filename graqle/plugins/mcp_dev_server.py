@@ -5051,6 +5051,33 @@ class KogniDevServer:
             )
         graph_context = "\n".join(graph_context_lines) if graph_context_lines else ""
 
+        # AL-10 fix: Extract type names from description, find matching Class/Function
+        # nodes in KG, and include their signatures in context even if not activated.
+        # This prevents LLM from hallucinating constructor APIs.
+        import re as _re_al10
+        _type_candidates = set(_re_al10.findall(r'\b[A-Z][a-zA-Z0-9]+(?:Config|Result|Budget|Memory|Level|Protocol|Agent)\b', description))
+        _al10_extra: list[str] = []
+        _activated_labels = {getattr(graph.nodes.get(nid), "label", "") for nid in activated_nids[:_MAX_CONTEXT_NODES]}
+        for _tname in _type_candidates:
+            if _tname in _activated_labels:
+                continue  # already in context
+            # Search KG for matching class node
+            for _knid, _knode in graph.nodes.items():
+                _klabel = getattr(_knode, "label", "")
+                _ketype = getattr(_knode, "entity_type", "")
+                if _klabel == _tname and _ketype in ("Class", "Function"):
+                    _kprops = getattr(_knode, "properties", None) or {}
+                    _ksig = (_kprops.get("signature", "") or "")[:_MAX_SIG_CHARS]
+                    _kdesc = (getattr(_knode, "description", "") or "")[:_MAX_DESC_CHARS]
+                    if _ksig:
+                        _al10_extra.append(f"- [{_ketype}] {_klabel}: {_kdesc}\n  Signature: {_ksig}")
+                    else:
+                        _al10_extra.append(f"- [{_ketype}] {_klabel}: {_kdesc}")
+                    break  # first match only
+        if _al10_extra:
+            graph_context += "\n\n## Referenced Types (AL-10)\n" + "\n".join(_al10_extra)
+            logger.info("AL-10: injected %d type signatures into LLM context", len(_al10_extra))
+
         # (c) Build single-shot prompt (system + user separation)
         # BLOCKER-2: inputs sanitized and capped to prevent prompt injection
         _MAX_DESC_INPUT = 4000
@@ -5120,7 +5147,7 @@ class KogniDevServer:
             # (e) Single LLM call — direct backend, no multi-agent pipeline
             gen_result = await backend.generate(
                 system_prompt + "\n\n" + user_prompt,
-                max_tokens=4096,
+                max_tokens=8192,  # AL-9 fix: 4096 truncated full-file rewrites
                 temperature=0.2,
             )
             # GenerateResult is str-compatible but may have .text attribute
@@ -5238,6 +5265,27 @@ class KogniDevServer:
                 )
         except Exception as e:
             logger.debug("format_validation skipped: %s", e)  # advisory — never block
+
+        # Step 4c (AL-1 fix): Apply diff to filesystem when dry_run=False
+        if not dry_run and file_path and diff_text:
+            try:
+                from graqle.core.file_writer import apply_diff
+                from pathlib import Path as _ApplyPath
+                _apply_result = apply_diff(
+                    _ApplyPath(file_path),
+                    diff_text,
+                    dry_run=False,
+                    skip_syntax_check=False,
+                )
+                if _apply_result.success:
+                    logger.info("graq_generate: wrote %s (AL-1 fix)", file_path)
+                else:
+                    logger.warning(
+                        "graq_generate: apply_diff failed for %s: %s",
+                        file_path, _apply_result.error,
+                    )
+            except Exception as _apply_exc:
+                logger.warning("graq_generate: file write failed for %s: %s", file_path, _apply_exc)
 
         # Step 5: OT-050 — sync written file into KG (mirrors _handle_edit per ADR-134)
         if not dry_run and file_path:
