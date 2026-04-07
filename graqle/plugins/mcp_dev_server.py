@@ -5350,6 +5350,14 @@ class KogniDevServer:
         except Exception as e:
             logger.debug("format_validation skipped: %s", e)  # advisory — never block
 
+        # Step 4c-pre: Self-validation (AUTONOMY-100-BLUEPRINT)
+        # Validate diff context lines match actual file before applying
+        if file_path and diff_text:
+            ctx_check = self._validate_diff_context(diff_text, file_path)
+            if not ctx_check["valid"]:
+                logger.info("Self-validation: %d context mismatches, re-anchoring", len(ctx_check["errors"]))
+                diff_text = self._reanchor_diff(diff_text, file_path)
+
         # Step 4c (AL-1 fix): Apply diff to filesystem when dry_run=False
         if not dry_run and file_path and diff_text:
             try:
