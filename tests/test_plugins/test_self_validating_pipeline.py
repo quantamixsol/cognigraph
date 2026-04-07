@@ -13,10 +13,12 @@ from graqle.plugins.mcp_dev_server import KogniDevServer
 
 
 @pytest.fixture
-def server():
+def server(tmp_path):
     srv = KogniDevServer.__new__(KogniDevServer)
     srv._graph = MagicMock()
     srv._graph.nodes = {}
+    srv._graph_file = str(tmp_path / "graqle.json")
+    srv._session_cache = {}
     return srv
 
 

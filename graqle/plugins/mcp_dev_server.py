@@ -4690,7 +4690,7 @@ class KogniDevServer:
     # ── Self-validating pipeline (AUTONOMY-100-BLUEPRINT) ────────────
     # GAP 1: AST validation, GAP 2: context re-anchoring, GAP 3: loop
 
-    _MAX_VALIDATION_ITERATIONS = 3
+    _MAX_VALIDATION_ITERATIONS = 3  # TODO: Wire retry loop in next PR (GAP 3 full implementation)
 
     def _extract_code_from_response(self, raw: str, mode: str) -> str:
         """Strip markdown fences and normalize LLM output."""
@@ -4716,6 +4716,15 @@ class KogniDevServer:
         """GAP 2: Verify diff context lines match actual file content."""
         import difflib
         from pathlib import Path
+        # RF-1 (CWE-22): containment check before reading any file
+        try:
+            file_path = self._resolve_file_path(file_path)
+        except (ValueError, OSError, AttributeError):
+            # New file or path outside graph root — nothing to validate
+            from pathlib import Path as _P
+            if not _P(file_path).exists():
+                return {"valid": True, "errors": []}
+            return {"valid": False, "errors": ["Path containment check failed"]}
         path = Path(file_path)
         if not path.exists():
             return {"valid": True, "errors": []}
@@ -4738,6 +4747,11 @@ class KogniDevServer:
         """GAP 2: Auto-fix drifted context lines via fuzzy matching."""
         import difflib
         from pathlib import Path
+        # RF-1 (CWE-22): containment check before reading any file
+        try:
+            file_path = self._resolve_file_path(file_path)
+        except (ValueError, OSError, AttributeError):
+            return diff_text
         path = Path(file_path)
         if not path.exists():
             return diff_text
@@ -4748,6 +4762,8 @@ class KogniDevServer:
                 ctx = line[1:]
                 matches = difflib.get_close_matches(ctx, actual_lines, n=1, cutoff=0.6)
                 if matches and matches[0] != ctx:
+                    # RF-2: Log every reanchored line for auditability
+                    logger.info("Reanchored: '%s' -> '%s'", ctx[:60], matches[0][:60])
                     fixed.append(" " + matches[0])
                     continue
             fixed.append(line)
