@@ -42,6 +42,16 @@ def _build_mock_graph() -> MagicMock:
     }
     graph.edges = {}
     graph.areason = AsyncMock(return_value=_MockReasoningResult())
+    # OT-054: _handle_generate uses direct backend call, not areason
+    _mock_backend = MagicMock()
+    _mock_backend.generate = AsyncMock(return_value=_MockReasoningResult().answer)
+    _mock_backend.name = "mock-backend"
+    _mock_backend.cost_per_1k_tokens = 0.003
+    graph._get_backend_for_node = MagicMock(return_value=_mock_backend)
+    graph._activate_subgraph = MagicMock(return_value=["SyncEngine"])
+    graph.config = MagicMock()
+    graph.config.activation = MagicMock()
+    graph.config.activation.strategy = "top_k"
     return graph
 
 
