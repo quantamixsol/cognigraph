@@ -61,6 +61,7 @@ except Exception:
 
 
 # C1: Use shared sensitive keys from redaction module (single source of truth)
+from graqle.cli.commands.auto import _PERMITTED_RUNNERS
 from graqle.core.redaction import DEFAULT_SENSITIVE_KEYS as _SENSITIVE_KEYS
 
 _LESSON_ENTITY_TYPES = frozenset({
@@ -1872,6 +1873,44 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "required": [],
         },
     },
+    {
+        "name": "graq_auto",
+        "description": (
+            "Run the autonomous loop: plan, generate code, write files, run tests, "
+            "diagnose failures, fix, and retry until GREEN or max retries. "
+            "Use for tasks like 'write tests for module X' or 'fix the CORS bug'. "
+            "Governed: max_retries cap, protected file gate, cost tracking."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task": {
+                    "type": "string",
+                    "description": "Task description — what to build, fix, or test",
+                },
+                "max_retries": {
+                    "type": "integer",
+                    "description": "Max fix-retry cycles (default: 3)",
+                    "default": 3,
+                },
+                "test_command": {
+                    "type": "string",
+                    "description": "Test command (default: python -m pytest -x -q)",
+                },
+                "test_paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Specific test paths to run",
+                },
+                "dry_run": {
+                    "type": "boolean",
+                    "description": "Plan + generate without writing files (default: true for safety)",
+                    "default": True,
+                },
+            },
+            "required": ["task"],
+        },
+    },
 ]
 
 # Backward-compat: register kogni_* aliases so old .mcp.json configs still work.
@@ -1907,6 +1946,8 @@ _WRITE_TOOLS = frozenset({
     "graq_test", "kogni_test",
     # Phase 10: graq_gov_gate writes GOVERNANCE_BYPASS KG nodes — blocked in read-only mode
     "graq_gov_gate", "kogni_gov_gate",
+    # v0.44.1: autonomous loop — writes files, runs tests
+    "graq_auto", "kogni_auto",
 })
 
 
@@ -2028,16 +2069,12 @@ class KogniDevServer:
                     logger.warning("Neo4j load failed (%s), falling back to JSON", neo4j_exc)
 
             # Auto-discover graph file (JSON/NetworkX fallback)
-            # OT-057: Resolve against GRAQLE_SERVE_CWD (set by mcp_serve/serve)
-            # to ensure discovery uses project root, not IDE spawn directory.
-            _serve_cwd = os.environ.get("GRAQLE_SERVE_CWD", "")
-            _discovery_root = Path(_serve_cwd) if _serve_cwd else Path.cwd()
             for candidate in [
                 "graqle.json",
                 "knowledge_graph.json",
                 "graph.json",
             ]:
-                p = _discovery_root / candidate
+                p = Path(candidate)
                 if p.exists():
                     self._graph = Graqle.from_json(str(p), config=self._config)
                     self._graph_file = str(p.resolve())
@@ -2748,6 +2785,9 @@ class KogniDevServer:
             # v0.38.0 Phase 7: performance profiler
             "graq_profile": self._handle_profile,
             "kogni_profile": self._handle_profile,
+            # v0.44.1: autonomous loop
+            "graq_auto": self._handle_auto,
+            "kogni_auto": self._handle_auto,
         }
 
         handler = handlers.get(name)
@@ -3409,12 +3449,9 @@ class KogniDevServer:
         if self._graph is None:
             self._load_graph()  # make sure dev server graph is loaded first
         cfg = MCPConfig(graph_path="graqle.json")
-        # FRAGILE(B7): sync with MCPServer.__init__ — S1 will replace with from_graph() classmethod
         proxy = MCPServer(cfg)
         proxy._graph = self._graph        # inject already-loaded graph — skips _ensure_graph
         proxy._embedder = getattr(self, "_embedder", None)
-        if proxy._graph is None:
-            logger.warning("B7 guard: proxy._graph is None after injection — predict may use stale state")
         result = await proxy._handle_predict(args)
         # MCPToolResult.content is already a JSON string — return it directly
         content = getattr(result, "content", None)
@@ -5265,33 +5302,6 @@ class KogniDevServer:
             )
         graph_context = "\n".join(graph_context_lines) if graph_context_lines else ""
 
-        # AL-10 fix: Extract type names from description, find matching Class/Function
-        # nodes in KG, and include their signatures in context even if not activated.
-        # This prevents LLM from hallucinating constructor APIs.
-        import re as _re_al10
-        _type_candidates = set(_re_al10.findall(r'\b[A-Z][a-zA-Z0-9]+(?:Config|Result|Budget|Memory|Level|Protocol|Agent)\b', description))
-        _al10_extra: list[str] = []
-        _activated_labels = {getattr(graph.nodes.get(nid), "label", "") for nid in activated_nids[:_MAX_CONTEXT_NODES]}
-        for _tname in _type_candidates:
-            if _tname in _activated_labels:
-                continue  # already in context
-            # Search KG for matching class node
-            for _knid, _knode in graph.nodes.items():
-                _klabel = getattr(_knode, "label", "")
-                _ketype = getattr(_knode, "entity_type", "")
-                if _klabel == _tname and _ketype in ("Class", "Function"):
-                    _kprops = getattr(_knode, "properties", None) or {}
-                    _ksig = (_kprops.get("signature", "") or "")[:_MAX_SIG_CHARS]
-                    _kdesc = (getattr(_knode, "description", "") or "")[:_MAX_DESC_CHARS]
-                    if _ksig:
-                        _al10_extra.append(f"- [{_ketype}] {_klabel}: {_kdesc}\n  Signature: {_ksig}")
-                    else:
-                        _al10_extra.append(f"- [{_ketype}] {_klabel}: {_kdesc}")
-                    break  # first match only
-        if _al10_extra:
-            graph_context += "\n\n## Referenced Types (AL-10)\n" + "\n".join(_al10_extra)
-            logger.info("AL-10: injected %d type signatures into LLM context", len(_al10_extra))
-
         # (c) Build single-shot prompt (system + user separation)
         # BLOCKER-2: inputs sanitized and capped to prevent prompt injection
         _MAX_DESC_INPUT = 4000
@@ -6942,8 +6952,7 @@ class KogniDevServer:
         if reason_result is not None:
             # Estimate token usage from cost (rough: $3/1M tokens for claude-sonnet)
             cost_usd = getattr(reason_result, "cost_usd", 0.0)
-            _COST_PER_TOKEN_USD = 0.000003  # Approximate: $3/1M tokens (Claude Sonnet)
-            tokens_used = int(cost_usd / _COST_PER_TOKEN_USD) if cost_usd is not None and cost_usd > 0 else 0
+            tokens_used = int(cost_usd / 0.000003) if cost_usd > 0 else 0
             confidence = float(getattr(reason_result, "confidence", 0.0))
             model_used = str(getattr(reason_result, "model", ""))
             if not model_used:
@@ -6991,6 +7000,119 @@ class KogniDevServer:
         if reason_error:
             result["reason_error"] = reason_error
         return json.dumps(result)
+
+    # ── v0.44.1: graq_auto — autonomous loop ────────────────────────
+
+    async def _handle_auto(self, args: dict[str, Any]) -> str:
+        """Run the autonomous loop: plan -> generate -> test -> fix -> retry.
+
+        Args:
+            task (str): Task description — what to build, fix, or test (required).
+            max_retries (int): Max fix-retry cycles, capped at 10 (default: 3).
+            test_command (str): Test command (default: python -m pytest -x -q).
+            test_paths (list[str]): Specific test paths to run.
+            dry_run (bool): Plan + generate without writing files (default: True).
+
+        Returns:
+            JSON string with ExecutorResult fields (success, state, attempts, etc.)
+        """
+        import re
+        import shlex
+
+        from graqle.workflow.autonomous_executor import AutonomousExecutor, ExecutorConfig
+        from graqle.workflow.mcp_agent import McpActionAgent
+
+        _err = lambda msg: json.dumps({"error": msg, "tool": "graq_auto"})
+
+        # Validate and sanitize task
+        task = args.get("task", "").strip()
+        # Strip control characters (prevent injection)
+        task = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", task)
+        if not task:
+            return _err("graq_auto requires 'task'")
+
+        # Validate max_retries
+        try:
+            max_retries = min(int(args.get("max_retries", 3)), 10)
+            if max_retries < 0:
+                max_retries = 0
+        except (ValueError, TypeError):
+            return _err("max_retries must be an integer")
+
+        # Validate test_command — use shlex for safe splitting
+        raw_test_cmd = args.get("test_command", "python -m pytest -x -q")
+        if not isinstance(raw_test_cmd, str):
+            return _err("test_command must be a string")
+        try:
+            test_cmd_parts = shlex.split(raw_test_cmd)
+        except ValueError as exc:
+            return _err(f"Invalid test_command: {exc}")
+
+        # RO-2: Runner allowlist — parity with CLI (research team V4 validated)
+        if not test_cmd_parts:
+            return _err("test_command must not be empty")
+        runner = test_cmd_parts[0]
+        if "/" in runner or "\\" in runner:
+            return _err("test_command runner must not contain path separators")
+        if runner not in _PERMITTED_RUNNERS:
+            return _err(f"Runner '{runner}' not permitted. Allowed: {sorted(_PERMITTED_RUNNERS)}")
+
+        # Validate test_paths — must be a list of strings
+        test_paths = args.get("test_paths", [])
+        if not isinstance(test_paths, list):
+            return _err("test_paths must be a list of strings")
+        test_paths = [str(p) for p in test_paths]
+
+        # Derive working directory from graph file location
+        graph_path = self._graph_file
+        if graph_path:
+            working_dir = Path(graph_path).parent.resolve()
+        else:
+            logger.warning("No graph file loaded — using cwd as working directory")
+            working_dir = Path.cwd().resolve()
+
+        # dry_run defaults to True for safety (convention: write tools default safe)
+        dry_run = bool(args.get("dry_run", True))
+
+        config = ExecutorConfig(
+            max_retries=max_retries,
+            test_command=test_cmd_parts,
+            test_paths=test_paths,
+            working_dir=str(working_dir),
+            dry_run=dry_run,
+        )
+
+        agent = McpActionAgent(self, working_dir)
+        executor = AutonomousExecutor(agent, config)
+
+        # V5 defense-in-depth: governance gate before loop entry.
+        # graq_generate fires governance per-iteration internally (V5=YES);
+        # this pre-check catches policy blocks early. gate.blocked is authoritative.
+        if self._gov is not None:
+            try:
+                gate = self._gov.check(
+                    action="autonomous_loop",
+                    risk_level="HIGH",
+                )
+                if gate.blocked:
+                    return _err(f"Governance gate blocked autonomous loop: {gate.reason}")
+            except (ConnectionError, TimeoutError, OSError):
+                logger.warning("Governance pre-check unavailable, proceeding (per-iteration gates active)", exc_info=True)
+
+        try:
+            result = await asyncio.wait_for(
+                executor.execute(task),
+                timeout=config.timeout_seconds * (max_retries + 1),
+            )
+        except asyncio.TimeoutError:
+            return _err(f"Autonomous loop timed out after {config.timeout_seconds * (max_retries + 1)}s")
+        except asyncio.CancelledError:
+            raise  # propagate cooperative cancellation
+        except Exception as exc:
+            logger.exception("graq_auto executor failed")
+            return _err(f"Executor error: {exc}")
+
+        return json.dumps(result.to_dict(), default=str)
 
     def _read_active_branch(self) -> str | None:
         """Read .gcc/registry.md to find the active branch, if present."""
@@ -7041,7 +7163,7 @@ class KogniDevServer:
             _proj = _detect_project_name(_Path(self._graph_file).parent)
             schedule_push(self._graph_file, _proj)
         except Exception as _push_exc:
-            logger.warning("KG background push failed: %s", _push_exc)
+            logger.debug("KG background push skipped: %s", _push_exc)
 
     # ==================================================================
     # MCP JSON-RPC stdio transport
