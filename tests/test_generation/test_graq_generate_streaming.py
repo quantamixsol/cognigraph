@@ -24,6 +24,10 @@ def _build_mock_server():
 
     # Mock graph that supports both areason and areason_stream
     mock_graph = MagicMock()
+    mock_graph.nodes = {
+        "node_a": MagicMock(label="node_a", entity_type="Class", description="Mock"),
+    }
+    mock_graph.edges = {}
 
     # areason returns a structured ReasoningResult-like object
     mock_result = MagicMock()
@@ -35,6 +39,17 @@ def _build_mock_server():
     mock_result.backend_status = "ok"
     mock_result.backend_error = ""
     mock_graph.areason = AsyncMock(return_value=mock_result)
+
+    # OT-054: _handle_generate uses direct backend call
+    _mock_backend = MagicMock()
+    _mock_backend.generate = AsyncMock(return_value=mock_result.answer)
+    _mock_backend.name = "mock-backend"
+    _mock_backend.cost_per_1k_tokens = 0.003
+    mock_graph._get_backend_for_node = MagicMock(return_value=_mock_backend)
+    mock_graph._activate_subgraph = MagicMock(return_value=["node_a"])
+    mock_graph.config = MagicMock()
+    mock_graph.config.activation = MagicMock()
+    mock_graph.config.activation.strategy = "top_k"
 
     # areason_stream yields chunk objects with .content attribute
     async def _fake_stream(*args, **kwargs):
@@ -74,39 +89,37 @@ async def test_stream_false_returns_no_chunks(server):
 
 
 @pytest.mark.asyncio
-async def test_stream_true_populates_chunks(server):
-    """stream=True → metadata.chunks contains the streamed text pieces."""
+async def test_stream_true_ignored_in_ot054_mode(server):
+    """OT-054: stream=True is ignored — single-shot backend call, chunks empty."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
                new=AsyncMock(return_value='{"overall_risk":"low"}')), \
-         patch("graqle.cloud.credentials.load_credentials",
-               side_effect=Exception("no creds")):
+         patch("graqle.cloud.credentials.load_credentials") as mock_creds:
+        mock_creds.return_value = MagicMock(plan="team")
         raw = await server._handle_generate({"description": "add a comment", "stream": True})
 
     data = json.loads(raw)
     if "error" not in data:
-        chunks = data["metadata"]["chunks"]
-        assert isinstance(chunks, list)
-        assert len(chunks) >= 1
-        assert data["metadata"]["stream"] is True
+        # OT-054: stream param is recorded as-is, but chunks are empty (single-shot mode)
+        assert data["metadata"]["chunks"] == []
 
 
 @pytest.mark.asyncio
-async def test_stream_true_chunks_join_to_non_empty(server):
-    """stream=True → joining chunks produces non-empty text."""
+async def test_stream_true_still_produces_answer(server):
+    """OT-054: stream=True still produces a valid answer via single-shot call."""
     with patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_preflight",
                new=AsyncMock(return_value='{"risk_level":"low","warnings":[]}')), \
          patch("graqle.plugins.mcp_dev_server.KogniDevServer._handle_safety_check",
                new=AsyncMock(return_value='{"overall_risk":"low"}')), \
-         patch("graqle.cloud.credentials.load_credentials",
-               side_effect=Exception("no creds")):
+         patch("graqle.cloud.credentials.load_credentials") as mock_creds:
+        mock_creds.return_value = MagicMock(plan="team")
         raw = await server._handle_generate({"description": "add a comment", "stream": True})
 
     data = json.loads(raw)
     if "error" not in data:
-        chunks = data["metadata"]["chunks"]
-        assert "".join(chunks).strip() != ""
+        # Even with stream=True, OT-054 produces answer via single-shot
+        assert "patches" in data or "answer" in data
 
 
 @pytest.mark.asyncio
