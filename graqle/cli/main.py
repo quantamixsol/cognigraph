@@ -180,6 +180,11 @@ def mcp_serve(
     from graqle.__version__ import __version__
     from graqle.plugins.mcp_dev_server import KogniDevServer
 
+    # Anchor CWD so _graph_file resolves against project root, not IDE spawn dir.
+    # serve() already does this via GRAQLE_SERVE_CWD — mcp_serve must match.
+    # Use setdefault to preserve user/container overrides.
+    os.environ.setdefault("GRAQLE_SERVE_CWD", str(pathlib.Path.cwd()))
+
     # Write PID + version so self-update and other tools can detect running server
     graqle_dir = Path(".graqle")
     graqle_dir.mkdir(exist_ok=True)
