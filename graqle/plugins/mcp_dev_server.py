@@ -5147,7 +5147,7 @@ class KogniDevServer:
             # (e) Single LLM call — direct backend, no multi-agent pipeline
             gen_result = await backend.generate(
                 system_prompt + "\n\n" + user_prompt,
-                max_tokens=4096,
+                max_tokens=8192,  # AL-9 fix: 4096 truncated full-file rewrites
                 temperature=0.2,
             )
             # GenerateResult is str-compatible but may have .text attribute
