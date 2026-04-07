@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -244,6 +245,19 @@ class AutonomousExecutor:
             Final result with success/failure status, files modified, etc.
         """
         self._memory.clear()
+
+        # A-002: verify git is available before entering the loop
+        if not shutil.which("git"):
+            return ExecutorResult(
+                success=False,
+                state=LoopState.FAILED.value,
+                attempts=0,
+                error=(
+                    "git not found in PATH. The autonomous executor requires git "
+                    "for stash-based rollback. Install git and ensure it's in PATH."
+                ),
+            )
+
         ctx = self._loop.initial_context(task)
 
         logger.info(
