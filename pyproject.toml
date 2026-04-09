@@ -153,7 +153,6 @@ exclude = ["graqle/benchmarks/data/*"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "examples" = "graqle/examples"
-"graqle/data/claude_gate" = "graqle/data/claude_gate"
 
 [tool.ruff]
 target-version = "py310"
