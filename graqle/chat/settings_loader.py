@@ -37,8 +37,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import jsonschema
-from jsonschema import Draft202012Validator
+try:
+    import jsonschema
+    from jsonschema import Draft202012Validator
+    _JSONSCHEMA_AVAILABLE = True
+except ImportError:  # pragma: no cover — defensive fallback
+    jsonschema = None  # type: ignore[assignment]
+    Draft202012Validator = None  # type: ignore[assignment,misc]
+    _JSONSCHEMA_AVAILABLE = False
 
 __all__ = [
     "ChatSettings",
