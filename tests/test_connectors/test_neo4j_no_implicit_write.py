@@ -1,6 +1,6 @@
 """T01 (v0.51.6) — Graqle.from_neo4j must not write to disk by default.
 
-Acceptance criteria for Graqle.from_neo4j read-only-by-default:
+Acceptance per .gcc/branches/hotfix-v0.51.6/EXECUTION-PATH.md §T01:
 - Default call creates ZERO files in cwd
 - No UserWarning emitted on default path
 - mirror_to=<path> with file present and mirror_overwrite=False raises FileExistsError

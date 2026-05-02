@@ -1,4 +1,4 @@
-"""ITEM 04 — Fast-path intent classifier + path containment.
+"""ITEM 04 — ADR-206 — Fast-path intent classifier + path containment.
 
 Acceptance:
 1. classify_intent() returns a FastPathIntent on a clean file-create prompt.
@@ -71,7 +71,7 @@ def test_adr206_fast_path(record, tmp_workspace):
 
     record(
         item_id="04-adr206",
-        name="Fast-path intent classifier + path containment",
+        name="ADR-206 — Fast-path intent classifier + path containment",
         status="PASS",
         assertions=assertions,
         duration_ms=int((time.monotonic() - t0) * 1000),

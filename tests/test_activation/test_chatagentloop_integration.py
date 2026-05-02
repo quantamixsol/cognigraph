@@ -1,11 +1,11 @@
-"""ChatAgentLoop.run_turn integration tests.
+"""ADR-205 — ChatAgentLoop.run_turn integration tests.
 
 Covers:
-  - Flag default ON (regression guard per flag-default regression guard)
+  - Flag default ON (regression guard per ADR-205 Decision 4)
   - Env var override forces OFF
   - ENFORCED + blocked → turn transitions to FAILED
   - ADVISORY + blocked → turn continues + upgrade chip emitted
-  - Flag OFF → zero activation work (parity with pre-activation behavior)
+  - Flag OFF → zero activation work (parity with pre-ADR-205 behavior)
 """
 from __future__ import annotations
 
@@ -32,10 +32,10 @@ from graqle.activation.providers import (
 )
 
 
-# ── Flag default regression guard (from flag-default regression guard) ──────────────
+# ── Flag default regression guard (from ADR-205 Decision 4) ──────────────
 
 def test_pre_reason_activation_flag_defaults_on():
-    """Flag-default regression guard: flag MUST default ON.
+    """ADR-205 Decision 4: flag MUST default ON.
 
     This test is the codified guard for the v0.4.15 gate-never-turned-on
     incident. If a PR ever flips the default to OFF, this test fails
@@ -46,10 +46,10 @@ def test_pre_reason_activation_flag_defaults_on():
     sig = inspect.signature(ChatAgentLoop.__init__)
     default = sig.parameters["pre_reason_activation_enabled"].default
     assert default is True, (
-        "Flag-default regression violated: pre_reason_activation_enabled "
+        "ADR-205 Decision 4 violated: pre_reason_activation_enabled "
         "must default to True. The v0.4.15 incident (gate shipped OFF "
         "and stayed dormant for weeks) required this default to be ON. "
-        "If you have a legitimate reason to flip this, update the test "
+        "If you have a legitimate reason to flip this, update ADR-205 "
         "and this test with the rationale."
     )
 

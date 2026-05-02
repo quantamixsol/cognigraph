@@ -1,4 +1,4 @@
-"""ITEM 05 — Zero-Violation Governance Discipline.
+"""ITEM 05 — ADR-207 — Zero-Violation Governance Discipline.
 
 Acceptance:
 1. Release-gate engine module exists and exposes expected public surface.
@@ -78,7 +78,7 @@ def test_adr207_zero_violation_surfaces(record, monkeypatch):
 
     record(
         item_id="05-adr207",
-        name="Zero-Violation Governance Discipline (public surfaces)",
+        name="ADR-207 — Zero-Violation Governance Discipline (public surfaces)",
         status="PASS",
         assertions=assertions,
         duration_ms=int((time.monotonic() - t0) * 1000),

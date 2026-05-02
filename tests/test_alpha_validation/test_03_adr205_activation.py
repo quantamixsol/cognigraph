@@ -1,4 +1,4 @@
-"""ITEM 03 — Pre-Reason Activation Layer.
+"""ITEM 03 — ADR-205 — Pre-Reason Activation Layer.
 
 Acceptance:
 1. ActivationLayer composes 3 providers (chunk scorer, safety gate, subgraph).
@@ -79,7 +79,7 @@ async def test_adr205_activation_layer(record):
 
     record(
         item_id="03-adr205",
-        name="Pre-Reason Activation Layer",
+        name="ADR-205 — Pre-Reason Activation Layer",
         status="PASS",
         assertions=assertions,
         duration_ms=int((time.monotonic() - t0) * 1000),
