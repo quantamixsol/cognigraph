@@ -1,3 +1,4 @@
+"""ADR-205 — ActivationLayer orchestration tests (fakes only, no LLM)."""
 from __future__ import annotations
 
 import asyncio

@@ -1,4 +1,4 @@
-"""SDK-B3 — Fast-path tests (21 cases, injection-based)."""
+"""SDK-B3 + ADR-206 — Fast-path tests (21 cases, injection-based)."""
 from __future__ import annotations
 
 import asyncio
@@ -27,21 +27,21 @@ from graqle.chat.streaming import ChatEventType
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# flag defaults (CI guard)
+# ADR-206 flag defaults (CI guard)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def test_fast_path_flag_defaults_on():
-    """fast_path_enabled MUST default True at construction.
+    """ADR-206 — fast_path_enabled MUST default True at construction.
 
     Guards against the same flag-forgotten failure mode that motivated
-    the v0.4.15 incident. If a PR flips this to False, CI fails
+    ADR-205 (v0.4.15 incident). If a PR flips this to False, CI fails
     loudly with a message explaining why.
     """
     sig = inspect.signature(ChatAgentLoop.__init__)
     default = sig.parameters["fast_path_enabled"].default
     assert default is True, (
-        "fast_path_enabled regression violated: fast_path_enabled must default to True. "
-        "If you have a legitimate reason to flip this, update the test "
+        "ADR-206 violated: fast_path_enabled must default to True. "
+        "If you have a legitimate reason to flip this, update ADR-206 "
         "and this test with the rationale."
     )
 

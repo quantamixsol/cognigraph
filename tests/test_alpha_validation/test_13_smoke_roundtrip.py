@@ -4,6 +4,7 @@ This item is the integration proof. It exercises:
 
 1. SDK-B1 — graq init scaffolds GRAQ.md for a python project
 2. CG-17 — graq_memory op=write lands a memory file
+3. ADR-206 — is_fast_path_candidate approves a safe .md create
 4. CG-11 — graq_bash "git status" is routed to graq_git_status
 5. G3 — graq_vsce_check validates an invalid semver (no network needed)
 
@@ -62,6 +63,7 @@ async def test_smoke_full_roundtrip(server_with_plan, record, tmp_path, monkeypa
     assertions += 1
     evidence["memory_write_ok"] = True
 
+    # === 3. ADR-206 — fast-path approves safe .md create ===
     from graqle.chat.fast_path import is_fast_path_candidate
     candidate = is_fast_path_candidate("create a file demo.md", ws)
     assert candidate is not None

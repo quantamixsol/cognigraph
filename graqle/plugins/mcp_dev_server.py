@@ -531,6 +531,11 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                     "type": "string",
                     "description": "[outcome mode] Optional new lesson learned",
                 },
+                "create_lesson": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "[outcome mode] When false: record metadata and edge weights only — no lesson node and no LEARNED_FROM edges written. Default true.",
+                },
                 "entity_id": {
                     "type": "string",
                     "description": "[entity mode] Unique entity ID (e.g. 'the regulatory product', 'Philips')",
@@ -1823,6 +1828,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 "file_path": {"type": "string", "description": "Path to write"},
                 "content": {"type": "string", "description": "Full file content to write"},
                 "dry_run": {"type": "boolean", "description": "Preview only, do not write (default true)", "default": True},
+                "force_overwrite": {"type": "boolean", "description": "Bypass CG-03 edit-gate for full-file rewrites. Runs governance log entry. Use when graq_edit is not suitable (e.g. full-file generation). Default false.", "default": False},
             },
             "required": ["file_path", "content"],
         },
@@ -2485,6 +2491,43 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "vs. external-process contention. Read-only; no I/O."
         ),
         "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "graq_graph_health",
+        "description": (
+            "GraQle Graph Health Check & Rebuild. Diagnoses the knowledge graph "
+            "backend (local JSON/NetworkX or Neo4j), reports node/edge counts, "
+            "activation strategy (chunk-level semantic vs keyword fallback), "
+            "NPZ cache status, zero-vector count, and estimated reasoning latency. "
+            "Optionally rebuilds the chunk_embeddings.npz incrementally (only "
+            "embeds NEW chunks — never regresses existing vectors) and injects "
+            "ADR→code REFERENCES and ADR↔ADR RELATED_TO links. "
+            "Works for any user's project: auto-detects config from graqle.yaml."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "type": "string",
+                    "enum": ["check", "rebuild", "links", "full"],
+                    "default": "check",
+                    "description": (
+                        "check = health report only (no writes); "
+                        "rebuild = health + incremental NPZ rebuild; "
+                        "links = health + ADR link injection; "
+                        "full = health + rebuild + links"
+                    ),
+                },
+                "graph_path": {
+                    "type": "string",
+                    "description": "Override path to graqle.json (auto-detected if omitted)",
+                },
+                "config_path": {
+                    "type": "string",
+                    "description": "Override path to graqle.yaml (searches upward if omitted)",
+                },
+            },
+        },
     },
     # T03 (v0.51.6) — Chat surface (ChatAgentLoop v4) handlers.
     # Unblocks VS Code extension v0.4.9 pivot; handlers live in
@@ -4131,6 +4174,8 @@ class KogniDevServer:
                 "graq_lifecycle", "kogni_lifecycle", "graq_inspect", "kogni_inspect",
                 "graq_gate_status", "kogni_gate_status", "graq_gate_install", "kogni_gate_install",
                 "graq_kg_diag", "kogni_kg_diag",
+                "graq_graph_health", "kogni_graph_health",
+                "graq_reload", "kogni_reload",
             }
             if getattr(_governance, "session_gate_enabled", False):
                 # the VS Code extension bypass — skip if initialize handler set _cg01_bypass
@@ -4153,10 +4198,11 @@ class KogniDevServer:
                 "graq_plan", "kogni_plan", "graq_learn", "kogni_learn",
                 "graq_lifecycle", "kogni_lifecycle",
                 "graq_gate_status", "kogni_gate_status", "graq_gate_install", "kogni_gate_install",
+                "graq_reload", "kogni_reload",   # BUG-003: reload is read-only, no destructive side effects
             }
             if getattr(_governance, "plan_mandatory", False):
                 # the VS Code extension bypass — skip if initialize handler set _cg02_bypass
-                if name in _WRITE_TOOLS and name not in _CG02_EXEMPT and not getattr(self, "_plan_active", False) and not getattr(self, "_cg02_bypass", False):
+                if name in _WRITE_TOOLS and name not in _CG02_EXEMPT and not getattr(self, "_plan_active", False) and not getattr(self, "_cg02_bypass", False) and not (name in {"graq_bash", "kogni_bash"} and arguments and arguments.get("dry_run") is True):
                     logger.warning("CG-02 BLOCKED: write tool '%s' without prior graq_plan", name)
                     err = json.dumps({
                         "error": "CG-02_PLAN_GATE",
@@ -4168,6 +4214,15 @@ class KogniDevServer:
                         "remediation": "graq_plan",
                     })
                     return self._inject_tool_hints(name, err)
+
+            # BUG-001: normalize 'path' alias → 'file_path' for graq_write/kogni_write
+            # Must happen before CG-03 reads arguments.get("file_path") below.
+            # Drop 'path' key in all cases so downstream only ever sees 'file_path'.
+            if name in ("graq_write", "kogni_write") and "path" in arguments:
+                _b001_path = arguments["path"]
+                arguments = {k: v for k, v in arguments.items() if k != "path"}
+                if "file_path" not in arguments:
+                    arguments = {**arguments, "file_path": _b001_path}
 
             # CG-03: Edit enforcement — BLOCK graq_write for files that should use graq_edit
             # When enabled, graq_write is blocked for .py/.ts/.js/.tsx files (code files).
@@ -4191,7 +4246,10 @@ class KogniDevServer:
                         for prefix in (".tmp_", "scripts/", "tests/")
                     )
                     _is_code = any(_target.endswith(ext) for ext in _CODE_EXTS)
-                    if _is_code and not _is_new_file and not _in_scratch:
+                    # BUG-002: force_overwrite bypasses CG-03 for full-file rewrites.
+                    # Governance log entry is created in _handle_write.
+                    _force_overwrite = bool(arguments.get("force_overwrite", False))
+                    if _is_code and not _is_new_file and not _in_scratch and not _force_overwrite:
                         logger.warning("CG-03 BLOCKED: graq_write on code file '%s' — use graq_edit", _target)
                         err = json.dumps({
                             "error": "CG-03_EDIT_GATE",
@@ -4199,7 +4257,8 @@ class KogniDevServer:
                             "file_path": _target,
                             "message": (
                                 f"graq_write blocked for code file '{_target}'. "
-                                "Use graq_edit instead — it runs preflight, governance, and diff application."
+                                "Use graq_edit instead — it runs preflight, governance, and diff application. "
+                                "Pass force_overwrite=true to bypass CG-03 for full-file rewrites."
                             ),
                             "remediation": "graq_edit",
                         })
@@ -4469,6 +4528,9 @@ class KogniDevServer:
             # NS-08/NS-09 (Wave 3 / 0.52.0): session compact + resume kogni aliases
             "kogni_session_compact": self._handle_session_compact,
             "kogni_session_resume": self._handle_session_resume,
+            # Graph Health Check & Rebuild (graqle.tools.graph_health)
+            "graq_graph_health": self._handle_graph_health,
+            "kogni_graph_health": self._handle_graph_health,
         }
 
         handler = handlers.get(name)
@@ -4615,10 +4677,28 @@ class KogniDevServer:
         node_id = args.get("node_id")
         show_stats = args.get("stats", False)
         file_audit = args.get("file_audit", False)
+        show_orphans = args.get("orphans", False)
 
         graph = self._require_graph()
         if graph is None:
             return self._build_first_run_response()
+
+        # BUG-006: Orphan audit — KNOWLEDGE/LESSON nodes with degree==0
+        if show_orphans:
+            orphans = []
+            for nid, node in graph.nodes.items():
+                if getattr(node, "entity_type", "") in ("KNOWLEDGE", "LESSON") and getattr(node, "degree", 0) == 0:
+                    orphans.append({
+                        "id": nid,
+                        "label": getattr(node, "label", nid),
+                        "description": (getattr(node, "description", "") or "")[:200],
+                    })
+            orphans.sort(key=lambda x: x["label"])
+            return json.dumps({
+                "orphans": orphans,
+                "orphan_count": len(orphans),
+                "hint": "Run graq_learn to reattach or graq_learn(mode='outcome') to replace orphan nodes.",
+            })
 
         # S-002: File audit — verify KG nodes reference files that exist on disk
         if file_audit:
@@ -4738,6 +4818,70 @@ class KogniDevServer:
             "tool_hints": [],
         })
 
+    async def _handle_graph_health(self, args: dict[str, Any]) -> str:
+        """GraQle Graph Health Check & Rebuild MCP handler.
+
+        Delegates to graqle.tools.graph_health.GraphHealthEngine.
+        Works for any user's project — auto-detects backend and config.
+        """
+        from pathlib import Path as _Path
+        from graqle.tools.graph_health import GraphHealthEngine
+
+        mode = str(args.get("mode", "check")).lower()
+        graph_path = _Path(args["graph_path"]) if args.get("graph_path") else None
+        config_path = _Path(args["config_path"]) if args.get("config_path") else None
+
+        do_rebuild = mode in ("rebuild", "full")
+        do_links = mode in ("links", "full")
+
+        try:
+            engine = GraphHealthEngine(
+                graph_path=graph_path,
+                config_path=config_path,
+            )
+            report = engine.run(
+                rebuild=do_rebuild,
+                inject_links=do_links,
+                dry_run=False,
+            )
+            return json.dumps({
+                "tool": "graq_graph_health",
+                "mode": mode,
+                "report": report.to_dict(),
+                "tool_hints": [
+                    {
+                        "tool": "graq_graph_health",
+                        "reason": "Run with mode='rebuild' to embed new chunks",
+                    }
+                ] if report.cache_status.get("new_chunks_available", 0) > 0 else [],
+            })
+        except Exception as exc:
+            logger.exception("graq_graph_health failed")
+            return json.dumps({
+                "tool": "graq_graph_health",
+                "error": str(exc),
+                "tool_hints": [],
+            })
+
+    def _project_root_from_graph_file(self, graph_file: "str | None") -> "Path":
+        """Resolve project root from _graph_file, safely handling non-filesystem URIs.
+
+        When Neo4j/Neptune is active, _graph_file is set to a URI like
+        'neo4j://bolt://localhost:7687'. Path() on that string produces an
+        invalid Windows path (WinError 123). Detect any URI scheme and fall
+        back to GRAQLE_SERVE_CWD env var (set by mcp_serve()) or cwd().
+        """
+        import os as _os
+        if graph_file and isinstance(graph_file, (str, Path)) and "://" not in str(graph_file):
+            try:
+                return Path(str(graph_file)).resolve().parent
+            except OSError:
+                pass
+        serve_cwd = _os.environ.get("GRAQLE_SERVE_CWD", "")
+        if serve_cwd:
+            return Path(serve_cwd).resolve()
+        return Path.cwd().resolve()
+
     def _get_chat_ctx(self) -> "Any":
         """T03 (v0.51.6): lazy ChatHandlerContext, one per server process."""
         ctx = getattr(self, "_chat_ctx", None)
@@ -4773,8 +4917,61 @@ class KogniDevServer:
                 "message": "message is required (string)",
             })
 
-        from graqle.chat.mcp_handlers import handle_chat_turn
+        from graqle.chat.mcp_handlers import handle_chat_turn, _GraqleBackedDriver
         ctx = self._get_chat_ctx()
+
+        # Build a real LLM driver on first turn (loop not yet created).
+        # Subsequent turns reuse the cached loop via get_or_create_loop.
+        _llm_driver = None
+        if ctx.session_id not in ctx.loops:
+            try:
+                _cfg = self._config
+                if _cfg is None:
+                    from graqle.config.settings import GraqleConfig
+                    from pathlib import Path as _Path
+                    _cfg_path = _Path(self.config_path) if hasattr(self, "config_path") else None
+                    if _cfg_path is not None and _cfg_path.exists():
+                        _cfg = GraqleConfig.from_yaml(str(_cfg_path))
+                    else:
+                        _cfg = GraqleConfig.default()
+                # Build backend directly to avoid CLI console.print() polluting stdout/JSON-RPC.
+                import os as _os_chat
+                _bname = getattr(getattr(_cfg, "model", None), "backend", "anthropic")
+                _mname = getattr(getattr(_cfg, "model", None), "model", "claude-sonnet-4-6")
+                _akey = getattr(getattr(_cfg, "model", None), "api_key", None)
+                if isinstance(_akey, str) and _akey.startswith("${") and _akey.endswith("}"):
+                    _akey = _os_chat.environ.get(_akey[2:-1])
+                _backend = None
+                if _bname == "anthropic":
+                    if not _akey:
+                        _akey = _os_chat.environ.get("ANTHROPIC_API_KEY")
+                    if _akey:
+                        from graqle.backends.api import AnthropicBackend
+                        _backend = AnthropicBackend(model=_mname, api_key=_akey)
+                elif _bname == "bedrock":
+                    _region = (
+                        getattr(getattr(_cfg, "model", None), "region", None)
+                        or _os_chat.environ.get("AWS_DEFAULT_REGION")
+                        or _os_chat.environ.get("AWS_REGION")
+                        or "us-east-1"
+                    )
+                    from graqle.backends.api import BedrockBackend
+                    _backend = BedrockBackend(model=_mname, region=_region)
+                elif _bname == "openai":
+                    if not _akey:
+                        _akey = _os_chat.environ.get("OPENAI_API_KEY")
+                    if _akey:
+                        from graqle.backends.api import OpenAIBackend
+                        _backend = OpenAIBackend(model=_mname, api_key=_akey)
+                if _backend is not None:
+                    _llm_driver = _GraqleBackedDriver(_backend, self._graph)
+                else:
+                    logger.warning("chat: no backend configured, responses will be empty")
+            except Exception as _drv_exc:
+                logger.warning(
+                    "chat: failed to build real LLM driver, using noop: %s", _drv_exc
+                )
+
         # Only thread permission_tier/intent_hint when explicitly provided
         # so the handler's sentinel-based omitted-detection works correctly.
         _extra: dict[str, Any] = {}
@@ -4782,6 +4979,8 @@ class KogniDevServer:
             _extra["permission_tier"] = args["permission_tier"]
         if "intent_hint" in args:
             _extra["intent_hint"] = args["intent_hint"]
+        if _llm_driver is not None:
+            _extra["llm_driver"] = _llm_driver
 
         result = await handle_chat_turn(
             ctx,
@@ -4982,6 +5181,21 @@ class KogniDevServer:
                 "backend_status": result.backend_status,
                 "backend_error": result.backend_error,
             }
+            # BUG-006: Orphan seed detection — additive field, only present when orphan detected.
+            import os as _os_bug006
+            if (
+                result.node_count == 1
+                and len(result.active_nodes) == 1
+                and _os_bug006.getenv("GRAQLE_ORPHAN_FALLBACK", "1") == "1"
+            ):
+                _seed_id = result.active_nodes[0]
+                if _seed_id in graph.nodes and getattr(graph.nodes[_seed_id], "degree", 0) == 0:
+                    result_dict["activation_warning"] = (
+                        f"Single-agent answer — seed node '{_seed_id}' has degree=0 (orphan). "
+                        "Answer may lack cross-node synthesis. "
+                        "Run graq_inspect(orphans=True) to audit all orphan nodes."
+                    )
+
             # v0.51.3 — surface ambiguous_options when the arbiter has
             # detected a near-tie (VS Code extension Ambiguity Pause).
             # Field is OPTIONAL and omitted entirely when not present,
@@ -6504,6 +6718,10 @@ class KogniDevServer:
                 },
             })
 
+        # BUG-007: read create_lesson flag — when False, skip lesson node + LEARNED_FROM edges entirely
+        create_lesson = bool(args.get("create_lesson", True))
+        orphan_targets_skipped: list[str] = []
+
         graph = self._load_graph()
         updates: list[dict[str, Any]] = []
         lesson_node_id: str | None = None
@@ -6536,7 +6754,7 @@ class KogniDevServer:
                             "delta": round(weight_delta, 4),
                         })
 
-            if lesson_text:
+            if lesson_text and create_lesson:
                 from graqle.core.edge import CogniEdge
                 from graqle.core.node import CogniNode
 
@@ -6560,6 +6778,11 @@ class KogniDevServer:
                 graph.add_node(lesson_node)
 
                 for idx, nid in enumerate(component_ids):
+                    # BUG-007: skip LEARNED_FROM edge to orphan nodes (degree==0)
+                    _target_node = graph.nodes.get(nid)
+                    if getattr(_target_node, "degree", None) == 0:
+                        orphan_targets_skipped.append(nid)
+                        continue
                     edge = CogniEdge(
                         id=f"e_{lesson_node_id}_{nid}_{idx}",
                         source_id=lesson_node_id,
@@ -6589,6 +6812,7 @@ class KogniDevServer:
             "components": components,
             "edge_updates": updates,
             "lesson_node_id": lesson_node_id,
+            "orphan_targets_skipped": orphan_targets_skipped,
             "retry_attempts": _retries,
         })
 
@@ -6838,10 +7062,7 @@ class KogniDevServer:
 
         # Step 2: invoke auditor, map typed exceptions to envelopes
         try:
-            root = None
-            if getattr(self, "_graph_file", None):
-                from pathlib import Path as _Path
-                root = _Path(self._graph_file).resolve().parent
+            root = self._project_root_from_graph_file(getattr(self, "_graph_file", None))
             auditor = ConfigDriftAuditor(root=root)
 
             if action == "audit":
@@ -7254,7 +7475,12 @@ class KogniDevServer:
         if not event:
             return json.dumps({"error": "Parameter 'event' is required."})
 
-        graph = self._load_graph()
+        # session_start always forces a fresh disk read so it picks up any
+        # graph changes made since the MCP server started (e.g. after graq learn).
+        if event == "session_start":
+            graph = self._load_graph_impl()
+        else:
+            graph = self._load_graph()
         response: dict[str, Any] = {
             "event": event,
             "graph_loaded": graph is not None,
@@ -9339,12 +9565,34 @@ class KogniDevServer:
         import tempfile
         import os as _os
 
+        # BUG-001: normalize 'path' alias → 'file_path' (defensive; handle_tool already does this
+        # for the governed path, but _handle_write may be called directly in tests).
+        # Snapshot original presence BEFORE mutation so the error hint logic is correct.
+        _caller_sent_path = "path" in args
+        _caller_sent_file_path = "file_path" in args
+        if _caller_sent_path:
+            _path_alias_val = args["path"]
+            args = {k: v for k, v in args.items() if k != "path"}
+            if not _caller_sent_file_path:
+                args = {**args, "file_path": _path_alias_val}
+            # if file_path already present, drop 'path' only (file_path wins)
+
         file_path = args.get("file_path", "")
         content = args.get("content", "")
         dry_run = bool(args.get("dry_run", True))
+        force_overwrite = bool(args.get("force_overwrite", False))
+
+        # BUG-002: governance log entry when force_overwrite bypasses CG-03
+        if force_overwrite:
+            logger.warning(
+                "BUG-002-GATE: graq_write force_overwrite=True bypassed CG-03 on '%s' — governance log entry created.",
+                file_path,
+            )
 
         if not file_path:
-            return json.dumps({"error": "Parameter 'file_path' is required."})
+            # Show hint only when the caller passed neither 'path' nor 'file_path'
+            _hint = " Did you mean 'file_path'?" if not _caller_sent_path and not _caller_sent_file_path else ""
+            return json.dumps({"error": f"Parameter 'file_path' is required.{_hint}"})
         if content is None:
             return json.dumps({"error": "Parameter 'content' is required."})
 
@@ -9646,6 +9894,52 @@ class KogniDevServer:
         if dry_run:
             return json.dumps({"command": command, "dry_run": True, "message": "dry_run=True — pass dry_run=False to execute."})
 
+        # BUG-004: venv-aware pip install gate (runs after dry_run short-circuit)
+        import sys as _sys_b004
+        import os as _os_b004
+        if "pip install" in command.lower():
+            _in_venv = (
+                _sys_b004.prefix != _sys_b004.base_prefix
+                or bool(_os_b004.environ.get("VIRTUAL_ENV"))
+                or bool(_os_b004.environ.get("CONDA_DEFAULT_ENV"))
+            )
+            if not _in_venv:
+                return json.dumps({
+                    "error": "BLOCKED_COMMAND",
+                    "message": (
+                        "pip install blocked: no active virtualenv detected. "
+                        "Activate a venv first, or use graq_deps_install for governed package installs."
+                    ),
+                    "command": command,
+                })
+            import logging as _log_b004
+            _log_b004.getLogger(__name__).warning(
+                "BUG-004-GATE: pip install inside venv — governance log entry created. command=%r", command
+            )
+
+        # BUG-005: Windows multi-line python -c swallows stdout — write to temp file
+        import sys as _sys_b005
+        _cleanup_tmp_b005: str | None = None
+        if _sys_b005.platform == "win32" and "python" in command.lower() and "-c" in command:
+            import re as _re_b005, tempfile as _tf_b005, logging as _log_b005
+            _c_match = _re_b005.search(r'python\s+-c\s+["\'](.+)["\']', command, _re_b005.DOTALL)
+            if _c_match and "\n" in _c_match.group(1):
+                try:
+                    import os as _os_tmp_b005
+                    _tmp = _tf_b005.NamedTemporaryFile(
+                        suffix=".py", delete=False, mode="w", encoding="utf-8"
+                    )
+                    _tmp.write(_c_match.group(1))
+                    _tmp.close()
+                    _os_tmp_b005.chmod(_tmp.name, 0o600)
+                    _cleanup_tmp_b005 = _tmp.name
+                    command = f'python "{_tmp.name}"'
+                except OSError as _e_b005:
+                    _log_b005.getLogger(__name__).warning(
+                        "BUG-005: could not create temp file for python -c rewrite — running original command",
+                        exc_info=True,
+                    )
+
         try:
             result = subprocess.run(
                 command,
@@ -9669,6 +9963,15 @@ class KogniDevServer:
             return json.dumps({"error": f"Command timed out after {timeout}s", "command": command})
         except Exception as exc:
             return json.dumps({"error": f"Bash failed: {exc}", "command": command})
+        finally:
+            if _cleanup_tmp_b005:
+                import os as _os_b005, logging as _log_fin_b005
+                try:
+                    _os_b005.unlink(_cleanup_tmp_b005)
+                except OSError as _e_fin:
+                    _log_fin_b005.getLogger(__name__).debug(
+                        "BUG-005: temp file cleanup failed (%s) — %s", _cleanup_tmp_b005, _e_fin
+                    )
 
     # ── Phase 3.5: Git tools ─────────────────────────────────────────────
 
@@ -11485,13 +11788,7 @@ class KogniDevServer:
         run_self_test = args.get("self_test", True)
 
         _raw = getattr(self, "_graph_file", None)
-        if _raw and isinstance(_raw, (str, Path)):
-            try:
-                project_root = Path(str(_raw)).resolve().parent
-            except OSError:
-                project_root = Path.cwd().resolve()
-        else:
-            project_root = Path.cwd().resolve()
+        project_root = self._project_root_from_graph_file(_raw)
 
         gate_path = project_root / ".claude" / "hooks" / "graqle-gate.py"
         settings_path = project_root / ".claude" / "settings.json"
@@ -11608,13 +11905,7 @@ class KogniDevServer:
             })
 
         _raw = getattr(self, "_graph_file", None)
-        if _raw and isinstance(_raw, (str, Path)):
-            try:
-                project_root = Path(str(_raw)).resolve().parent
-            except OSError:
-                project_root = Path.cwd().resolve()
-        else:
-            project_root = Path.cwd().resolve()
+        project_root = self._project_root_from_graph_file(_raw)
 
         # G5: vscode-extension target dispatches to the helper and returns early
         if target == "vscode-extension":

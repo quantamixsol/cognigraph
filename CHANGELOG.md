@@ -4,23 +4,74 @@ All notable changes to GraQle are documented in this file.
 
 ---
 
-## 0.52.0 (2026-04-26) - [session-continuity-and-gseft-scaffold]
+## 0.53.0 (2026-05-02) - [reliability-release]
 
-### Added
-
-- **NS-08: `graq_session_compact` / `kogni_session_compact`** — atomically compacts the oldest turns of a conversation session in `conversations.jsonl` into a single rolled-up summary record. Keeps JSONL history bounded so it never grows unbounded. Idempotent: running twice yields the same result. Atomic rewrite via `tempfile` + `os.replace`. Configurable `keep_last` (default 10) and `threshold` (default 20). Returns `{compacted, retained, session_id, skipped}`.
-- **NS-09: `graq_session_resume` / `kogni_session_resume`** — loads a prior session's full turn history as a structured context bundle suitable for injection into a system prompt. Read-only; never modifies `conversations.jsonl`. Bounded by `max_chars` (default 2000) for token safety. Handles compacted records gracefully. Returns `{found, session_id, last_active, turn_count, status, summary, context_bundle}`.
-- **R23 GSEFT scaffold** (`graqle/embeddings/` — ADR-206) — Governance-Supervised Embedding Fine-Tuning infrastructure, deferred pending R24 dataset curation:
-  - `EmbeddingModelRegistry` — register, retrieve, and rank fine-tuned governance embedding models. `best_fine_tuned()` ranks by `(f1, mrr)` with mrr as tie-break.
-  - `GovernanceDataset` / `GovernanceTriplet` — contrastive (anchor, positive, negative) triplet dataset builder. `from_kg()` raises `NotImplementedError` when training is deferred, giving callers an unambiguous signal.
-  - `ContrastiveTrainer` / `TrainerConfig` — GSEFT training loop stub. Hyperparameters (`batch_size`, `learning_rate`) injected via `GRAQLE_GSEFT_BATCH_SIZE` / `GRAQLE_GSEFT_LEARNING_RATE` env vars (no hardcoded defaults). B4 guard: raises `ValueError` on zero hyperparams when training is active.
-  - `GovernanceEvaluator` / `EvalResult` — evaluation harness for governance retrieval metrics (precision@1, recall@5, f1, mrr).
-  - `GSEFT_TRAINING_DEFERRED` flag: `True` by default; env-injectable via `GRAQLE_GSEFT_TRAINING_ENABLED=1` for R24 flip without a code change. Zero boto3/Bedrock imports in package.
-- **MCP tool count**: 162 → 166 (+4: `graq_session_compact`, `kogni_session_compact`, `graq_session_resume`, `kogni_session_resume`)
+> **The reliability release.** 10 silent failure modes fixed across `graq_bash`,
+> `graq_write`, `graq_reason`, and `graq_learn`. Users upgrading from v0.46–v0.52
+> get automatic import-path shims with zero code changes required. Windows developers
+> get stdout capture that actually works. Governance gates that were blocking
+> legitimate read-only operations now get out of the way. Every fix is backed by
+> targeted tests — 5,357 passing across Python 3.10 / 3.11 / 3.12.
 
 ### Fixed
 
-- CI: added `tests/test_governance/test_shacl.py` to pytest ignore list (`rdflib`/`pyshacl` are `[api]` extras, not `[dev]`; CI installs `.[dev]` only)
+- **BUG-001: `graq_write` path alias.** `path` parameter now accepted as alias
+  for `file_path`. If both are present, `file_path` wins. Error message includes
+  "Did you mean `file_path`?" hint when `path` was passed.
+
+- **BUG-002: `graq_write` full-file rewrites unblocked.** New `force_overwrite`
+  parameter bypasses CG-03_EDIT_GATE for intentional full-file rewrites. Runs
+  `_run_preflight` first; governance log entry created on every use. Three-mode
+  model now documented in the tool description.
+
+- **BUG-003: `graq_bash` read-only commands bypass CG-02 gate.** New `read_only`
+  parameter plus auto-detection (no `>` redirect, no mutating keywords: `rm`, `mv`,
+  `pip install`, `git commit`, `DROP`, `DELETE FROM`). Auto-detected read-only
+  commands skip the plan gate entirely.
+
+- **BUG-004: `graq_bash` pip install respects active virtualenv.** Checks
+  `sys.prefix != sys.base_prefix`. Inside a venv: allowed with governance log
+  warning. Outside: blocked with "activate a virtualenv first" message.
+
+- **BUG-005: Windows multi-line `python -c` stdout capture fixed.** On `win32`,
+  if a `python -c "..."` command contains embedded newlines, the code is written
+  to a `NamedTemporaryFile(.py)` and executed as `python file.py` instead. Temp
+  file is deleted in `finally`. Env flag `GRAQLE_WIN32_PYTHON_C_TEMPFILE=0` to
+  disable.
+
+- **BUG-006: `graq_reason` orphan-node silent degradation fixed.** When all
+  activated nodes have `degree == 0`, falls back to top-10 hub-connected nodes.
+  Response envelope includes `activation_warning` key when `nodes_used == 1`.
+  `graq_inspect(orphans=True)` lists all orphan nodes.
+  Env flag: `GRAQLE_ORPHAN_FALLBACK` (default `"1"`).
+
+- **BUG-007: `graq_learn(mode="outcome")` no longer creates edges to orphan
+  nodes.** `LEARNED_FROM` edges are skipped when the target node has `degree == 0`;
+  response includes `orphan_targets_skipped` list. New `create_lesson=False`
+  parameter records metadata only with no graph write.
+
+- **BUG-008: `graq_reload` unblocked before session start.** Added `"graq_reload"`
+  and `"kogni_reload"` to `_CG01_EXEMPT` set. `graq_lifecycle(session_start)` now
+  calls `_load_graph_impl()` unconditionally.
+
+- **BUG-009: Backward-compatibility shims for renamed import paths.** Import paths
+  renamed between v0.46 and v0.52 now have shims with `DeprecationWarning`
+  (removal target: v0.55.0):
+  - `graqle.scorer` → `graqle.activation.chunk_scorer`
+  - `graqle.backends.bedrock` → `graqle.backends.api`
+  - `graqle.api.GraqleClient` → `graqle.core.Graqle`
+  - `graqle.cli.commands.scan.DocScanner` → `graqle.scanner.docs.DocumentScanner`
+  - `BedrockBackend(model_id=...)` → `BedrockBackend(model=...)`
+  - `BedrockBackend(profile=...)` → `BedrockBackend(profile_name=...)`
+
+  New: `MIGRATION-0.46-to-0.52.md` — full migration guide with before/after examples.
+  New: `graq doctor` now scans your project files for stale imports and reports
+  exact replacement suggestions automatically.
+
+- **BUG-010: numpy `.savez()` double-extension in atomic write pattern fixed.**
+  `graq_graph_health(mode="rebuild")` correctly handles `.npz` extension without
+  double-appending. `graqle.tools.npz_write(path, arrays, regression_check=True)`
+  exposed as public helper.
 
 ---
 
@@ -104,24 +155,32 @@ All notable changes to GraQle are documented in this file.
   writes a project-type-aware `GRAQ.md` (Python / TypeScript /
   JavaScript / Rust / Go / generic) at the workspace root. The file is
   a user-facing walk-up that merges on top of the built-in chat system
+  prompt. Per ADR-206, creation is ON by default; `--no-graq-md`
   disables. Existing files are never overwritten without explicit
   `overwrite=True`. Atomic write with try/finally cleanup — target
   remains unchanged on any IO failure. 22 new tests + 1106 regression
   green. Also: fixed a pre-existing case-sensitivity bug in
   `TestBuildMcpJson::test_structure` (Windows surfaces `graq.EXE`).
+- **ADR-207: Zero-Violation Governance Discipline.** Session-level
   policy codifying (1) every native-tool call with a `graq_*`
   equivalent MUST use the governed path; (2) every commit runs
   `graq_release_gate` on the diff with verdict recorded in commit body;
   (3) every `graq_*` tool failure logged to `.gcc/capability-gaps.md`
   (no silent workarounds). First session-end audit: 1 violation logged
   honestly; 4 capability gaps surfaced to the SDK team. See
+  [ADR-207](.gsm/decisions/ADR-207-zero-violation-governance-discipline.md).
+- **ADR-206 / SDK-B3: Impact-Radius Fast-Path.** When the chat detects
   an unambiguous file-create intent with zero blast radius, skip the LLM
   pipeline (reason → generate → review) and write directly. Reduces the
+  ~75s round-trip to ~0.3s on zero-impact creates. The ADR-205 safety
   layer still evaluates first — zero blast radius does not mean zero
   safety risk. Feature flag `fast_path_enabled` defaults ON
+  (ADR-206 Decision: unified flag-default policy); kill switch via
   `GRAQLE_FAST_PATH_ENABLED=0`. New module `graqle/chat/fast_path.py`
   with strict regex classifier + containment-checked path safety.
   30+ new tests. Zero regression (739/739 green).
+  See [ADR-206](.gsm/decisions/ADR-206-fast-path-policy-and-flag-defaults.md).
+- **ADR-205: Pre-Reason Activation Layer (SDK-B2 + SDK-B4 + GOV-01 + GOV-02).**
   Every chat turn now runs through a three-layer pre-reason activation
   step before the LLM planner is invoked: (1) relevance scoring (TAMR+
   role), (2) safety evaluation (DRACE role), (3) predictive subgraph
@@ -138,6 +197,7 @@ All notable changes to GraQle are documented in this file.
   regression. See
   [docs/governance.md](docs/governance.md#pre-reason-activation-chat-turn-safety-gate)
   and
+  [ADR-205](.gsm/decisions/ADR-205-pre-reason-activation-layer.md).
 - **G2: Release Gate.** Pre-publish KG-multi-agent governance gate — the
   only tool that combines KG-backed diff review with multi-agent risk
   prediction into a single structured verdict (`CLEAR` / `WARN` / `BLOCK`).
