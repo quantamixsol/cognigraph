@@ -4,6 +4,51 @@ All notable changes to GraQle are documented in this file.
 
 ---
 
+## 0.53.1 (2026-05-03) - [codex-mcp-installer]
+
+> **One command installs GraQle into Codex.** First-class Codex CLI integration,
+> full KG → Neo4j bulk transfer command, and a governance gate fix that eliminates
+> the invisible permission dialog bug in VS Code.
+
+### Added
+
+- **`graq mcp install codex`** — Registers GraQle as a Codex MCP server in one command.
+  Auto-detects Codex CLI on PATH, resolves absolute `graqle.yaml` path (relative paths
+  break global MCP entries), runs `codex mcp add graqle -- graq mcp serve --config <abs>`.
+  Supports `--mode read-only|read-write` and `--yes` for non-interactive use.
+  Env vars (`GRAQLE_PROJECT`, `AWS_DEFAULT_REGION`, `AWS_PROFILE`) passed through with
+  safe JSON serialization — no shell quote stripping on Windows.
+
+- **`graq mcp doctor codex`** — 8-point health checklist: Codex on PATH → version →
+  graqle listed → graq binary → yaml exists → env JSON valid → KogniDevServer importable
+  → serve responds. Fails fast at the first broken step with a clear fix suggestion.
+
+- **`graq mcp tools [--json]`** — Lists all 80+ MCP tools. Queries live server if
+  running; falls back to static registry. `--json` for machine-readable output.
+
+- **`graq mcp sessions`** — Shows running MCP server PIDs, versions, and lock files.
+
+- **`graq mcp locks`** — Shows KG write locks currently held.
+
+- **`graq neo4j-import`** — Full KG → Neo4j bulk transfer. Batched MERGE for nodes
+  (core props + 1024-dim embeddings) and edges, with schema setup (uniqueness constraint
+  + cosine vector index). Validates counts and runs a live vector search after import.
+  Flags: `--dry-run`, `--batch-size` (1–5000), `--skip-schema`, `--kg-file`.
+
+### Fixed
+
+- **Governance gate permission dialogs in VS Code.** The gate template
+  (`graqle/data/claude_gate/settings.json`) now ships with a full `permissions.allow`
+  list for all `graq_*` and `kogni_*` MCP tools. Previously, Claude Code would silently
+  wait for a permission dialog that never rendered in the VS Code extension, causing
+  sessions to appear stuck. Users on existing installations: run `graq gate-install --force`
+  once to apply the fix.
+
+- **`pyproject.toml` version string.** Escaped backslash in `version = "0.53.1\"` caused
+  `tomllib.TOMLDecodeError` on `pip install` — broke all CI jobs. Fixed.
+
+---
+
 ## 0.53.0 (2026-05-02) - [reliability-release]
 
 > **The reliability release.** 10 silent failure modes fixed across `graq_bash`,
