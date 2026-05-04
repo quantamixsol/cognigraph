@@ -78,41 +78,42 @@ That's it. Claude Code now routes every tool call through GraQle's governed equi
 
 ---
 
-## What's New in v0.53.0 — The Reliability Release
+## What's New in v0.53.1 — Codex MCP Installer
 
-> **AI assistants see files. GraQle sees architecture. And now it never silently fails.**
+> **One command installs GraQle into Codex.** Plus a full Neo4j import pipeline and a fix for the invisible permission dialog that was silently stalling VS Code sessions.
 
-v0.53.0 is the reliability release — 10 silent failure modes fixed across `graq_bash`, `graq_write`, `graq_reason`, and `graq_learn`. Every fix is covered by targeted tests. 5,357 passing across Python 3.10 / 3.11 / 3.12.
+### Codex — One Command Setup
 
-### Governance Gates That Get Out of the Way
+```bash
+pip install graqle
+graq mcp install codex          # registers GraQle in Codex automatically
+graq mcp doctor codex           # 8-point health check — confirms everything is wired
+```
 
-The gates that were blocking legitimate work now know the difference between safe and unsafe:
+`graq mcp install codex` auto-detects Codex CLI, resolves the absolute `graqle.yaml` path (relative paths silently fail in global MCP entries), and runs `codex mcp add graqle` with the correct config. Supports `--mode read-only` for safe parallel Claude + Codex sessions, `--yes` for scripts.
 
-- **`graq_bash` read-only bypass** — commands with no `>` redirect and no mutating keywords (`rm`, `DROP`, `pip install`, `git push`) skip the plan gate automatically. Or pass `read_only=True` explicitly.
-- **`graq_bash` pip inside venv** — `pip install` inside an active virtualenv is now allowed with a governance log entry. Outside a venv: still blocked with a clear message.
-- **`graq_write` path alias** — always passed `path=` instead of `file_path=`? It works now. Wrong key gets a "Did you mean `file_path`?" hint.
-- **`graq_write` full-file rewrites** — pass `force_overwrite=True` for intentional full-file rewrites. Preflight runs first; governance log entry created automatically.
-- **`graq_reload` before session start** — no longer blocked by CG-01 gate. Boot sequence works unconditionally.
+### New MCP Management Commands
 
-### Reasoning That Doesn't Silently Degrade
+- **`graq mcp tools [--json]`** — lists all 80+ tools; queries live server or falls back to static registry
+- **`graq mcp sessions`** — shows running MCP server PIDs and versions
+- **`graq mcp locks`** — shows KG write locks currently held
 
-- **`graq_reason` orphan fallback** — when the seed node has no graph connections, automatically falls back to the top-10 hub-connected nodes. Response includes `activation_warning` key so you know when this happened. Use `graq_inspect(orphans=True)` to audit.
-- **`graq_learn` orphan edges** — `LEARNED_FROM` edges are no longer silently created to disconnected nodes. Response includes `orphan_targets_skipped` list. New `create_lesson=False` for metadata-only recording.
+### Neo4j Full Import
 
-### Zero Breaking Changes for Upgraders
+```bash
+graq neo4j-import               # transfers your full KG to Neo4j with embeddings
+graq neo4j-import --dry-run     # preview without writing
+```
 
-- **4 import-path shims** — paths renamed between v0.46 and v0.52 now have backward-compat shims. `from graqle.scorer import ChunkScorer` still works — you get a `DeprecationWarning` telling you exactly what to change.
-- **`BedrockBackend` constructor aliases** — `model_id` and `profile` kwargs still accepted, mapped to `model` and `profile_name` with deprecation warnings.
-- **`graq doctor` stale-import scan** — run `graq doctor` and it will find every stale import in your project and tell you the exact replacement.
-- **`MIGRATION-0.46-to-0.52.md`** — full before/after migration guide included in the repo.
+Bulk-transfers the KG in configurable batches: nodes with 1024-dim embeddings, edges, uniqueness constraint, and cosine vector index. Validates counts and runs a live vector search after import to confirm reasoning quality is intact.
 
-### Windows Fix
+### VS Code Permission Dialog Fix
 
-- **`python -c` stdout capture on Windows** — multi-line `python -c "..."` commands now write to a temp file and execute as `python file.py`. No more swallowed stdout on Windows cmd.
+The governance gate template now ships with `permissions.allow` pre-populated for all `graq_*` / `kogni_*` MCP tools. Previously, Claude Code would silently wait for a permission dialog that never rendered inside the VS Code extension, causing sessions to appear stuck. **Existing installations:** run `graq gate-install --force` once to apply.
 
 ### 14 LLM Backends. 160+ MCP Tools. 5,357+ Tests.
 
-Works with Anthropic, OpenAI, AWS Bedrock, Ollama (local), Gemini, Groq, DeepSeek, Together, Mistral, OpenRouter, Fireworks, Cohere, vLLM, and custom providers.
+Works with Anthropic, OpenAI, AWS Bedrock, Ollama (local), Gemini, Groq, DeepSeek, Together, Mistral, OpenRouter, Fireworks, Cohere, vLLM, and custom providers. Full reliability release notes: [v0.53.0 changelog](https://github.com/quantamixsol/graqle/blob/master/CHANGELOG.md#0530-2026-05-02---reliability-release).
 
 [Install VS Code Extension](https://marketplace.visualstudio.com/items?itemName=graqle.graqle-vscode) | [Full Changelog](https://github.com/quantamixsol/graqle/blob/master/CHANGELOG.md)
 
@@ -511,6 +512,14 @@ graq init --ide vscode
 graq init --ide windsurf
 ```
 
+**Codex (OpenAI):**
+
+```bash
+graq mcp install codex          # one command — auto-detects Codex, wires graqle.yaml
+graq mcp install codex --mode read-only   # safe for parallel Claude + Codex sessions
+graq mcp doctor codex           # 8-point health check
+```
+
 **Core reasoning tools (free):**
 
 | Tool | What it does |
@@ -648,7 +657,9 @@ This is not a demo feature. This is proof the tool works at the scale and comple
 | `graq cloud pull --merge` | Pull graph from S3 — preserves local lessons |
 | `graq studio` | Visual dashboard |
 | `graq serve` | REST API server |
-| `graq mcp serve` | MCP server — auto-discovered by Claude Code, Cursor, Windsurf |
+| `graq mcp serve` | MCP server — auto-discovered by Claude Code, Cursor, Windsurf, Codex |
+| `graq mcp install codex` | Register GraQle in Codex CLI — one command setup |
+| `graq mcp doctor codex` | 8-point health check for Codex integration |
 
 </details>
 
